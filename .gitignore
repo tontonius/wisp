@@ -24,3 +24,6 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+
+# Local agent instructions (not tracked)
+AGENTS.md
