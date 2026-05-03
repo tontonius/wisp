@@ -27,6 +27,7 @@ The library is a Unity/Shuriken-inspired particle system for Three.js. It uses J
 - [Create A GPU Ambient Effect](how-to/create-a-gpu-ambient-effect.md)
 - [Use Texture Sheets](how-to/use-texture-sheets.md)
 - [Debug Emitters](how-to/debug-emitters.md)
+- [Publish The Demo To GitHub Pages](how-to/publish-github-pages.md)
 
 ## Reference
 
@@ -54,4 +55,3 @@ The library is a Unity/Shuriken-inspired particle system for Three.js. It uses J
 - [Simulation Model](explanation/simulation-model.md)
 - [Rendering Model](explanation/rendering-model.md)
 - [Known Limitations](explanation/known-limitations.md)
-
