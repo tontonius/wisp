@@ -49,6 +49,8 @@ In GitHub, configure Pages to use GitHub Actions:
 Settings -> Pages -> Build and deployment -> Source -> GitHub Actions
 ```
 
+The workflow also passes `enablement: true` to `actions/configure-pages`, so the first successful run can create/enable the Pages site if the repository permits it. If the workflow still fails with a Pages `Not Found` error, enable Pages through the repository settings above and rerun the workflow.
+
 After a successful deploy, the demo should be available at:
 
 ```txt
@@ -63,4 +65,3 @@ Update this page if:
 - The Pages URL changes.
 - The Vite base path changes.
 - The deployment workflow changes.
-
