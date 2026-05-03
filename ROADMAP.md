@@ -88,6 +88,14 @@ Do not try to make one backend solve every problem. The hybrid model is intentio
 - `restart()`
 - `emit(count)`
 - `dispose()`
+- `isPlaying`
+- `isAlive`
+- `isComplete`
+- `elapsed`
+- `aliveCount`
+- Lifecycle callbacks (`onStart`, `onStop`, `onComplete`)
+- CPU particle death callback (`onParticleDeath`)
+- Emitter debug gizmos for point, sphere, hemisphere, cone, and box shapes
 - One-shot lifecycle support
 - Auto-cleanup through `ParticleWorld`
 - Shared authoring model for CPU and GPU presets

@@ -74,6 +74,8 @@ const explosion: ParticlePreset = {
     size: [0.05, 0.25],
     color: ["#fff4ba", "#ff4b16"],
     opacity: [0.6, 1],
+    rotation: [0, Math.PI * 2],
+    angularVelocity: [-4, 4],
   },
 
   forces: {
@@ -189,6 +191,56 @@ system.play();
 
 If `simulation: "gpu"` is requested without a renderer, the system falls back to CPU and logs a warning. Yes, it tattles. Correctly.
 
+## Lifecycle
+
+Every spawned `ParticleSystem` exposes:
+
+```ts
+system.isPlaying;
+system.isAlive;
+system.isComplete;
+system.elapsed;
+system.aliveCount;
+```
+
+Presets can also provide lifecycle callbacks:
+
+```ts
+const sparks: ParticlePreset = {
+  callbacks: {
+    onStart: (system) => console.log("started", system.elapsed),
+    onComplete: (system) => console.log("done", system.aliveCount),
+    onParticleDeath: (particle) => console.log("cpu particle died", particle.position),
+  },
+};
+```
+
+`onStart`, `onStop`, and `onComplete` work on both CPU and GPU systems. `onParticleDeath` is CPU-only because GPU particle death stays on the GPU.
+
+## Debug Gizmos
+
+Emitter gizmos can be enabled per preset:
+
+```ts
+const coneBurst: ParticlePreset = {
+  emitter: { type: "cone", radius: 0.2, angle: 30, length: 2 },
+  debug: {
+    enabled: true,
+    emitter: true,
+    spawnDirection: true,
+  },
+};
+```
+
+Or toggled at runtime:
+
+```ts
+system.setDebug(true);
+particles.setDebug({ enabled: true, color: "#78d7ff" });
+```
+
+The current gizmos show point, sphere, hemisphere, cone, and box emitter shapes. Cone gizmos include the base radius, length, angle spread, and forward spawn direction.
+
 ## `simulation: "auto"`
 
 `auto` uses GPU when:
@@ -288,6 +340,15 @@ particles.update(dt, camera);
 
 One-shot systems auto-dispose by default when complete.
 
+Most `start` values accept either a scalar or an interval:
+
+```ts
+start: {
+  rotation: Math.PI * 0.25,
+  angularVelocity: [-2, 2],
+}
+```
+
 ### `ParticleSystem`
 
 A single live particle effect. It extends `THREE.Object3D`.
@@ -373,6 +434,22 @@ emitter: {
 ## Renderer
 
 ```ts
+const texture = new THREE.TextureLoader().load("/particles/smoke-puff.png");
+texture.colorSpace = THREE.SRGBColorSpace;
+
+const smoke: ParticlePreset = {
+  renderer: {
+    texture,
+    blendMode: "alpha",
+    align: "camera",
+    depthWrite: false,
+  },
+};
+```
+
+For white-on-black sprite images, additive blending can be useful. For alpha blending, use a transparent PNG or preprocess the image so the dark background becomes alpha.
+
+```ts
 renderer: {
   texture,
   blendMode: "additive", // "alpha" | "multiply"
@@ -389,8 +466,21 @@ renderer: {
   textureSheet: {
     columns: 4,
     rows: 4,
+    randomFrame: true,
+  },
+}
+```
+
+For flipbook animation, advance frames over each particle lifetime. `randomStartFrame` remains supported as an alias for `randomFrame`.
+
+```ts
+renderer: {
+  texture: flipbookTexture,
+  textureSheet: {
+    columns: 4,
+    rows: 4,
     frameOverLifetime: true,
-    randomStartFrame: true,
+    randomFrame: true,
   },
 }
 ```

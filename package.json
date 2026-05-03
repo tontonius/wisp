@@ -8,8 +8,11 @@
     "build": "vite build"
   },
   "dependencies": {
+    "@tweakpane/core": "^2.0.5",
+    "@tweakpane/plugin-essentials": "^0.2.1",
     "@vitejs/plugin-basic-ssl": "latest",
     "three": "latest",
+    "tweakpane": "^4.0.5",
     "typescript": "latest",
     "vite": "latest"
   }

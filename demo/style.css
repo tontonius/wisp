@@ -38,3 +38,43 @@ canvas {
   line-height: 1.45;
   opacity: 0.85;
 }
+
+.copy-status {
+  min-height: 18px;
+  margin-top: 8px;
+  color: #9de8c9;
+  font-size: 12px;
+}
+
+.tweakpane-wrap {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: min(360px, calc(100vw - 40px));
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  z-index: 2;
+}
+
+.tweakpane-wrap .tp-dfwv {
+  position: static;
+  width: 100%;
+}
+
+@media (max-width: 760px) {
+  .ui {
+    left: 12px;
+    right: 12px;
+    top: 12px;
+    max-width: none;
+  }
+
+  .tweakpane-wrap {
+    left: 12px;
+    right: 12px;
+    top: auto;
+    bottom: 12px;
+    width: auto;
+    max-height: 52vh;
+  }
+}

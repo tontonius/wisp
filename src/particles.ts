@@ -16,6 +16,15 @@ export type EmitterShape =
   | { type: "cone"; radius?: number; angle?: number; length?: number }
   | { type: "box"; size?: Vec3Tuple };
 
+export type ParticleDebugOptions = {
+  enabled?: boolean;
+  emitter?: boolean;
+  spawnDirection?: boolean;
+  color?: THREE.ColorRepresentation;
+  opacity?: number;
+  segments?: number;
+};
+
 export type ParticlePreset = {
   name?: string;
   simulation?: SimulationMode;
@@ -24,6 +33,8 @@ export type ParticlePreset = {
   loop?: boolean;
   prewarm?: boolean;
   autoDispose?: boolean;
+  callbacks?: ParticleLifecycleCallbacks;
+  debug?: boolean | ParticleDebugOptions;
 
   gpu?: {
     textureSize?: number;
@@ -70,6 +81,7 @@ export type ParticlePreset = {
     textureSheet?: {
       columns: number;
       rows: number;
+      randomFrame?: boolean;
       frameOverLifetime?: boolean;
       randomStartFrame?: boolean;
     };
@@ -82,6 +94,24 @@ export type ParticleSystemOptions = {
 
 export type ParticleWorldOptions = {
   renderer?: THREE.WebGLRenderer;
+};
+
+export type ParticleSnapshot = {
+  position: THREE.Vector3;
+  velocity: THREE.Vector3;
+  age: number;
+  lifetime: number;
+};
+
+export type ParticleLifecycleCallbacks = {
+  onStart?: (system: ParticleSystem) => void;
+  onStop?: (system: ParticleSystem) => void;
+  onComplete?: (system: ParticleSystem) => void;
+  onParticleDeath?: (particle: ParticleSnapshot, system: ParticleSystem) => void;
+};
+
+type ParticleBackendOptions = {
+  onParticleDeath?: (particle: Particle) => void;
 };
 
 type Particle = {
@@ -105,8 +135,18 @@ type SpawnRequest = {
   seed: number;
 };
 
+type TextureSheetConfig = {
+  columns: number;
+  rows: number;
+  totalFrames: number;
+  frameOverLifetime: boolean;
+  randomFrame: boolean;
+};
+
 interface ParticleBackend {
   readonly object: THREE.Object3D;
+  readonly elapsed: number;
+  readonly aliveCount: number;
   readonly isAlive: boolean;
   readonly isPlaying: boolean;
   readonly isComplete: boolean;
@@ -121,6 +161,7 @@ interface ParticleBackend {
 }
 
 const DEFAULT_EMITTER: EmitterShape = { type: "point" };
+const DEFAULT_GIZMO_COLOR = "#78d7ff";
 
 const tempColorA = new THREE.Color();
 const tempColorB = new THREE.Color();
@@ -279,6 +320,151 @@ function applyBlendMode(material: THREE.Material, blendMode: BlendMode = "alpha"
   else material.blending = THREE.NormalBlending;
 }
 
+function getTextureSheetConfig(preset: ParticlePreset): TextureSheetConfig | undefined {
+  const sheet = preset.renderer?.textureSheet;
+  if (!sheet) return undefined;
+
+  const columns = Math.max(1, Math.floor(sheet.columns));
+  const rows = Math.max(1, Math.floor(sheet.rows));
+  const totalFrames = columns * rows;
+  return {
+    columns,
+    rows,
+    totalFrames,
+    frameOverLifetime: sheet.frameOverLifetime ?? false,
+    randomFrame: sheet.randomFrame ?? sheet.randomStartFrame ?? false,
+  };
+}
+
+function resolveDebugOptions(debug: boolean | ParticleDebugOptions | undefined): Required<ParticleDebugOptions> {
+  const options = typeof debug === "object" ? debug : {};
+  const enabled = typeof debug === "boolean" ? debug : options.enabled ?? false;
+  return {
+    enabled,
+    emitter: options.emitter ?? true,
+    spawnDirection: options.spawnDirection ?? true,
+    color: options.color ?? DEFAULT_GIZMO_COLOR,
+    opacity: options.opacity ?? 0.85,
+    segments: Math.max(8, Math.floor(options.segments ?? 48)),
+  };
+}
+
+function addLine(points: THREE.Vector3[], a: THREE.Vector3, b: THREE.Vector3): void {
+  points.push(a.clone(), b.clone());
+}
+
+function addCircle(points: THREE.Vector3[], radius: number, segments: number, plane: "xy" | "xz" | "yz", center = tempVectorA.set(0, 0, 0)): void {
+  for (let i = 0; i < segments; i++) {
+    const a0 = (i / segments) * Math.PI * 2;
+    const a1 = ((i + 1) / segments) * Math.PI * 2;
+    const p0 = circlePoint(radius, a0, plane).add(center);
+    const p1 = circlePoint(radius, a1, plane).add(center);
+    addLine(points, p0, p1);
+  }
+}
+
+function addArc(points: THREE.Vector3[], radius: number, segments: number, plane: "xy" | "yz"): void {
+  for (let i = 0; i < segments; i++) {
+    const a0 = (i / segments) * Math.PI;
+    const a1 = ((i + 1) / segments) * Math.PI;
+    const p0 = plane === "xy" ? new THREE.Vector3(Math.cos(a0) * radius, Math.sin(a0) * radius, 0) : new THREE.Vector3(0, Math.sin(a0) * radius, Math.cos(a0) * radius);
+    const p1 = plane === "xy" ? new THREE.Vector3(Math.cos(a1) * radius, Math.sin(a1) * radius, 0) : new THREE.Vector3(0, Math.sin(a1) * radius, Math.cos(a1) * radius);
+    addLine(points, p0, p1);
+  }
+}
+
+function circlePoint(radius: number, angle: number, plane: "xy" | "xz" | "yz"): THREE.Vector3 {
+  const x = Math.cos(angle) * radius;
+  const y = Math.sin(angle) * radius;
+  if (plane === "xy") return new THREE.Vector3(x, y, 0);
+  if (plane === "xz") return new THREE.Vector3(x, 0, y);
+  return new THREE.Vector3(0, x, y);
+}
+
+function addArrow(points: THREE.Vector3[], from: THREE.Vector3, to: THREE.Vector3, headLength: number): void {
+  addLine(points, from, to);
+  const direction = tempVectorA.copy(to).sub(from).normalize();
+  const right = tempVectorB.set(1, 0, 0);
+  if (Math.abs(direction.dot(right)) > 0.95) right.set(0, 0, 1);
+  const side = tempVectorC.copy(direction).cross(right).normalize().multiplyScalar(headLength * 0.45);
+  const back = direction.multiplyScalar(-headLength);
+  const headCenter = to.clone().add(back);
+  addLine(points, to, headCenter.clone().add(side));
+  addLine(points, to, headCenter.clone().sub(side));
+}
+
+function makeEmitterGizmo(shape: EmitterShape = DEFAULT_EMITTER, debug: boolean | ParticleDebugOptions | undefined): THREE.LineSegments {
+  const options = resolveDebugOptions(debug);
+  const points: THREE.Vector3[] = [];
+  const segments = options.segments;
+
+  if (options.emitter) {
+    if (shape.type === "point") {
+      const size = 0.18;
+      addLine(points, new THREE.Vector3(-size, 0, 0), new THREE.Vector3(size, 0, 0));
+      addLine(points, new THREE.Vector3(0, -size, 0), new THREE.Vector3(0, size, 0));
+      addLine(points, new THREE.Vector3(0, 0, -size), new THREE.Vector3(0, 0, size));
+    } else if (shape.type === "sphere") {
+      const radius = shape.radius ?? 1;
+      addCircle(points, radius, segments, "xy");
+      addCircle(points, radius, segments, "xz");
+      addCircle(points, radius, segments, "yz");
+    } else if (shape.type === "hemisphere") {
+      const radius = shape.radius ?? 1;
+      addCircle(points, radius, segments, "xz");
+      addArc(points, radius, Math.floor(segments / 2), "xy");
+      addArc(points, radius, Math.floor(segments / 2), "yz");
+    } else if (shape.type === "cone") {
+      const radius = shape.radius ?? 0.1;
+      const length = shape.length ?? 1;
+      const spread = Math.tan(THREE.MathUtils.degToRad(shape.angle ?? 25)) * length;
+      const endRadius = Math.max(radius, spread);
+      addCircle(points, radius, segments, "xz");
+      addCircle(points, endRadius, segments, "xz", new THREE.Vector3(0, length, 0));
+      const sideCount = 8;
+      for (let i = 0; i < sideCount; i++) {
+        const angle = (i / sideCount) * Math.PI * 2;
+        addLine(points, circlePoint(radius, angle, "xz"), circlePoint(endRadius, angle, "xz").add(new THREE.Vector3(0, length, 0)));
+      }
+    } else if (shape.type === "box") {
+      const [sx, sy, sz] = shape.size ?? [1, 1, 1];
+      const x = sx * 0.5;
+      const y = sy * 0.5;
+      const z = sz * 0.5;
+      const corners = [
+        new THREE.Vector3(-x, -y, -z),
+        new THREE.Vector3(x, -y, -z),
+        new THREE.Vector3(x, -y, z),
+        new THREE.Vector3(-x, -y, z),
+        new THREE.Vector3(-x, y, -z),
+        new THREE.Vector3(x, y, -z),
+        new THREE.Vector3(x, y, z),
+        new THREE.Vector3(-x, y, z),
+      ];
+      const edges = [[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]] as const;
+      for (const [a, b] of edges) addLine(points, corners[a], corners[b]);
+    }
+  }
+
+  if (options.spawnDirection) {
+    const length = shape.type === "cone" ? shape.length ?? 1 : shape.type === "box" ? Math.max(...(shape.size ?? [1, 1, 1])) * 0.55 : "radius" in shape ? (shape.radius ?? 1) * 1.25 : 0.45;
+    addArrow(points, new THREE.Vector3(), new THREE.Vector3(0, Math.max(0.25, length), 0), Math.max(0.08, length * 0.12));
+  }
+
+  const geometry = new THREE.BufferGeometry().setFromPoints(points);
+  const material = new THREE.LineBasicMaterial({
+    color: options.color,
+    transparent: true,
+    opacity: options.opacity,
+    depthTest: false,
+  });
+  const gizmo = new THREE.LineSegments(geometry, material);
+  gizmo.frustumCulled = false;
+  gizmo.renderOrder = 999;
+  gizmo.visible = options.enabled;
+  return gizmo;
+}
+
 function makeParticleMaterial(options: NonNullable<ParticlePreset["renderer"]> = {}): THREE.ShaderMaterial {
   const material = new THREE.ShaderMaterial({
     transparent: true,
@@ -369,7 +555,8 @@ class CPUParticleBackend implements ParticleBackend {
   private uvAttribute: THREE.BufferAttribute;
   private colorAttribute: THREE.BufferAttribute;
   private maxParticles: number;
-  private elapsed = 0;
+  private _elapsed = 0;
+  private _aliveCount = 0;
   private emissionAccumulator = 0;
   private playing = false;
   private emissionComplete = false;
@@ -377,7 +564,7 @@ class CPUParticleBackend implements ParticleBackend {
   private _disposed = false;
   private sortedBursts: Array<{ time: number; count: Range; probability?: number }>;
 
-  constructor(private preset: ParticlePreset) {
+  constructor(private preset: ParticlePreset, private backendOptions: ParticleBackendOptions = {}) {
     this.maxParticles = preset.maxParticles ?? 256;
     this.sortedBursts = [...(preset.emission?.bursts ?? [])].sort((a, b) => a.time - b.time);
 
@@ -406,7 +593,15 @@ class CPUParticleBackend implements ParticleBackend {
   }
 
   get isAlive(): boolean {
-    return this.particles.some((p) => p.alive);
+    return this._aliveCount > 0;
+  }
+
+  get aliveCount(): number {
+    return this._aliveCount;
+  }
+
+  get elapsed(): number {
+    return this._elapsed;
   }
 
   get isPlaying(): boolean {
@@ -434,12 +629,13 @@ class CPUParticleBackend implements ParticleBackend {
   stop({ clear = true } = {}): void {
     this.playing = false;
     this.emissionComplete = true;
-    this.elapsed = 0;
+    this._elapsed = 0;
     this.emissionAccumulator = 0;
     this.burstCursor = 0;
 
     if (clear) {
       for (const particle of this.particles) particle.alive = false;
+      this._aliveCount = 0;
       this.geometry.setDrawRange(0, 0);
     }
   }
@@ -460,15 +656,15 @@ class CPUParticleBackend implements ParticleBackend {
     const loop = this.preset.loop ?? false;
 
     if (this.playing) {
-      this.elapsed += dt;
+      this._elapsed += dt;
 
-      if (loop && this.elapsed > duration) {
-        this.elapsed %= duration;
+      if (loop && this._elapsed > duration) {
+        this._elapsed %= duration;
         this.burstCursor = 0;
         this.emissionComplete = false;
       }
 
-      if (!loop && this.elapsed > duration) {
+      if (!loop && this._elapsed > duration) {
         this.playing = false;
         this.emissionComplete = true;
       } else {
@@ -517,7 +713,7 @@ class CPUParticleBackend implements ParticleBackend {
     dummyCamera.lookAt(0, 0, 0);
     this.play();
     for (let t = 0; t < duration; t += step) this.update(step, dummyCamera);
-    this.elapsed = 0;
+    this._elapsed = 0;
     this.burstCursor = 0;
   }
 
@@ -532,7 +728,7 @@ class CPUParticleBackend implements ParticleBackend {
 
     while (this.burstCursor < this.sortedBursts.length) {
       const burst = this.sortedBursts[this.burstCursor];
-      if (this.elapsed < burst.time) break;
+      if (this._elapsed < burst.time) break;
       if (Math.random() <= (burst.probability ?? 1)) this.emit(Math.floor(randomRange(burst.count)));
       this.burstCursor++;
     }
@@ -546,6 +742,7 @@ class CPUParticleBackend implements ParticleBackend {
     const start = this.preset.start ?? {};
 
     particle.alive = true;
+    this._aliveCount++;
     particle.position.copy(sample.position);
     particle.age = 0;
     particle.lifetime = Math.max(0.01, randomRange(start.lifetime ?? 1));
@@ -557,9 +754,8 @@ class CPUParticleBackend implements ParticleBackend {
     particle.angularVelocity = randomRange(start.angularVelocity ?? 0);
     particle.randomSeed = Math.random() * 1000;
 
-    const sheet = this.preset.renderer?.textureSheet;
-    const totalFrames = sheet ? sheet.columns * sheet.rows : 1;
-    particle.startFrame = sheet?.randomStartFrame ? Math.floor(Math.random() * totalFrames) : 0;
+    const sheet = getTextureSheetConfig(this.preset);
+    particle.startFrame = sheet?.randomFrame ? Math.floor(Math.random() * sheet.totalFrames) : 0;
   }
 
   private updateParticles(dt: number): void {
@@ -575,6 +771,8 @@ class CPUParticleBackend implements ParticleBackend {
       particle.age += dt;
       if (particle.age >= particle.lifetime) {
         particle.alive = false;
+        this._aliveCount = Math.max(0, this._aliveCount - 1);
+        this.backendOptions.onParticleDeath?.(particle);
         continue;
       }
 
@@ -662,13 +860,12 @@ class CPUParticleBackend implements ParticleBackend {
   }
 
   private getParticleUvs(particle: Particle, t: number): { u0: number; v0: number; u1: number; v1: number } {
-    const sheet = this.preset.renderer?.textureSheet;
+    const sheet = getTextureSheetConfig(this.preset);
     if (!sheet) return { u0: 0, v0: 0, u1: 1, v1: 1 };
 
-    const totalFrames = sheet.columns * sheet.rows;
     let frame = particle.startFrame;
-    if (sheet.frameOverLifetime) frame += Math.floor(t * totalFrames);
-    frame = THREE.MathUtils.clamp(frame, 0, totalFrames - 1);
+    if (sheet.frameOverLifetime) frame += Math.floor(t * sheet.totalFrames);
+    frame = THREE.MathUtils.clamp(frame, 0, sheet.totalFrames - 1);
 
     const column = frame % sheet.columns;
     const row = Math.floor(frame / sheet.columns);
@@ -693,7 +890,7 @@ class GPUParticleBackend implements ParticleBackend {
   private textureSize: number;
   private maxParticles: number;
   private capacity: number;
-  private elapsed = 0;
+  private _elapsed = 0;
   private emissionAccumulator = 0;
   private playing = false;
   private emissionComplete = false;
@@ -752,7 +949,15 @@ class GPUParticleBackend implements ParticleBackend {
     // GPU readback would defeat the point. We conservatively keep one-shots alive until the maximum possible lifetime has elapsed.
     if (this.preset.loop) return this.playing;
     const [, lifetimeMax] = rangeMinMax(this.preset.start?.lifetime, 1);
-    return this.elapsed <= (this.preset.duration ?? 1) + lifetimeMax;
+    return this._elapsed <= (this.preset.duration ?? 1) + lifetimeMax;
+  }
+
+  get aliveCount(): number {
+    return this.isAlive ? this.maxParticles : 0;
+  }
+
+  get elapsed(): number {
+    return this._elapsed;
   }
 
   get isPlaying(): boolean {
@@ -780,7 +985,7 @@ class GPUParticleBackend implements ParticleBackend {
   stop({ clear = true } = {}): void {
     this.playing = false;
     this.emissionComplete = true;
-    this.elapsed = 0;
+    this._elapsed = 0;
     this.emissionAccumulator = 0;
     this.burstCursor = 0;
     this.queuedSpawns.length = 0;
@@ -813,15 +1018,15 @@ class GPUParticleBackend implements ParticleBackend {
     const loop = this.preset.loop ?? false;
 
     if (this.playing) {
-      this.elapsed += dt;
+      this._elapsed += dt;
 
-      if (loop && this.elapsed > duration) {
-        this.elapsed %= duration;
+      if (loop && this._elapsed > duration) {
+        this._elapsed %= duration;
         this.burstCursor = 0;
         this.emissionComplete = false;
       }
 
-      if (!loop && this.elapsed > duration) {
+      if (!loop && this._elapsed > duration) {
         this.playing = false;
         this.emissionComplete = true;
       } else {
@@ -856,7 +1061,7 @@ class GPUParticleBackend implements ParticleBackend {
     const step = 1 / 30;
     this.play();
     for (let t = 0; t < duration; t += step) this.update(step, new THREE.PerspectiveCamera());
-    this.elapsed = 0;
+    this._elapsed = 0;
     this.burstCursor = 0;
   }
 
@@ -905,7 +1110,7 @@ class GPUParticleBackend implements ParticleBackend {
 
     while (this.burstCursor < this.sortedBursts.length) {
       const burst = this.sortedBursts[this.burstCursor];
-      if (this.elapsed < burst.time) break;
+      if (this._elapsed < burst.time) break;
       if (Math.random() <= (burst.probability ?? 1)) this.emit(Math.floor(randomRange(burst.count)));
       this.burstCursor++;
     }
@@ -965,8 +1170,7 @@ class GPUParticleBackend implements ParticleBackend {
     const emitterAngle = emitter.type === "cone" ? THREE.MathUtils.degToRad(emitter.angle ?? 25) : 0;
     const emitterLength = emitter.type === "cone" ? emitter.length ?? 1 : 1;
     const emitterSize = emitter.type === "box" ? emitter.size ?? [1, 1, 1] : [1, 1, 1];
-    const sheet = this.preset.renderer?.textureSheet;
-    const totalFrames = sheet ? sheet.columns * sheet.rows : 1;
+    const sheet = getTextureSheetConfig(this.preset);
 
     const u = this.simMaterial.uniforms;
     u.uPrevPositionAge.value = this.readTargets[0].texture;
@@ -1000,8 +1204,8 @@ class GPUParticleBackend implements ParticleBackend {
     u.uDrag.value = forces.drag ?? 0;
     u.uNoiseStrength.value = forces.noise?.strength ?? 0;
     u.uNoiseFrequency.value = forces.noise?.frequency ?? 1;
-    u.uRandomStartFrame.value = sheet?.randomStartFrame ? 1 : 0;
-    u.uTotalFrames.value = totalFrames;
+    u.uRandomStartFrame.value = sheet?.randomFrame ? 1 : 0;
+    u.uTotalFrames.value = sheet?.totalFrames ?? 1;
   }
 
   private makeSimulationMaterial(): THREE.ShaderMaterial {
@@ -1168,12 +1372,12 @@ class GPUParticleBackend implements ParticleBackend {
             float rotation = mix(uRotationRange.x, uRotationRange.y, rand(rawIndex, 19.0));
             float angularVelocity = mix(uAngularVelocityRange.x, uAngularVelocityRange.y, rand(rawIndex, 20.0));
             float opacity = mix(uOpacityRange.x, uOpacityRange.y, rand(rawIndex, 21.0));
-            float frame = uRandomStartFrame == 1 ? floor(rand(rawIndex, 22.0) * float(uTotalFrames)) : 0.0;
+            float startFrame = uRandomStartFrame == 1 ? floor(rand(rawIndex, 22.0) * float(uTotalFrames)) : 0.0;
 
             if (uTarget == 0) gl_FragColor = vec4(pos, 0.0);
             else if (uTarget == 1) gl_FragColor = vec4(velocity, max(0.01, life));
             else if (uTarget == 2) gl_FragColor = vec4(color, seed);
-            else gl_FragColor = vec4(size, rotation, angularVelocity + frame * 10000.0, opacity + 2.0);
+            else gl_FragColor = vec4(size, rotation, angularVelocity, opacity + 2.0 + startFrame * 10000.0);
             return;
           }
 
@@ -1258,7 +1462,7 @@ class GPUParticleBackend implements ParticleBackend {
   }
 
   private makeRenderMaterial(): THREE.ShaderMaterial {
-    const sheet = this.preset.renderer?.textureSheet;
+    const sheet = getTextureSheetConfig(this.preset);
     const material = new THREE.ShaderMaterial({
       transparent: true,
       depthWrite: this.preset.renderer?.depthWrite ?? false,
@@ -1279,7 +1483,7 @@ class GPUParticleBackend implements ParticleBackend {
         uSheetColumns: { value: sheet?.columns ?? 1 },
         uSheetRows: { value: sheet?.rows ?? 1 },
         uSheetFrameOverLifetime: { value: sheet?.frameOverLifetime ? 1 : 0 },
-        uTotalFrames: { value: sheet ? sheet.columns * sheet.rows : 1 },
+        uTotalFrames: { value: sheet?.totalFrames ?? 1 },
       },
       vertexShader: `
         precision highp float;
@@ -1320,7 +1524,8 @@ class GPUParticleBackend implements ParticleBackend {
 
           float startSize = extra.x;
           float rotation = extra.y;
-          float startOpacity = max(0.0, extra.a - 2.0);
+          float startFrame = floor(extra.a / 10000.0);
+          float startOpacity = max(0.0, extra.a - startFrame * 10000.0 - 2.0);
           float size = startSize * sizeMul;
           float opacity = startOpacity * opacityMul * alive;
 
@@ -1341,8 +1546,6 @@ class GPUParticleBackend implements ParticleBackend {
 
           vec2 atlasUv = uv;
           if (uTotalFrames > 1) {
-            float encoded = extra.z;
-            float startFrame = floor(encoded / 10000.0);
             float frame = startFrame;
             if (uSheetFrameOverLifetime == 1) frame += floor(ageT * float(uTotalFrames));
             frame = clamp(frame, 0.0, float(uTotalFrames - 1));
@@ -1398,6 +1601,8 @@ export class ParticleSystem extends THREE.Object3D {
   readonly preset: ParticlePreset;
   readonly backendType: "cpu" | "gpu";
   private backend: ParticleBackend;
+  private gizmo?: THREE.LineSegments;
+  private completionNotified = false;
 
   constructor(preset: ParticlePreset = {}, options: ParticleSystemOptions = {}) {
     super();
@@ -1409,8 +1614,21 @@ export class ParticleSystem extends THREE.Object3D {
 
     const useGpu = shouldUseGpu(preset, options);
     this.backendType = useGpu ? "gpu" : "cpu";
-    this.backend = useGpu ? new GPUParticleBackend(preset, options.renderer!) : new CPUParticleBackend(preset);
-    this.add(this.backend.object);
+    this.backend = useGpu
+      ? new GPUParticleBackend(preset, options.renderer!)
+      : new CPUParticleBackend(preset, {
+          onParticleDeath: (particle) => this.notifyParticleDeath(particle),
+        });
+    (this as unknown as THREE.Object3D).add(this.backend.object);
+    this.setDebug(preset.debug);
+  }
+
+  get elapsed(): number {
+    return this.backend.elapsed;
+  }
+
+  get aliveCount(): number {
+    return this.backend.aliveCount;
   }
 
   get isAlive(): boolean {
@@ -1430,7 +1648,10 @@ export class ParticleSystem extends THREE.Object3D {
   }
 
   play(): this {
+    const wasPlaying = this.backend.isPlaying;
     this.backend.play();
+    this.completionNotified = false;
+    if (!wasPlaying) this.preset.callbacks?.onStart?.(this);
     return this;
   }
 
@@ -1440,12 +1661,17 @@ export class ParticleSystem extends THREE.Object3D {
   }
 
   stop(options?: { clear?: boolean }): this {
+    const wasActive = this.backend.isPlaying || this.backend.isAlive;
     this.backend.stop(options);
+    this.completionNotified = this.backend.isComplete;
+    if (wasActive) this.preset.callbacks?.onStop?.(this);
     return this;
   }
 
   restart(): this {
     this.backend.restart();
+    this.completionNotified = false;
+    this.preset.callbacks?.onStart?.(this);
     return this;
   }
 
@@ -1454,13 +1680,53 @@ export class ParticleSystem extends THREE.Object3D {
     return this;
   }
 
+  setDebug(debug: boolean | ParticleDebugOptions | undefined): this {
+    const options = resolveDebugOptions(debug);
+
+    if (!options.enabled) {
+      if (this.gizmo) this.gizmo.visible = false;
+      return this;
+    }
+
+    if (this.gizmo) {
+      this.gizmo.removeFromParent();
+      this.gizmo.geometry.dispose();
+      (this.gizmo.material as THREE.Material).dispose();
+    }
+
+    this.gizmo = makeEmitterGizmo(this.preset.emitter ?? DEFAULT_EMITTER, options);
+    (this as unknown as THREE.Object3D).add(this.gizmo);
+    return this;
+  }
+
   update(dt: number, camera: THREE.Camera): void {
     this.backend.update(dt, camera);
+    if (this.backend.isComplete && !this.completionNotified) {
+      this.completionNotified = true;
+      this.preset.callbacks?.onComplete?.(this);
+    }
   }
 
   dispose(options?: { disposeTexture?: boolean }): void {
+    if (this.gizmo) {
+      this.gizmo.geometry.dispose();
+      (this.gizmo.material as THREE.Material).dispose();
+      this.gizmo = undefined;
+    }
     this.backend.dispose(options);
-    this.removeFromParent();
+    (this as unknown as THREE.Object3D).removeFromParent();
+  }
+
+  private notifyParticleDeath(particle: Particle): void {
+    this.preset.callbacks?.onParticleDeath?.(
+      {
+        position: particle.position.clone(),
+        velocity: particle.velocity.clone(),
+        age: particle.age,
+        lifetime: particle.lifetime,
+      },
+      this
+    );
   }
 }
 
@@ -1494,19 +1760,22 @@ export class ParticleEffectLibrary {
       parent?: THREE.Object3D;
       autoPlay?: boolean;
       renderer?: THREE.WebGLRenderer;
+      debug?: boolean | ParticleDebugOptions;
     } = {}
   ): ParticleSystem {
     const preset = this.presets.get(name);
     if (!preset) throw new Error(`Unknown particle effect "${name}".`);
 
     const system = new ParticleSystem(preset, { renderer: options.renderer ?? this.renderer });
-    if (options.position) Array.isArray(options.position) ? system.position.set(...options.position) : system.position.copy(options.position);
-    if (options.rotation) system.rotation.copy(options.rotation);
-    if (options.quaternion) system.quaternion.copy(options.quaternion);
-    if (typeof options.scale === "number") system.scale.setScalar(options.scale);
+    const systemObject = system as unknown as THREE.Object3D;
+    if (options.position) Array.isArray(options.position) ? systemObject.position.set(...options.position) : systemObject.position.copy(options.position);
+    if (options.rotation) systemObject.rotation.copy(options.rotation);
+    if (options.quaternion) systemObject.quaternion.copy(options.quaternion);
+    if (typeof options.scale === "number") systemObject.scale.setScalar(options.scale);
 
     const parent = options.parent ?? this.defaultParent;
-    if (parent) parent.add(system);
+    if (parent) parent.add(systemObject);
+    if (options.debug !== undefined) system.setDebug(options.debug);
     if (options.autoPlay ?? true) system.play();
     return system;
   }
@@ -1515,6 +1784,7 @@ export class ParticleEffectLibrary {
 export class ParticleWorld {
   readonly effects: ParticleEffectLibrary;
   readonly systems = new Set<ParticleSystem>();
+  debug: boolean | ParticleDebugOptions = false;
 
   constructor(private parent: THREE.Object3D, presets: Record<string, ParticlePreset> = {}, private options: ParticleWorldOptions = {}) {
     this.effects = new ParticleEffectLibrary(presets, parent, options);
@@ -1526,9 +1796,16 @@ export class ParticleWorld {
   }
 
   spawn(name: string, options: Parameters<ParticleEffectLibrary["spawn"]>[1] = {}): ParticleSystem {
-    const system = this.effects.spawn(name, { parent: this.parent, renderer: this.options.renderer, ...options });
+    const debug = options.debug ?? this.debug;
+    const system = this.effects.spawn(name, { parent: this.parent, renderer: this.options.renderer, ...options, ...(debug ? { debug } : {}) });
     this.systems.add(system);
     return system;
+  }
+
+  setDebug(debug: boolean | ParticleDebugOptions): this {
+    this.debug = debug;
+    for (const system of this.systems) system.setDebug(debug);
+    return this;
   }
 
   update(dt: number, camera: THREE.Camera): void {
