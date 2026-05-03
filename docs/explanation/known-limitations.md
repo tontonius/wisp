@@ -1,0 +1,74 @@
+# Known Limitations
+
+This system is useful, but it is still an MVP.
+
+## No Transparent Particle Sorting
+
+Particles are not sorted back-to-front.
+
+Implications:
+
+- Additive blending works well.
+- Alpha smoke can be acceptable.
+- Dense overlapping alpha particles may render in visually incorrect order.
+
+## No Collisions
+
+Particles do not collide with scene geometry.
+
+For future collision work, CPU is the natural first backend.
+
+## No Sub-Emitters
+
+Particles cannot spawn child effects on birth, collision, or death.
+
+CPU `onParticleDeath` can be used manually for simple death-triggered effects, but built-in sub-emitters do not exist yet.
+
+## No Mesh Emitters
+
+Supported emitter shapes are:
+
+- Point.
+- Sphere.
+- Hemisphere.
+- Cone.
+- Box.
+
+Mesh surface or volume emission is not implemented.
+
+## No Trails Or Ribbons
+
+Particles are rendered as billboards only.
+
+## GPU Readback Is Avoided
+
+The GPU backend does not read particle state back to the CPU.
+
+Implications:
+
+- No exact GPU `aliveCount`.
+- No GPU `onParticleDeath`.
+- Conservative GPU completion checks.
+
+## Limited Velocity-Over-Lifetime Scope
+
+Currently implemented:
+
+- Linear X/Y/Z curves.
+
+Not yet implemented:
+
+- Local/world space toggle.
+- Orbital velocity.
+- Radial velocity.
+- Offset center.
+- Speed modifier.
+
+## Preset Mutation Does Not Update GPU Lookup Textures
+
+GPU curve and gradient textures are built when a GPU backend is constructed.
+
+If you mutate `preset.overLifetime` or `preset.velocityOverLifetime` after spawning, the live GPU system does not rebuild those textures.
+
+Dispose and respawn to apply changed curves.
+

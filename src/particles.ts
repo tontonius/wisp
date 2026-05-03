@@ -8,6 +8,13 @@ export type AlignMode = "camera" | "velocity";
 export type SimulationMode = "cpu" | "gpu" | "auto";
 export type Curve = Array<[time: number, value: number]>;
 export type Gradient = Array<[time: number, color: THREE.ColorRepresentation]>;
+export type VelocityOverLifetime = {
+  linear?: {
+    x?: Curve;
+    y?: Curve;
+    z?: Curve;
+  };
+};
 
 export type EmitterShape =
   | { type: "point" }
@@ -65,6 +72,8 @@ export type ParticlePreset = {
     drag?: number;
     noise?: { strength?: number; frequency?: number };
   };
+
+  velocityOverLifetime?: VelocityOverLifetime;
 
   overLifetime?: {
     size?: Curve;
@@ -541,6 +550,25 @@ function makeGradientTexture(gradient: Gradient | undefined): THREE.DataTexture 
   return texture;
 }
 
+function makeVectorCurveTexture(velocity: VelocityOverLifetime | undefined): THREE.DataTexture {
+  const width = 256;
+  const data = new Float32Array(width * 4);
+  for (let i = 0; i < width; i++) {
+    const t = i / (width - 1);
+    data[i * 4 + 0] = evaluateCurve(velocity?.linear?.x, t, 0);
+    data[i * 4 + 1] = evaluateCurve(velocity?.linear?.y, t, 0);
+    data[i * 4 + 2] = evaluateCurve(velocity?.linear?.z, t, 0);
+    data[i * 4 + 3] = 1;
+  }
+  const texture = new THREE.DataTexture(data, width, 1, THREE.RGBAFormat, THREE.FloatType);
+  texture.needsUpdate = true;
+  texture.magFilter = THREE.NearestFilter;
+  texture.minFilter = THREE.NearestFilter;
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  return texture;
+}
+
 class CPUParticleBackend implements ParticleBackend {
   readonly object = new THREE.Object3D();
   readonly mesh: THREE.Mesh;
@@ -788,7 +816,14 @@ class CPUParticleBackend implements ParticleBackend {
       }
 
       if (drag > 0) particle.velocity.multiplyScalar(Math.max(0, 1 - drag * dt));
-      particle.position.addScaledVector(particle.velocity, dt);
+      const t = THREE.MathUtils.clamp(particle.age / particle.lifetime, 0, 1);
+      const lifetimeVelocity = this.preset.velocityOverLifetime;
+      const linearVelocity = tempVectorB.set(
+        evaluateCurve(lifetimeVelocity?.linear?.x, t, 0),
+        evaluateCurve(lifetimeVelocity?.linear?.y, t, 0),
+        evaluateCurve(lifetimeVelocity?.linear?.z, t, 0)
+      );
+      particle.position.addScaledVector(tempVectorC.copy(particle.velocity).add(linearVelocity), dt);
       particle.rotation += particle.angularVelocity * dt;
     }
   }
@@ -913,6 +948,7 @@ class GPUParticleBackend implements ParticleBackend {
   private sizeCurveTexture: THREE.DataTexture;
   private opacityCurveTexture: THREE.DataTexture;
   private colorGradientTexture: THREE.DataTexture;
+  private lifetimeVelocityTexture: THREE.DataTexture;
   private previousRenderTarget: THREE.WebGLRenderTarget | null = null;
   private previousXrEnabled = false;
 
@@ -925,6 +961,7 @@ class GPUParticleBackend implements ParticleBackend {
     this.sizeCurveTexture = makeCurveTexture(preset.overLifetime?.size, 1);
     this.opacityCurveTexture = makeCurveTexture(preset.overLifetime?.opacity, 1);
     this.colorGradientTexture = makeGradientTexture(preset.overLifetime?.color);
+    this.lifetimeVelocityTexture = makeVectorCurveTexture(preset.velocityOverLifetime);
 
     this.rtA = this.makeTargetSet();
     this.rtB = this.makeTargetSet();
@@ -1048,6 +1085,7 @@ class GPUParticleBackend implements ParticleBackend {
     this.sizeCurveTexture.dispose();
     this.opacityCurveTexture.dispose();
     this.colorGradientTexture.dispose();
+    this.lifetimeVelocityTexture.dispose();
     this.rtA.forEach((rt) => rt.dispose());
     this.rtB.forEach((rt) => rt.dispose());
 
@@ -1204,6 +1242,7 @@ class GPUParticleBackend implements ParticleBackend {
     u.uDrag.value = forces.drag ?? 0;
     u.uNoiseStrength.value = forces.noise?.strength ?? 0;
     u.uNoiseFrequency.value = forces.noise?.frequency ?? 1;
+    u.uLifetimeVelocity.value = this.lifetimeVelocityTexture;
     u.uRandomStartFrame.value = sheet?.randomFrame ? 1 : 0;
     u.uTotalFrames.value = sheet?.totalFrames ?? 1;
   }
@@ -1245,6 +1284,7 @@ class GPUParticleBackend implements ParticleBackend {
         uDrag: { value: 0 },
         uNoiseStrength: { value: 0 },
         uNoiseFrequency: { value: 1 },
+        uLifetimeVelocity: { value: this.lifetimeVelocityTexture },
         uRandomStartFrame: { value: 0 },
         uTotalFrames: { value: 1 },
       },
@@ -1296,6 +1336,7 @@ class GPUParticleBackend implements ParticleBackend {
         uniform float uDrag;
         uniform float uNoiseStrength;
         uniform float uNoiseFrequency;
+        uniform sampler2D uLifetimeVelocity;
         uniform int uRandomStartFrame;
         uniform int uTotalFrames;
 
@@ -1408,7 +1449,9 @@ class GPUParticleBackend implements ParticleBackend {
           }
 
           if (uDrag > 0.0) velocity *= max(0.0, 1.0 - uDrag * uDeltaTime);
-          pos += velocity * uDeltaTime;
+          float ageT = clamp(age / max(0.0001, life), 0.0, 1.0);
+          vec3 lifetimeVelocity = texture2D(uLifetimeVelocity, vec2(ageT, 0.5)).rgb;
+          pos += (velocity + lifetimeVelocity) * uDeltaTime;
           extra.y += extra.z * uDeltaTime;
 
           if (uTarget == 0) gl_FragColor = vec4(pos, age);

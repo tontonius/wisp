@@ -45,6 +45,15 @@ Click = CPU explosion + smoke
 
 The scene starts with a small CPU aura on the left and a larger GPU magic storm on the right.
 
+## Documentation
+
+The full Diataxis-style documentation set lives in [`docs/`](docs/index.md):
+
+- Tutorials for first success.
+- How-to guides for focused tasks.
+- Reference pages for every public API and preset module.
+- Explanations for architecture and backend tradeoffs.
+
 ## Basic usage
 
 ```ts
@@ -280,6 +289,18 @@ overLifetime: {
 }
 ```
 
+Velocity over lifetime adds a per-age linear velocity channel on top of the particle's simulated velocity:
+
+```ts
+velocityOverLifetime: {
+  linear: {
+    x: [[0, 0], [1, 0]],
+    y: [[0, 1.5], [1, -0.5]],
+    z: [[0, 0], [1, 0]],
+  },
+}
+```
+
 ### GPU backend supports
 
 - point / sphere / hemisphere / cone / box emitters
@@ -287,6 +308,7 @@ overLifetime: {
 - burst emission via `emit(count)` or preset bursts
 - lifetime / speed / size / opacity / colour ranges
 - start velocity ranges
+- linear velocity over lifetime
 - gravity
 - drag
 - simple procedural noise

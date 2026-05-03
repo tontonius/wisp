@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { Pane } from "tweakpane";
 import { ParticleWorld } from "../src";
-import type { ParticlePreset, ParticleSystem } from "../src";
+import type { Curve, ParticlePreset, ParticleSystem } from "../src";
 import "./style.css";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
@@ -151,6 +151,7 @@ const customParams = {
   emissionEnabled: true,
   shapeEnabled: true,
   velocityEnabled: true,
+  velocityOverLifetimeEnabled: true,
   forceEnabled: true,
   colorOverLifetimeEnabled: true,
   sizeOverLifetimeEnabled: true,
@@ -198,6 +199,12 @@ const customParams = {
   velocityYMin: 0,
   velocityYMax: 0.9,
   velocityZ: 0.15,
+  lifetimeVelocityXStart: 0,
+  lifetimeVelocityXEnd: 0,
+  lifetimeVelocityYStart: 0.75,
+  lifetimeVelocityYEnd: -0.35,
+  lifetimeVelocityZStart: 0,
+  lifetimeVelocityZEnd: 0,
   gravityY: -0.25,
   drag: 0.45,
   noiseStrength: 0.28,
@@ -373,6 +380,15 @@ function makeCustomPreset(): ParticlePreset {
           gravity: [0, customParams.gravityY, 0],
           drag: customParams.drag,
           noise: { strength: customParams.noiseStrength, frequency: customParams.noiseFrequency },
+        }
+      : undefined,
+    velocityOverLifetime: customParams.velocityOverLifetimeEnabled
+      ? {
+          linear: {
+            x: [[0, customParams.lifetimeVelocityXStart], [1, customParams.lifetimeVelocityXEnd]],
+            y: [[0, customParams.lifetimeVelocityYStart], [1, customParams.lifetimeVelocityYEnd]],
+            z: [[0, customParams.lifetimeVelocityZStart], [1, customParams.lifetimeVelocityZEnd]],
+          },
         }
       : undefined,
     overLifetime: {
@@ -884,6 +900,11 @@ function rangeValues(range: number | [number, number] | undefined, fallback: num
   return [value, value];
 }
 
+function curveEndpoint(curve: Curve | undefined, end: "first" | "last"): number {
+  if (!Array.isArray(curve) || curve.length === 0) return 0;
+  return curve[end === "first" ? 0 : curve.length - 1][1];
+}
+
 function colorHex(color: THREE.ColorRepresentation): string {
   return `#${new THREE.Color(color).getHexString()}`;
 }
@@ -980,6 +1001,15 @@ function loadPresetIntoEditor(name: DemoEffectName): void {
   customParams.drag = forces?.drag ?? 0;
   customParams.noiseStrength = forces?.noise?.strength ?? 0;
   customParams.noiseFrequency = forces?.noise?.frequency ?? 1;
+
+  const velocityOverLifetime = preset.velocityOverLifetime;
+  customParams.velocityOverLifetimeEnabled = !!velocityOverLifetime;
+  customParams.lifetimeVelocityXStart = curveEndpoint(velocityOverLifetime?.linear?.x, "first");
+  customParams.lifetimeVelocityXEnd = curveEndpoint(velocityOverLifetime?.linear?.x, "last");
+  customParams.lifetimeVelocityYStart = curveEndpoint(velocityOverLifetime?.linear?.y, "first");
+  customParams.lifetimeVelocityYEnd = curveEndpoint(velocityOverLifetime?.linear?.y, "last");
+  customParams.lifetimeVelocityZStart = curveEndpoint(velocityOverLifetime?.linear?.z, "first");
+  customParams.lifetimeVelocityZEnd = curveEndpoint(velocityOverLifetime?.linear?.z, "last");
 
   const overLifetime = preset.overLifetime ?? {};
   customParams.sizeOverLifetimeEnabled = !!overLifetime.size;
@@ -1102,12 +1132,21 @@ bind(shapeFolder, "boxX", { label: "box x", min: 0.1, max: 10, step: 0.1 });
 bind(shapeFolder, "boxY", { label: "box y", min: 0.1, max: 10, step: 0.1 });
 bind(shapeFolder, "boxZ", { label: "box z", min: 0.1, max: 10, step: 0.1 });
 
-const velocityFolder = pane.addFolder({ title: "Velocity over Lifetime", expanded: false }) as PaneLike;
+const velocityFolder = pane.addFolder({ title: "Start Velocity", expanded: false }) as PaneLike;
 bind(velocityFolder, "velocityEnabled", { label: "enabled" });
 bind(velocityFolder, "velocityX", { label: "x spread", min: 0, max: 4, step: 0.01 });
 bind(velocityFolder, "velocityYMin", { label: "y min", min: -5, max: 5, step: 0.01 });
 bind(velocityFolder, "velocityYMax", { label: "y max", min: -5, max: 5, step: 0.01 });
 bind(velocityFolder, "velocityZ", { label: "z spread", min: 0, max: 4, step: 0.01 });
+
+const lifetimeVelocityFolder = pane.addFolder({ title: "Velocity over Lifetime", expanded: false }) as PaneLike;
+bind(lifetimeVelocityFolder, "velocityOverLifetimeEnabled", { label: "enabled" });
+bind(lifetimeVelocityFolder, "lifetimeVelocityXStart", { label: "linear x start", min: -8, max: 8, step: 0.01 });
+bind(lifetimeVelocityFolder, "lifetimeVelocityXEnd", { label: "linear x end", min: -8, max: 8, step: 0.01 });
+bind(lifetimeVelocityFolder, "lifetimeVelocityYStart", { label: "linear y start", min: -8, max: 8, step: 0.01 });
+bind(lifetimeVelocityFolder, "lifetimeVelocityYEnd", { label: "linear y end", min: -8, max: 8, step: 0.01 });
+bind(lifetimeVelocityFolder, "lifetimeVelocityZStart", { label: "linear z start", min: -8, max: 8, step: 0.01 });
+bind(lifetimeVelocityFolder, "lifetimeVelocityZEnd", { label: "linear z end", min: -8, max: 8, step: 0.01 });
 
 const forceFolder = pane.addFolder({ title: "Force over Lifetime", expanded: false }) as PaneLike;
 bind(forceFolder, "forceEnabled", { label: "enabled" });
