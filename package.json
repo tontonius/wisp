@@ -1,0 +1,16 @@
+{
+  "name": "three-particles-mvp",
+  "version": "0.2.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@vitejs/plugin-basic-ssl": "latest",
+    "three": "latest",
+    "typescript": "latest",
+    "vite": "latest"
+  }
+}
