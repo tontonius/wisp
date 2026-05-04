@@ -247,6 +247,14 @@ export function collectParticlePresetIssues(
       errors.push("renderer.stretchMaxScale: must be a finite number >= 1 when set.");
     }
   }
+  if (preset.renderer?.softParticles !== undefined && typeof preset.renderer.softParticles !== "boolean") {
+    errors.push("renderer.softParticles: must be a boolean when set.");
+  }
+  if (preset.renderer?.softness !== undefined) {
+    if (!isFiniteNumber(preset.renderer.softness) || preset.renderer.softness <= 0) {
+      errors.push("renderer.softness: must be a finite number > 0 when set.");
+    }
+  }
   const sorting = preset.renderer?.sorting;
   if (sorting !== undefined && !SORTING_MODES.has(sorting)) {
     errors.push(`renderer.sorting: must be one of ${[...SORTING_MODES].map((s) => `"${s}"`).join(", ")} when set.`);

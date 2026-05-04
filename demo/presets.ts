@@ -109,7 +109,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
       opacity: [[0, 0], [0.14, 1], [1, 0]],
       color: [[0, "#aaaaaa"], [1, "#252832"]],
     },
-    renderer: { texture: softDisc, blendMode: "alpha", depthWrite: false },
+    renderer: { texture: softDisc, blendMode: "alpha", depthWrite: false, softParticles: true, softness: 1.5 },
   };
 
   const pickupSparkle: ParticlePreset = {
@@ -606,6 +606,8 @@ export function createDemoPresets(textures: DemoPresetTextures): {
       blendMode: "alpha",
       align: "camera",
       depthWrite: false,
+      softParticles: true,
+      softness: 1.4,
     },
   };
 

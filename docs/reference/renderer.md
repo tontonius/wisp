@@ -13,6 +13,8 @@ renderer?: {
   stretchMaxScale?: number;
   depthWrite?: boolean;
   depthTest?: boolean;
+  softParticles?: boolean;
+  softness?: number;
   textureSheet?: {
     columns: number;
     rows: number;
@@ -34,6 +36,8 @@ renderer?: {
 | `sorting` | `"distance"` | CPU-only draw order for alive particles (see [Sorting](#sorting)). |
 | `depthWrite` | `false` | Whether particles write to the depth buffer. |
 | `depthTest` | `true` | Whether particles test against scene depth. |
+| `softParticles` | `false` | Enables depth-based edge fading when a scene depth texture is provided at runtime. |
+| `softness` | `1.5` | Fade strength for soft particles. Higher values fade more aggressively at intersections. |
 | `textureSheet` | `undefined` | Optional flipbook/atlas settings. |
 
 ## Texture
@@ -123,6 +127,33 @@ depthTest: true,
 `depthWrite: false` is the default because transparent particles usually should not write depth.
 
 Set `depthTest: false` for always-visible screen-space-ish or stylized effects. Use carefully; it can make particles appear through walls or geometry.
+
+## Soft Particles (Opt-In)
+
+```ts
+renderer: {
+  blendMode: "alpha",
+  softParticles: true,
+  softness: 1.5,
+}
+```
+
+Soft particles fade alpha where billboard pixels intersect scene geometry depth. This removes hard clipping seams on smoke/fog/dust style effects.
+
+Runtime depth texture hookup:
+
+```ts
+system.setSoftParticleDepthTexture(depthTexture, {
+  width: depthTarget.width,
+  height: depthTarget.height,
+});
+```
+
+Notes:
+
+- `renderer.softParticles` only enables shader logic; it does not create a depth texture for you.
+- Pass `null` to `setSoftParticleDepthTexture(null)` to disable depth-fade at runtime.
+- For additive-only effects (sparks, glows), soft particles are often unnecessary.
 
 ## Shader Behavior
 

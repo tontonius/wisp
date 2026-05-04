@@ -186,6 +186,10 @@ export type ParticlePreset = {
     sorting?: SortMode;
     depthWrite?: boolean;
     depthTest?: boolean;
+    /** Enables depth-based edge fading when a scene depth texture is provided via `ParticleSystem.setSoftParticleDepthTexture(...)`. */
+    softParticles?: boolean;
+    /** Soft-particle fade strength multiplier. Higher values fade out faster near geometry intersections. Default `1.5`. */
+    softness?: number;
     textureSheet?: {
       columns: number;
       rows: number;
@@ -222,6 +226,13 @@ export type ParticleSpawnOptions = {
   parent?: THREE.Object3D;
   autoPlay?: boolean;
   debug?: boolean | ParticleDebugOptions;
+};
+
+export type SoftParticleDepthTextureOptions = {
+  /** Scene depth texture width in pixels. Optional if inferred from `depthTexture.image.width`. */
+  width?: number;
+  /** Scene depth texture height in pixels. Optional if inferred from `depthTexture.image.height`. */
+  height?: number;
 };
 
 export type ParticleSnapshot = {
@@ -288,6 +299,7 @@ interface ParticleBackend {
   stop(options?: { clear?: boolean }): void;
   restart(): void;
   emit(count: number): void;
+  setSoftParticleDepthTexture(depthTexture: THREE.Texture | null, options?: SoftParticleDepthTextureOptions): void;
   update(dt: number, camera: THREE.Camera): void;
   dispose(options?: { disposeTexture?: boolean }): void;
 }
@@ -668,11 +680,20 @@ function makeEmitterGizmo(
 }
 
 function makeParticleMaterial(options: NonNullable<ParticlePreset["renderer"]> = {}): THREE.ShaderMaterial {
+  const softParticlesEnabled = options.softParticles ?? false;
   const material = new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: options.depthWrite ?? false,
     depthTest: options.depthTest ?? true,
-    uniforms: { uTexture: { value: options.texture ?? makeDefaultParticleTexture() } },
+    uniforms: {
+      uTexture: { value: options.texture ?? makeDefaultParticleTexture() },
+      uSceneDepth: { value: null },
+      uSceneDepthSize: { value: new THREE.Vector2(1, 1) },
+      uSoftParticles: { value: softParticlesEnabled ? 1 : 0 },
+      uSoftness: { value: options.softness ?? 1.5 },
+      uCameraNearFar: { value: new THREE.Vector2(0.1, 2000) },
+      uCameraIsPerspective: { value: 1 },
+    },
     vertexShader: `
       attribute vec4 particleColor;
       varying vec2 vUv;
@@ -685,11 +706,36 @@ function makeParticleMaterial(options: NonNullable<ParticlePreset["renderer"]> =
     `,
     fragmentShader: `
       uniform sampler2D uTexture;
+      uniform sampler2D uSceneDepth;
+      uniform vec2 uSceneDepthSize;
+      uniform int uSoftParticles;
+      uniform float uSoftness;
+      uniform vec2 uCameraNearFar;
+      uniform int uCameraIsPerspective;
       varying vec2 vUv;
       varying vec4 vColor;
+
+      float linearizeDepth(float depth01) {
+        float near = uCameraNearFar.x;
+        float far = max(near + 0.0001, uCameraNearFar.y);
+        if (uCameraIsPerspective == 1) {
+          float z = depth01 * 2.0 - 1.0;
+          return (2.0 * near * far) / (far + near - z * (far - near));
+        }
+        return mix(near, far, depth01);
+      }
+
       void main() {
         vec4 tex = texture2D(uTexture, vUv);
         vec4 outColor = tex * vColor;
+        if (uSoftParticles == 1) {
+          vec2 uvDepth = gl_FragCoord.xy / max(uSceneDepthSize, vec2(1.0));
+          float sceneDepth01 = texture2D(uSceneDepth, uvDepth).r;
+          float sceneDepth = linearizeDepth(sceneDepth01);
+          float particleDepth = linearizeDepth(gl_FragCoord.z);
+          float fade = clamp((sceneDepth - particleDepth) * max(0.0001, uSoftness), 0.0, 1.0);
+          outColor.a *= fade;
+        }
         if (outColor.a < 0.001) discard;
         gl_FragColor = outColor;
       }
@@ -879,6 +925,16 @@ class CPUParticleBackend implements ParticleBackend {
     for (let i = 0; i < count; i++) this.spawnParticle();
   }
 
+  setSoftParticleDepthTexture(depthTexture: THREE.Texture | null, options: SoftParticleDepthTextureOptions = {}): void {
+    const u = this.material.uniforms;
+    const image = depthTexture?.image as { width?: number; height?: number } | undefined;
+    const width = options.width ?? image?.width ?? 1;
+    const height = options.height ?? image?.height ?? 1;
+    u.uSceneDepth.value = depthTexture;
+    u.uSceneDepthSize.value.set(Math.max(1, width), Math.max(1, height));
+    u.uSoftParticles.value = this.preset.renderer?.softParticles && depthTexture ? 1 : 0;
+  }
+
   update(dt: number, camera: THREE.Camera): void {
     if (this._disposed) return;
 
@@ -902,6 +958,7 @@ class CPUParticleBackend implements ParticleBackend {
       }
     }
 
+    this.updateSoftParticleCameraUniforms(camera);
     this.updateParticles(dt);
     this.updateGeometry(camera);
   }
@@ -945,6 +1002,12 @@ class CPUParticleBackend implements ParticleBackend {
     for (let t = 0; t < duration; t += step) this.update(step, dummyCamera);
     this._elapsed = 0;
     this.burstCursor = 0;
+  }
+
+  private updateSoftParticleCameraUniforms(camera: THREE.Camera): void {
+    const u = this.material.uniforms;
+    u.uCameraNearFar.value.set(camera.near, camera.far);
+    u.uCameraIsPerspective.value = camera instanceof THREE.PerspectiveCamera ? 1 : 0;
   }
 
   private updateEmission(dt: number): void {
@@ -1543,6 +1606,16 @@ class GPUParticleBackend implements ParticleBackend {
     }
   }
 
+  setSoftParticleDepthTexture(depthTexture: THREE.Texture | null, options: SoftParticleDepthTextureOptions = {}): void {
+    const u = this.material.uniforms;
+    const image = depthTexture?.image as { width?: number; height?: number } | undefined;
+    const width = options.width ?? image?.width ?? 1;
+    const height = options.height ?? image?.height ?? 1;
+    u.uSceneDepth.value = depthTexture;
+    u.uSceneDepthSize.value.set(Math.max(1, width), Math.max(1, height));
+    u.uSoftParticles.value = this.preset.renderer?.softParticles && depthTexture ? 1 : 0;
+  }
+
   update(dt: number, camera: THREE.Camera): void {
     if (this._disposed) return;
 
@@ -2057,6 +2130,7 @@ class GPUParticleBackend implements ParticleBackend {
 
   private makeRenderMaterial(): THREE.ShaderMaterial {
     const sheet = getTextureSheetConfig(this.preset);
+    const softParticlesEnabled = this.preset.renderer?.softParticles ?? false;
     const material = new THREE.ShaderMaterial({
       transparent: true,
       depthWrite: this.preset.renderer?.depthWrite ?? false,
@@ -2067,6 +2141,12 @@ class GPUParticleBackend implements ParticleBackend {
         uColorSeed: { value: this.readTargets[2].texture },
         uExtra: { value: this.readTargets[3].texture },
         uTexture: { value: this.preset.renderer?.texture ?? makeDefaultParticleTexture() },
+        uSceneDepth: { value: null },
+        uSceneDepthSize: { value: new THREE.Vector2(1, 1) },
+        uSoftParticles: { value: softParticlesEnabled ? 1 : 0 },
+        uSoftness: { value: this.preset.renderer?.softness ?? 1.5 },
+        uCameraNearFar: { value: new THREE.Vector2(0.1, 2000) },
+        uCameraIsPerspective: { value: 1 },
         uSizeCurve: { value: this.sizeCurveTexture },
         uOpacityCurve: { value: this.opacityCurveTexture },
         uColorGradient: { value: this.colorGradientTexture },
@@ -2160,11 +2240,36 @@ class GPUParticleBackend implements ParticleBackend {
       fragmentShader: `
         precision highp float;
         uniform sampler2D uTexture;
+        uniform sampler2D uSceneDepth;
+        uniform vec2 uSceneDepthSize;
+        uniform int uSoftParticles;
+        uniform float uSoftness;
+        uniform vec2 uCameraNearFar;
+        uniform int uCameraIsPerspective;
         varying vec2 vUv;
         varying vec4 vColor;
+
+        float linearizeDepth(float depth01) {
+          float near = uCameraNearFar.x;
+          float far = max(near + 0.0001, uCameraNearFar.y);
+          if (uCameraIsPerspective == 1) {
+            float z = depth01 * 2.0 - 1.0;
+            return (2.0 * near * far) / (far + near - z * (far - near));
+          }
+          return mix(near, far, depth01);
+        }
+
         void main() {
           vec4 tex = texture2D(uTexture, vUv);
           vec4 outColor = tex * vColor;
+          if (uSoftParticles == 1) {
+            vec2 uvDepth = gl_FragCoord.xy / max(uSceneDepthSize, vec2(1.0));
+            float sceneDepth01 = texture2D(uSceneDepth, uvDepth).r;
+            float sceneDepth = linearizeDepth(sceneDepth01);
+            float particleDepth = linearizeDepth(gl_FragCoord.z);
+            float fade = clamp((sceneDepth - particleDepth) * max(0.0001, uSoftness), 0.0, 1.0);
+            outColor.a *= fade;
+          }
           if (outColor.a < 0.001) discard;
           gl_FragColor = outColor;
         }
@@ -2182,6 +2287,8 @@ class GPUParticleBackend implements ParticleBackend {
     this.material.uniforms.uCameraRight.value.copy(cameraRight);
     this.material.uniforms.uCameraUp.value.copy(cameraUp);
     this.material.uniforms.uCameraForward.value.copy(cameraForward);
+    this.material.uniforms.uCameraNearFar.value.set(camera.near, camera.far);
+    this.material.uniforms.uCameraIsPerspective.value = camera instanceof THREE.PerspectiveCamera ? 1 : 0;
   }
 }
 
@@ -2276,6 +2383,11 @@ export class ParticleSystem extends THREE.Object3D {
 
   emit(count: number): this {
     this.backend.emit(count);
+    return this;
+  }
+
+  setSoftParticleDepthTexture(depthTexture: THREE.Texture | null, options?: SoftParticleDepthTextureOptions): this {
+    this.backend.setSoftParticleDepthTexture(depthTexture, options);
     return this;
   }
 

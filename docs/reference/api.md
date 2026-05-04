@@ -52,6 +52,7 @@ Methods:
 | `restart()` | `this` | Stops, clears, starts again, and calls `callbacks.onStart`. |
 | `emit(count)` | `this` | Immediately queues or spawns `count` particles. |
 | `setDebug(debug)` | `this` | Enables, updates, or hides emitter gizmos. |
+| `setSoftParticleDepthTexture(depthTexture, options?)` | `this` | Sets or clears (`null`) the scene depth texture used by opt-in soft-particle fading. |
 | `update(dt, camera)` | `void` | Advances simulation and updates render geometry/uniforms. |
 | `dispose(options?)` | `void` | Disposes geometry, material, backend resources, and removes the system from its parent. |
 
@@ -72,6 +73,19 @@ system.dispose({ disposeTexture?: boolean });
 
 - `disposeTexture` defaults to `false`.
 - Set it to `true` only when the system owns the texture and no other system or material uses it.
+
+`setSoftParticleDepthTexture` options:
+
+```ts
+system.setSoftParticleDepthTexture(depthTexture, {
+  width?: number,
+  height?: number,
+});
+```
+
+- `depthTexture` is a scene depth texture from your render target/composer pipeline.
+- Pass `null` to disable soft-particle depth fading at runtime.
+- `width`/`height` are optional when the texture image already exposes dimensions.
 
 ### `ParticleEffectLibrary`
 
@@ -204,6 +218,7 @@ Exported functions (see [Preset validation](preset-validation.md)):
 | `ParticleWorldOptions` | `{ renderer?: THREE.WebGLRenderer; pooling?: boolean \| { maxPerEffect?: number } }` |
 | `ParticleWorldPoolingOptions` | `{ maxPerEffect?: number }` — cap inactive instances per effect when `pooling` is an object. |
 | `ParticleSpawnOptions` | Transform, parent, `autoPlay`, and `debug` fields shared by `ParticleEffectLibrary.spawn` / `ParticleWorld.spawn` (world merge also applies default `parent` and `debug`). |
+| `SoftParticleDepthTextureOptions` | `{ width?: number; height?: number }` — optional depth texture dimensions for soft-particle sampling. |
 | `ParticleSnapshot` | CPU particle-death snapshot. |
 | `ParticleLifecycleCallbacks` | Lifecycle callback object. |
 | `ParticlePresetValidationContext` | `{ renderer?: THREE.WebGLRenderer }` — optional context for validation. |

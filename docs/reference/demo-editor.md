@@ -194,6 +194,13 @@ size: [[0, 0], [0.18, 1], [1, grow]]
 | `blend` | `renderer.blendMode` |
 | `align` | `renderer.align` |
 | `sort` | `renderer.sorting` (CPU-only; ignored on the GPU backend). |
+| `soft particles` | `renderer.softParticles` |
+| `softness` | `renderer.softness` |
+
+Soft particles in the demo:
+
+- The demo runs an internal depth prepass each frame (without particle meshes) and automatically wires that depth texture into live systems.
+- You can toggle soft particles per edited preset with `soft particles`; `softness` controls fade strength.
 
 ## Texture Sheet Folder
 

@@ -67,6 +67,8 @@ Pass the same renderer you pass into `ParticleSystemOptions` so validation can w
 | `renderer.type` | If set, must be `"billboard"` or `"stretchedBillboard"`. `simulation: "gpu"` + `"stretchedBillboard"` is invalid (CPU-only). |
 | `renderer.stretchFactor` | If set, must be finite and `>= 0`. |
 | `renderer.stretchMaxScale` | If set, must be finite and `>= 1`. |
+| `renderer.softParticles` | If set, must be a boolean. |
+| `renderer.softness` | If set, must be finite and `> 0`. |
 | `renderer.sorting` | If set, must be `"none"`, `"distance"`, `"youngestFirst"`, or `"oldestFirst"`. |
 | Curves | `overLifetime.size`, `overLifetime.opacity`, and each defined `velocityOverLifetime.linear.{x,y,z}` keyframe must have finite `time` and `value`; times must be **non-decreasing**. Empty or one-point curves are allowed. |
 | Gradients | `overLifetime.color` keyframes: finite time, non-decreasing times. |

@@ -129,6 +129,7 @@ The fragment shader:
 - Samples the particle texture.
 - Multiplies texture color by particle color.
 - Discards near-zero alpha.
+- Optionally applies depth-based soft-particle fading when `renderer.softParticles` is enabled and a depth texture is provided via `setSoftParticleDepthTexture(...)`.
 
 ## Curve Textures
 
@@ -177,4 +178,9 @@ Current GPU backend does not support:
 - Mesh emitters.
 - Trails/ribbons.
 - CPU readback.
+
+Soft particles note:
+
+- Supported as an opt-in render path (`renderer.softParticles` + `renderer.softness`) on the GPU backend.
+- Requires external scene depth texture wiring from your renderer/composer pipeline.
 

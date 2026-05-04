@@ -59,6 +59,21 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 app.appendChild(renderer.domElement);
 
+function createSceneDepthTarget(): THREE.WebGLRenderTarget {
+  const size = renderer.getSize(new THREE.Vector2());
+  const pixelRatio = renderer.getPixelRatio();
+  const width = Math.max(1, Math.floor(size.x * pixelRatio));
+  const height = Math.max(1, Math.floor(size.y * pixelRatio));
+  const target = new THREE.WebGLRenderTarget(width, height, {
+    depthBuffer: true,
+    stencilBuffer: false,
+  });
+  target.depthTexture = new THREE.DepthTexture(width, height, THREE.UnsignedIntType);
+  return target;
+}
+
+let sceneDepthTarget = createSceneDepthTarget();
+
 const light = new THREE.DirectionalLight("#ffffff", 2.5);
 light.position.set(4, 8, 5);
 scene.add(light);
@@ -175,6 +190,8 @@ const customParams = {
   textureSheetRows: 4,
   textureSheetRandomFrame: true,
   textureSheetFrameOverLifetime: false,
+  softParticles: false,
+  softness: 1.5,
   blendMode: "additive" as NonNullable<ParticlePreset["renderer"]>["blendMode"],
   align: "camera" as NonNullable<ParticlePreset["renderer"]>["align"],
   sorting: "distance" as NonNullable<ParticlePreset["renderer"]>["sorting"],
@@ -428,6 +445,8 @@ function makeCustomPreset(): ParticlePreset {
           align: customParams.align,
           sorting: customParams.sorting,
           depthWrite: false,
+          softParticles: customParams.softParticles,
+          softness: customParams.softness,
           textureSheet: customParams.textureSheetEnabled
             ? {
                 columns: getTextureSheetColumns(),
@@ -810,6 +829,8 @@ function loadPresetIntoEditor(name: DemoEffectName): void {
   customParams.blendMode = renderer?.blendMode ?? "alpha";
   customParams.align = renderer?.align ?? "camera";
   customParams.sorting = renderer?.sorting ?? "distance";
+  customParams.softParticles = renderer?.softParticles ?? false;
+  customParams.softness = renderer?.softness ?? 1.5;
   customParams.textureSheetEnabled = !!renderer?.textureSheet;
   customParams.textureSheetColumns = renderer?.textureSheet?.columns ?? 1;
   customParams.textureSheetRows = renderer?.textureSheet?.rows ?? 1;
@@ -871,6 +892,33 @@ function refreshRuntimeStats(): void {
   runtimeStats.maxTotal = maxTotal;
   runtimeStats.busiest = busiest;
   runtimeStats.busiestAlive = busiestAlive;
+}
+
+function renderSceneDepthWithoutParticles(): void {
+  const hiddenSystems: THREE.Object3D[] = [];
+  for (const system of particles.systems) {
+    const object = system as unknown as THREE.Object3D;
+    if (!object.visible) continue;
+    object.visible = false;
+    hiddenSystems.push(object);
+  }
+
+  const previousTarget = renderer.getRenderTarget();
+  renderer.setRenderTarget(sceneDepthTarget);
+  renderer.clear(true, true, false);
+  renderer.render(scene, camera);
+  renderer.setRenderTarget(previousTarget);
+
+  for (const object of hiddenSystems) object.visible = true;
+}
+
+function syncSoftParticleDepthTexture(): void {
+  const depthTexture = sceneDepthTarget.depthTexture ?? null;
+  const width = sceneDepthTarget.width;
+  const height = sceneDepthTarget.height;
+  for (const system of particles.systems) {
+    system.setSoftParticleDepthTexture(depthTexture, { width, height });
+  }
 }
 
 const controlsFolder = particlesPane.addFolder({ title: "Controls", expanded: true }) as PaneLike;
@@ -1019,6 +1067,8 @@ bind(rendererFolder, "sorting", {
   label: "sort",
   options: { None: "none", Distance: "distance", "Youngest in front": "youngestFirst", "Oldest in front": "oldestFirst" },
 });
+bind(rendererFolder, "softParticles", { label: "soft particles" });
+bind(rendererFolder, "softness", { min: 0.1, max: 8, step: 0.05 });
 
 const sheetFolder = rendererFolder.addFolder({ title: "Texture Sheet", expanded: true }) as PaneLike;
 bind(sheetFolder, "textureSheetEnabled", { label: "enabled" });
@@ -1122,6 +1172,8 @@ function animate() {
   }
   updateCameraOrbit();
   particles.update(dt, camera);
+  renderSceneDepthWithoutParticles();
+  syncSoftParticleDepthTexture();
   runtimeStatsRefreshElapsed += dt;
   if (runtimeStatsRefreshElapsed >= 0.2) {
     refreshRuntimeStats();
@@ -1137,4 +1189,6 @@ window.addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  sceneDepthTarget.dispose();
+  sceneDepthTarget = createSceneDepthTarget();
 });

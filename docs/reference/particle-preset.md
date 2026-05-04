@@ -147,6 +147,8 @@ renderer?: {
   sorting?: "none" | "distance" | "youngestFirst" | "oldestFirst";
   stretchFactor?: number;
   stretchMaxScale?: number;
+  softParticles?: boolean;
+  softness?: number;
   // texture, blendMode, depthWrite, depthTest, textureSheet...
 };
 ```
@@ -156,6 +158,8 @@ renderer?: {
 - `sorting` is CPU-only and defaults to `"distance"` (back-to-front by world-space camera depth). See [Renderer reference: Sorting](renderer.md#sorting).
 - `stretchFactor` controls speed-to-length scaling (default `0.35`).
 - `stretchMaxScale` clamps elongation (default `4`).
+- `softParticles` enables depth-fade at geometry intersections when you provide a scene depth texture through `system.setSoftParticleDepthTexture(...)`.
+- `softness` controls fade strength (default `1.5`, must be `> 0` when set).
 
 ## Preset Registration
 

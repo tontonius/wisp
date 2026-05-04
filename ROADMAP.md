@@ -420,7 +420,7 @@ Goal: make GPU particles reliable for large background and atmosphere effects.
 - [ ] GPU pause/resume/restart polish
 - [ ] Better noise
 - [ ] GPU texture atlas animation modes
-- [ ] Optional soft particles
+- [x] Optional soft particles
 
 ### GPU Spawn Scheduling
 
@@ -537,8 +537,8 @@ Goal: stop hand-writing every curve and duplicate preset by hand.
 
 - [ ] Preset inheritance/composition
 - [ ] Texture atlas helpers
-- [ ] Debug overlay and metrics
-- [ ] Debug gizmo expansion
+- [x] Debug overlay and metrics
+- [x] Debug gizmo expansion
 - [ ] Visual editor prototype
 
 ### Preset Inheritance
@@ -838,8 +838,8 @@ Implement in this order:
 5. (done) CPU sub-emitters (onBirth/onDeath/onCollision)
 6. (done) Stretched billboard renderer
 7. (done) CPU sorting (renderer.sorting)
-8. Debug stats and emitter gizmos
-9. Soft particles
+8. (done) Debug stats and emitter gizmos
+9. (done) Soft particles
 10. Preset inheritance/composition
 11. Texture atlas helpers
 12. Visual editor prototype
