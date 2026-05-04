@@ -65,7 +65,8 @@ Per live particle:
 6. Evaluate velocity over lifetime.
 7. Integrate position.
 8. If `collision.type` is `"plane"`, resolve penetration against that plane (bounce, tangential dampening, or `killOnCollision`).
-9. Integrate rotation.
+9. If `subEmitters.onDeath` is set and the system is managed by `ParticleWorld`, spawn that named effect at particle death positions.
+10. Integrate rotation.
 
 ## Collision (plane)
 
@@ -89,6 +90,21 @@ collision?: {
 The plane normal is **+Y**. Particles with `position.y` below the plane after integration are corrected. Spawning with the effect origin on the ground and `y: 0` matches a world floor at the spawn height.
 
 GPU presets must not set `collision`; validation throws if `simulation: "gpu"` and `collision` are both set.
+
+## Sub-emitters (onDeath)
+
+```ts
+subEmitters?: {
+  onDeath?: string;
+};
+```
+
+- CPU-only.
+- `onDeath` is a named effect looked up in `ParticleWorld.effects`.
+- Trigger source: every CPU particle death (lifetime expiry or `killOnCollision`).
+- Spawn location: particle death position in world space.
+- Triggering requires systems spawned through `ParticleWorld` (standalone `ParticleSystem` does not resolve named child effects).
+- GPU presets must not set `subEmitters`; validation rejects `simulation: "gpu"` with `subEmitters`.
 
 ## Geometry Behavior
 

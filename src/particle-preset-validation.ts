@@ -20,6 +20,7 @@ function isFiniteNumber(n: unknown): n is number {
 export function presetWouldUseGpu(preset: ParticlePreset, renderer: WebGLRenderer | undefined): boolean {
   if (preset.gpu?.forceCpuFallback) return false;
   if (preset.collision) return false;
+  if (preset.subEmitters) return false;
   if (preset.simulation === "cpu") return false;
   if (preset.simulation === "gpu") return !!renderer;
   if (preset.simulation === "auto") return !!renderer && (preset.maxParticles ?? 0) >= 2048;
@@ -141,6 +142,20 @@ export function collectParticlePresetIssues(
     }
   }
 
+  const subEmitters = preset.subEmitters;
+  if (subEmitters !== undefined) {
+    if (preset.simulation === "gpu") {
+      errors.push('subEmitters: CPU-only; use simulation "cpu", "auto", or omit subEmitters for GPU presets.');
+    }
+    if (typeof subEmitters !== "object" || subEmitters === null) {
+      errors.push("subEmitters: must be an object when set.");
+    } else if (subEmitters.onDeath !== undefined) {
+      if (typeof subEmitters.onDeath !== "string" || subEmitters.onDeath.trim().length === 0) {
+        errors.push("subEmitters.onDeath: must be a non-empty effect name string when set.");
+      }
+    }
+  }
+
   const sheet = preset.renderer?.textureSheet;
   if (sheet) {
     const { columns, rows } = sheet;
@@ -222,6 +237,10 @@ export function collectParticlePresetIssues(
 
   if (presetWouldUseGpu(preset, renderer) && preset.callbacks?.onParticleDeath) {
     warnings.push("callbacks.onParticleDeath is not invoked on the GPU backend; use CPU simulation for per-particle death callbacks.");
+  }
+
+  if (presetWouldUseGpu(preset, renderer) && preset.subEmitters?.onDeath) {
+    warnings.push("subEmitters.onDeath is CPU-only and will not run on the GPU backend; use CPU simulation for built-in sub-emitters.");
   }
 
   if (preset.collision && preset.simulation === "auto" && renderer && (preset.maxParticles ?? 0) >= 2048) {

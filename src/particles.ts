@@ -89,6 +89,10 @@ export type ParticlePreset = {
 
   /** CPU backend only. Ignored on GPU. */
   collision?: CpuPlaneCollision;
+  /** CPU backend only. Child effect names to spawn from particle lifecycle events. */
+  subEmitters?: {
+    onDeath?: string;
+  };
 
   velocityOverLifetime?: VelocityOverLifetime;
 
@@ -1696,6 +1700,7 @@ class GPUParticleBackend implements ParticleBackend {
 function shouldUseGpu(preset: ParticlePreset, options: ParticleSystemOptions): boolean {
   if (preset.gpu?.forceCpuFallback) return false;
   if (preset.collision) return false;
+  if (preset.subEmitters) return false;
   if (preset.simulation === "cpu") return false;
   if (preset.simulation === "gpu") return !!options.renderer;
   if (preset.simulation === "auto") return !!options.renderer && (preset.maxParticles ?? 0) >= 2048;
@@ -1892,8 +1897,9 @@ export class ParticleWorld {
   readonly systems = new Set<ParticleSystem>();
   private readonly inactivePool = new Map<string, ParticleSystem[]>();
   /** Tracks systems spawned through this world for auto-dispose pooling. */
-  private readonly systemSpawnMeta = new Map<ParticleSystem, { name: string; poolable: boolean }>();
+  private readonly systemSpawnMeta = new Map<ParticleSystem, { name: string; poolable: boolean; subEmitterDepth: number }>();
   debug: boolean | ParticleDebugOptions = false;
+  private readonly maxSubEmitterDepth = 3;
 
   constructor(private parent: THREE.Object3D, presets: Record<string, ParticlePreset> = {}, private options: ParticleWorldOptions = {}) {
     this.effects = new ParticleEffectLibrary(presets, parent, options);
@@ -1931,6 +1937,80 @@ export class ParticleWorld {
     this.inactivePool.set(name, stack);
   }
 
+  private createManagedPreset(basePreset: ParticlePreset): ParticlePreset {
+    const originalCallbacks = basePreset.callbacks;
+    return {
+      ...basePreset,
+      callbacks: {
+        ...originalCallbacks,
+        onParticleDeath: (particle, system) => {
+          originalCallbacks?.onParticleDeath?.(particle, system);
+          this.handleSubEmitterDeath(particle, system);
+        },
+      },
+    };
+  }
+
+  private createManagedSystem(preset: ParticlePreset, renderer?: THREE.WebGLRenderer): ParticleSystem {
+    const managedPreset = this.createManagedPreset(preset);
+    return new ParticleSystem(managedPreset, { renderer });
+  }
+
+  private handleSubEmitterDeath(particle: ParticleSnapshot, system: ParticleSystem): void {
+    const meta = this.systemSpawnMeta.get(system);
+    if (!meta) return;
+
+    const targetName = system.preset.subEmitters?.onDeath;
+    if (!targetName) return;
+    if (!this.effects.get(targetName)) return;
+    if (meta.subEmitterDepth >= this.maxSubEmitterDepth) return;
+
+    const worldPosition = particle.position.clone();
+    system.localToWorld(worldPosition);
+
+    this.spawnInternal(
+      targetName,
+      {
+        position: worldPosition,
+        parent: this.parent,
+      },
+      meta.subEmitterDepth + 1
+    );
+  }
+
+  private spawnInternal(name: string, options: Parameters<ParticleEffectLibrary["spawn"]>[1] = {}, subEmitterDepth: number): ParticleSystem {
+    const debug = options.debug ?? this.debug;
+    const merged: ParticleSpawnOptions & { renderer?: THREE.WebGLRenderer } = {
+      parent: this.parent,
+      renderer: this.options.renderer,
+      ...options,
+      ...(debug ? { debug } : {}),
+    };
+
+    const preset = this.effects.get(name);
+    if (!preset) throw new Error(`Unknown particle effect "${name}".`);
+
+    const spawnRenderer = options.renderer ?? this.options.renderer;
+    const poolable = this.isPoolingEnabled() && spawnRenderer === this.options.renderer;
+
+    let system: ParticleSystem | undefined;
+    if (poolable) {
+      const stack = this.inactivePool.get(name);
+      if (stack && stack.length > 0) system = stack.pop();
+    }
+
+    if (!system) {
+      system = this.createManagedSystem(preset, spawnRenderer);
+    }
+
+    const { renderer: _spawnRenderer, ...configureOpts } = merged;
+    configureSpawnedSystem(system, configureOpts);
+
+    this.systems.add(system);
+    this.systemSpawnMeta.set(system, { name, poolable, subEmitterDepth });
+    return system;
+  }
+
   register(name: string, preset: ParticlePreset): this {
     this.effects.register(name, preset);
     this.disposePoolForEffect(name);
@@ -1957,43 +2037,14 @@ export class ParticleWorld {
     }
 
     for (let i = 0; i < remainingCapacity; i++) {
-      stack.push(new ParticleSystem(preset, { renderer: this.options.renderer }));
+      stack.push(this.createManagedSystem(preset, this.options.renderer));
     }
     this.inactivePool.set(name, stack);
     return this;
   }
 
   spawn(name: string, options: Parameters<ParticleEffectLibrary["spawn"]>[1] = {}): ParticleSystem {
-    const debug = options.debug ?? this.debug;
-    const merged: ParticleSpawnOptions & { renderer?: THREE.WebGLRenderer } = {
-      parent: this.parent,
-      renderer: this.options.renderer,
-      ...options,
-      ...(debug ? { debug } : {}),
-    };
-
-    const preset = this.effects.get(name);
-    if (!preset) throw new Error(`Unknown particle effect "${name}".`);
-
-    const spawnRenderer = options.renderer ?? this.options.renderer;
-    const poolable = this.isPoolingEnabled() && spawnRenderer === this.options.renderer;
-
-    let system: ParticleSystem | undefined;
-    if (poolable) {
-      const stack = this.inactivePool.get(name);
-      if (stack && stack.length > 0) system = stack.pop();
-    }
-
-    if (!system) {
-      system = new ParticleSystem(preset, { renderer: spawnRenderer });
-    }
-
-    const { renderer: _spawnRenderer, ...configureOpts } = merged;
-    configureSpawnedSystem(system, configureOpts);
-
-    this.systems.add(system);
-    this.systemSpawnMeta.set(system, { name, poolable });
-    return system;
+    return this.spawnInternal(name, options, 0);
   }
 
   setDebug(debug: boolean | ParticleDebugOptions): this {
