@@ -179,6 +179,7 @@ const customParams = {
   velocityEnabled: true,
   velocityOverLifetimeEnabled: true,
   forceEnabled: true,
+  limitVelocityEnabled: false,
   colorOverLifetimeEnabled: true,
   sizeOverLifetimeEnabled: true,
   rotationOverLifetimeEnabled: true,
@@ -236,6 +237,9 @@ const customParams = {
   accelerationY: -0.25,
   accelerationZ: 0,
   drag: 0.45,
+  limitSpeedStart: 6,
+  limitSpeedEnd: 6,
+  limitDampen: 1,
   noiseStrength: 0.28,
   noiseFrequency: 4.5,
   noiseScrollX: 0.2,
@@ -420,6 +424,12 @@ function makeCustomPreset(): ParticlePreset {
             lacunarity: customParams.noiseLacunarity,
             persistence: customParams.noisePersistence,
           },
+        }
+      : undefined,
+    limitVelocityOverLifetime: customParams.limitVelocityEnabled
+      ? {
+          speed: [[0, customParams.limitSpeedStart], [1, customParams.limitSpeedEnd]],
+          dampen: customParams.limitDampen,
         }
       : undefined,
     velocityOverLifetime: customParams.velocityOverLifetimeEnabled
@@ -807,6 +817,11 @@ function loadPresetIntoEditor(name: DemoEffectName): void {
   customParams.noiseOctaves = forces?.noise?.octaves ?? 2;
   customParams.noiseLacunarity = forces?.noise?.lacunarity ?? 2;
   customParams.noisePersistence = forces?.noise?.persistence ?? 0.5;
+  const limitVelocity = preset.limitVelocityOverLifetime;
+  customParams.limitVelocityEnabled = !!limitVelocity;
+  customParams.limitSpeedStart = curveEndpoint(limitVelocity?.speed, "first");
+  customParams.limitSpeedEnd = curveEndpoint(limitVelocity?.speed, "last");
+  customParams.limitDampen = limitVelocity?.dampen ?? 1;
 
   const velocityOverLifetime = preset.velocityOverLifetime;
   customParams.velocityOverLifetimeEnabled = !!velocityOverLifetime;
@@ -1028,6 +1043,11 @@ bind(forceFolder, "accelerationX", { label: "acceleration x", min: -10, max: 10,
 bind(forceFolder, "accelerationY", { label: "acceleration y", min: -10, max: 10, step: 0.01 });
 bind(forceFolder, "accelerationZ", { label: "acceleration z", min: -10, max: 10, step: 0.01 });
 bind(forceFolder, "drag", { min: 0, max: 20, step: 0.01 });
+const limitVelocityFolder = particlesPane.addFolder({ title: "Limit Velocity over Lifetime", expanded: false }) as PaneLike;
+bind(limitVelocityFolder, "limitVelocityEnabled", { label: "enabled" });
+bind(limitVelocityFolder, "limitSpeedStart", { label: "speed at birth", min: 0, max: 30, step: 0.01 });
+bind(limitVelocityFolder, "limitSpeedEnd", { label: "speed at death", min: 0, max: 30, step: 0.01 });
+bind(limitVelocityFolder, "limitDampen", { label: "dampen", min: 0, max: 1, step: 0.01 });
 const noiseFolder = particlesPane.addFolder({ title: "Noise", expanded: false }) as PaneLike;
 bind(noiseFolder, "noiseStrength", { label: "strength", min: 0, max: 5, step: 0.01 });
 bind(noiseFolder, "noiseFrequency", { label: "frequency", min: 0.1, max: 20, step: 0.1 });

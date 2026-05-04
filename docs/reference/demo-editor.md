@@ -136,6 +136,15 @@ velocityOverLifetime: {
 | `acceleration z` | `forces.acceleration[2]` |
 | `drag` | `forces.drag` |
 
+## Limit Velocity Over Lifetime Folder
+
+| Control | Preset Field |
+| --- | --- |
+| `enabled` | Whether `limitVelocityOverLifetime` is included. |
+| `speed at birth` | `limitVelocityOverLifetime.speed[0][1]` |
+| `speed at death` | `limitVelocityOverLifetime.speed[1][1]` |
+| `dampen` | `limitVelocityOverLifetime.dampen` |
+
 ## Noise Folder
 
 | Control | Preset Field |

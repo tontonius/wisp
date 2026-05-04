@@ -323,7 +323,7 @@ Goal: make CPU particles excellent for responsive game juice.
 - [x] Stretched billboards
 - [x] CPU sorting (`renderer.sorting`: `none` / `distance` / `youngestFirst` / `oldestFirst`, defaults to `distance`)
 - [x] Better local/world simulation support (`simulationSpace: "local" | "world"`)
-- [ ] Limit velocity over lifetime
+- [x] Limit velocity over lifetime
 - [ ] Inherit velocity
 - [ ] Lifetime by emitter speed
 - [ ] Color by speed
@@ -890,7 +890,7 @@ Implement in this order:
 11. Texture atlas helpers
 12. Visual editor prototype
 13. WebGPU backend
-14. Limit velocity over lifetime
+14. (done) Limit velocity over lifetime
 15. Inherit velocity + lifetime by emitter speed
 16. Speed-driven authoring (`colorBySpeed`, `sizeBySpeed`, `rotationBySpeed`)
 17. External force fields / triggers / particle lights / custom data (later)

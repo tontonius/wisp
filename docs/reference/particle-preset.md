@@ -22,6 +22,7 @@ type ParticlePreset = {
   emission?: { rateOverTime?: Range; bursts?: Array<{ time: number; count: Range; probability?: number }> };
   start?: { ... };
   forces?: { ... };
+  limitVelocityOverLifetime?: { speed?: Curve; dampen?: number };
   collision?: CpuCollision;
   subEmitters?: { onBirth?: string; onDeath?: string; onCollision?: string };
   velocityOverLifetime?: VelocityOverLifetime;
@@ -52,6 +53,7 @@ type ParticlePreset = {
 | `emission` | Object | No emission | Continuous rate and/or scheduled bursts. |
 | `start` | Object | Individual defaults | Values sampled when each particle spawns. |
 | `forces` | Object | No force | Constant acceleration, drag, and procedural noise. |
+| `limitVelocityOverLifetime` | Object | `undefined` | CPU-only speed cap module by normalized age. |
 | `collision` | `CpuCollision` | `undefined` | CPU-only primitive collision (`plane`, `sphere`, or `box`) in local space; see [CPU backend](cpu-backend.md#collision-plane--sphere--box). |
 | `subEmitters` | `{ onBirth?: string; onDeath?: string; onCollision?: string }` | `undefined` | CPU-only child effect hooks. `onBirth` spawns on CPU particle spawn, `onDeath` on particle death, and `onCollision` on primitive collision (when spawned through `ParticleWorld`). |
 | `velocityOverLifetime` | `VelocityOverLifetime` | No lifetime velocity | Per-age linear velocity channel. |
@@ -137,6 +139,20 @@ gpu?: {
 | `forceCpuFallback` | `false` | Forces CPU even if simulation asks for GPU. |
 
 Use `textureSize` only when you need explicit render-target dimensions. Usually `maxParticles` is enough.
+
+## Limit Velocity Over Lifetime
+
+```ts
+limitVelocityOverLifetime?: {
+  speed?: Curve;
+  dampen?: number;
+}
+```
+
+- CPU-only in the current release.
+- `speed` is a max-speed curve sampled by normalized age (`0..1`).
+- `dampen` is blend strength toward the capped velocity (`0..1`, default `1`).
+- For a constant cap, use a flat curve such as `[[0, 4], [1, 4]]`.
 
 ## Renderer Options
 

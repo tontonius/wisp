@@ -149,6 +149,17 @@ export type ParticlePreset = {
     };
   };
 
+  /**
+   * CPU backend only for now. Caps particle speed by normalized age.
+   * Use a flat curve for constant caps: `[[0, 4], [1, 4]]`.
+   */
+  limitVelocityOverLifetime?: {
+    /** Maximum speed curve sampled by normalized age (0..1). */
+    speed?: Curve;
+    /** Blend factor toward the capped velocity when over the limit. `1` = hard clamp. Default `1`. */
+    dampen?: number;
+  };
+
   /** CPU backend only. Ignored on GPU. */
   collision?: CpuCollision;
   /** CPU backend only. Child effect names to spawn from particle lifecycle events. */
@@ -1104,6 +1115,17 @@ class CPUParticleBackend implements ParticleBackend {
       const t = THREE.MathUtils.clamp(particle.age / particle.lifetime, 0, 1);
       const over = this.preset.overLifetime ?? {};
       const particleVisualRadius = Math.max(0, particle.startSize * evaluateCurve(over.size, t, 1) * 0.5);
+      const velocityLimit = this.preset.limitVelocityOverLifetime;
+      if (velocityLimit?.speed) {
+        const maxSpeed = Math.max(0, evaluateCurve(velocityLimit.speed, t, Number.POSITIVE_INFINITY));
+        const speedSq = particle.velocity.lengthSq();
+        if (Number.isFinite(maxSpeed) && speedSq > maxSpeed * maxSpeed) {
+          const speed = Math.sqrt(speedSq);
+          const cappedVelocity = tempVectorD.copy(particle.velocity).multiplyScalar(maxSpeed / Math.max(speed, 1e-6));
+          const dampen = THREE.MathUtils.clamp(velocityLimit.dampen ?? 1, 0, 1);
+          particle.velocity.lerp(cappedVelocity, dampen);
+        }
+      }
       const lifetimeVelocity = this.preset.velocityOverLifetime;
       const linearVelocity = tempVectorB.set(
         evaluateCurve(lifetimeVelocity?.linear?.x, t, 0),

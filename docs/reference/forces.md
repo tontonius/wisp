@@ -47,6 +47,28 @@ velocity *= max(0, 1 - drag * dt)
 
 Higher values slow particles more quickly. Very high values can clamp velocity to zero in a single frame.
 
+## Limit Velocity Over Lifetime
+
+This module is configured at the preset top-level (not inside `forces`):
+
+```ts
+limitVelocityOverLifetime: {
+  speed: [[0, 6], [1, 2.5]],
+  dampen: 1,
+}
+```
+
+Behavior:
+
+- The module evaluates `speed` by normalized age.
+- If current speed exceeds the evaluated max, velocity is reduced toward the capped value.
+- `dampen: 1` means hard clamp; lower values blend more softly.
+
+This is different from drag:
+
+- Drag continuously damps all velocity.
+- Limit velocity only acts when speed is above the configured cap.
+
 ## Noise
 
 ```ts
@@ -95,7 +117,8 @@ Per update, the CPU backend applies:
 2. Constant acceleration.
 3. Noise.
 4. Drag.
-5. Position integration using stored velocity plus lifetime velocity.
-6. Angular velocity.
+5. Limit velocity over lifetime (if configured).
+6. Position integration using stored velocity plus lifetime velocity.
+7. Angular velocity.
 
 The GPU backend follows the same conceptual order inside the simulation shader.

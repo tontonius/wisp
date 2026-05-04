@@ -70,6 +70,8 @@ Pass the same renderer you pass into `ParticleSystemOptions` so validation can w
 | `renderer.softParticles` | If set, must be a boolean. |
 | `renderer.softness` | If set, must be finite and `> 0`. |
 | `renderer.sorting` | If set, must be `"none"`, `"distance"`, `"youngestFirst"`, or `"oldestFirst"`. |
+| `limitVelocityOverLifetime.speed` | If set, must be a valid `Curve` (finite keyframe times/values, non-decreasing times). |
+| `limitVelocityOverLifetime.dampen` | If set, must be a finite number in `[0, 1]`. |
 | Curves | `overLifetime.size`, `overLifetime.opacity`, and each defined `velocityOverLifetime.linear.{x,y,z}` keyframe must have finite `time` and `value`; times must be **non-decreasing**. Empty or one-point curves are allowed. |
 | Gradients | `overLifetime.color` keyframes: finite time, non-decreasing times. |
 | `start.*` ranges | For each set `start` range field, values must be finite scalars or finite tuple endpoints. |
@@ -92,6 +94,7 @@ Pass the same renderer you pass into `ParticleSystemOptions` so validation can w
 | Resolved GPU path and `subEmitters.onCollision` set | Built-in sub-emitters are CPU-only; they will not run on GPU. |
 | `simulation: "auto"`, `collision` set, renderer present, and `maxParticles >= 2048` | Auto would pick GPU at that capacity, but collision forces CPU. |
 | Resolved GPU path and `renderer.sorting` set to anything other than `"none"` | Sorting is CPU-only; the GPU backend ignores it. |
+| Resolved GPU path and `limitVelocityOverLifetime.speed` set | Limit-velocity-over-lifetime is CPU-only for now; the GPU backend ignores it. |
 
 ## See Also
 

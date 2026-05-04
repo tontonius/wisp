@@ -327,6 +327,13 @@ export function collectParticlePresetIssues(
   errors.push(...validateCurve("overLifetime.size", preset.overLifetime?.size));
   errors.push(...validateCurve("overLifetime.opacity", preset.overLifetime?.opacity));
   errors.push(...validateGradient("overLifetime.color", preset.overLifetime?.color));
+  errors.push(...validateCurve("limitVelocityOverLifetime.speed", preset.limitVelocityOverLifetime?.speed));
+  if (preset.limitVelocityOverLifetime?.dampen !== undefined) {
+    const dampen = preset.limitVelocityOverLifetime.dampen;
+    if (!isFiniteNumber(dampen) || dampen < 0 || dampen > 1) {
+      errors.push("limitVelocityOverLifetime.dampen: must be a finite number in [0, 1] when set.");
+    }
+  }
 
   const vol = preset.velocityOverLifetime?.linear;
   if (vol) {
@@ -386,6 +393,9 @@ export function collectParticlePresetIssues(
 
   if (presetWouldUseGpu(preset, renderer) && sorting !== undefined && sorting !== "none") {
     warnings.push('renderer.sorting is CPU-only; the GPU backend ignores it. Use simulation "cpu" or "auto" with a CPU configuration for sorted particles.');
+  }
+  if (presetWouldUseGpu(preset, renderer) && preset.limitVelocityOverLifetime?.speed) {
+    warnings.push('limitVelocityOverLifetime is CPU-only for now; the GPU backend ignores it. Use simulation "cpu" or "auto" with a CPU configuration.');
   }
 
   return { errors, warnings };
