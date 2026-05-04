@@ -107,6 +107,7 @@ type ParticleLifecycleCallbacks = {
   onStart?: (system: ParticleSystem) => void;
   onStop?: (system: ParticleSystem) => void;
   onComplete?: (system: ParticleSystem) => void;
+  onParticleBirth?: (particle: ParticleSnapshot, system: ParticleSystem) => void;
   onParticleDeath?: (particle: ParticleSnapshot, system: ParticleSystem) => void;
   onParticleCollision?: (particle: ParticleSnapshot, system: ParticleSystem) => void;
 };
@@ -140,6 +141,12 @@ type ParticleSnapshot = {
 The snapshot clones position and velocity so callbacks do not mutate internal particle state.
 
 GPU particle death is not reported because reading particle death back from the GPU would defeat the GPU backend's purpose.
+
+### `onParticleBirth`
+
+CPU-only.
+
+Called when a CPU particle is spawned. The snapshot clones position and velocity.
 
 ### `onParticleCollision`
 

@@ -21,7 +21,7 @@ type ParticlePreset = {
   start?: { ... };
   forces?: { ... };
   collision?: CpuPlaneCollision;
-  subEmitters?: { onDeath?: string; onCollision?: string };
+  subEmitters?: { onBirth?: string; onDeath?: string; onCollision?: string };
   velocityOverLifetime?: VelocityOverLifetime;
   overLifetime?: { ... };
   renderer?: { ... };
@@ -49,7 +49,7 @@ type ParticlePreset = {
 | `start` | Object | Individual defaults | Values sampled when each particle spawns. |
 | `forces` | Object | No force | Constant acceleration, drag, and procedural noise. |
 | `collision` | `CpuPlaneCollision` | `undefined` | CPU-only infinite plane along local `xz` at `y`; see [CPU backend](cpu-backend.md#collision-plane). |
-| `subEmitters` | `{ onDeath?: string; onCollision?: string }` | `undefined` | CPU-only child effect hooks. `onDeath` spawns on particle death; `onCollision` spawns on plane collision (when spawned through `ParticleWorld`). |
+| `subEmitters` | `{ onBirth?: string; onDeath?: string; onCollision?: string }` | `undefined` | CPU-only child effect hooks. `onBirth` spawns on CPU particle spawn, `onDeath` on particle death, and `onCollision` on plane collision (when spawned through `ParticleWorld`). |
 | `velocityOverLifetime` | `VelocityOverLifetime` | No lifetime velocity | Per-age linear velocity channel. |
 | `overLifetime` | Object | Multipliers/color default to neutral values | Size, opacity, and color curves. |
 | `renderer` | Object | Default soft particle material | Texture, blend, alignment, depth, and texture sheet settings. |

@@ -134,6 +134,7 @@ type DemoEffectName =
   | "pickupSparkle"
   | "torchFire"
   | "floorBounceDemo"
+  | "onBirthSubEmittersDemo"
   | "onDeathSubEmittersDemo"
   | "onCollisionSubEmittersDemo"
   | "rainGpu"
@@ -712,6 +713,56 @@ const onDeathSubEmittersDemo: ParticlePreset = {
   renderer: { texture: softDisc, blendMode: "additive", depthWrite: false },
 };
 
+const onBirthSubEmitterChild: ParticlePreset = {
+  simulation: "cpu",
+  maxParticles: 420,
+  duration: 0.24,
+  emitter: { type: "sphere", radius: 0.03, emitFrom: "volume" },
+  emission: { bursts: [{ time: 0, count: [16, 28] }] },
+  start: {
+    lifetime: [0.2, 0.55],
+    speed: [1.2, 3.6],
+    size: [0.05, 0.14],
+    color: ["#ffe9b0", "#ff6a3f"],
+    opacity: [0.7, 1],
+    velocity: [[-1.1, 0.2, -1.1], [1.1, 2.4, 1.1]],
+  },
+  forces: { acceleration: [0, -6.2, 0], drag: 1.05, noise: { strength: 0.22, frequency: 6.8 } },
+  overLifetime: {
+    size: [[0, 0.5], [0.2, 1.2], [1, 0]],
+    opacity: [[0, 0], [0.04, 1], [0.72, 0.9], [1, 0]],
+    color: [[0, "#fff9df"], [0.35, "#ffb255"], [0.75, "#ff5a2e"], [1, "#2b0f08"]],
+  },
+  renderer: { texture: spark, blendMode: "additive", align: "velocity", depthWrite: false },
+};
+
+const onBirthSubEmittersDemo: ParticlePreset = {
+  simulation: "cpu",
+  maxParticles: 260,
+  duration: 1.7,
+  loop: true,
+  prewarm: false,
+  autoDispose: false,
+  emitter: { type: "cone", radius: 0.24, angle: 52, length: 1.25 },
+  emission: { rateOverTime: [48, 72] },
+  subEmitters: { onBirth: "onBirthSubEmitterChild" },
+  start: {
+    lifetime: [0.6, 1.25],
+    speed: [0.35, 1.2],
+    size: [0.06, 0.15],
+    color: ["#fff7d9", "#ffa24f"],
+    opacity: [0.5, 0.95],
+    velocity: [[-0.45, 0.65, -0.45], [0.45, 2.15, 0.45]],
+  },
+  forces: { acceleration: [0, 0.95, 0], drag: 0.28, noise: { strength: 0.14, frequency: 5.6 } },
+  overLifetime: {
+    size: [[0, 0.45], [0.3, 1], [1, 0.2]],
+    opacity: [[0, 0], [0.07, 1], [0.82, 0.9], [1, 0]],
+    color: [[0, "#fffde7"], [0.35, "#ffbf66"], [0.72, "#ff7633"], [1, "#3a170e"]],
+  },
+  renderer: { texture: softDisc, blendMode: "additive", depthWrite: false, align: "velocity" },
+};
+
 const onCollisionSubEmitterChild: ParticlePreset = {
   simulation: "cpu",
   maxParticles: 320,
@@ -1023,6 +1074,8 @@ const particles = new ParticleWorld(
     pickupSparkle,
     torchFire,
     floorBounceDemo,
+    onBirthSubEmitterChild,
+    onBirthSubEmittersDemo,
     onDeathSubEmitterChild,
     onDeathSubEmittersDemo,
     onCollisionSubEmitterChild,
@@ -1048,6 +1101,7 @@ const editablePresets: Partial<Record<DemoEffectName, ParticlePreset>> = {
   pickupSparkle,
   torchFire,
   floorBounceDemo,
+  onBirthSubEmittersDemo,
   onDeathSubEmittersDemo,
   onCollisionSubEmittersDemo,
   rainGpu,
@@ -1296,6 +1350,7 @@ bind(controlsFolder, "clickEffect", {
     "Pickup sparkle": "pickupSparkle",
     "Torch fire": "torchFire",
     "Floor bounce (CPU collision)": "floorBounceDemo",
+    "Sub-emitters (CPU onBirth)": "onBirthSubEmittersDemo",
     "Sub-emitters (CPU onDeath)": "onDeathSubEmittersDemo",
     "Sub-emitters (CPU onCollision)": "onCollisionSubEmittersDemo",
     Smoke: "smokePuff",

@@ -91,6 +91,7 @@ export type ParticlePreset = {
   collision?: CpuPlaneCollision;
   /** CPU backend only. Child effect names to spawn from particle lifecycle events. */
   subEmitters?: {
+    onBirth?: string;
     onDeath?: string;
     onCollision?: string;
   };
@@ -158,11 +159,13 @@ export type ParticleLifecycleCallbacks = {
   onStart?: (system: ParticleSystem) => void;
   onStop?: (system: ParticleSystem) => void;
   onComplete?: (system: ParticleSystem) => void;
+  onParticleBirth?: (particle: ParticleSnapshot, system: ParticleSystem) => void;
   onParticleDeath?: (particle: ParticleSnapshot, system: ParticleSystem) => void;
   onParticleCollision?: (particle: ParticleSnapshot, system: ParticleSystem) => void;
 };
 
 type ParticleBackendOptions = {
+  onParticleBirth?: (particle: Particle) => void;
   onParticleDeath?: (particle: Particle) => void;
   onParticleCollision?: (particle: Particle) => void;
 };
@@ -828,6 +831,7 @@ class CPUParticleBackend implements ParticleBackend {
 
     const sheet = getTextureSheetConfig(this.preset);
     particle.startFrame = sheet?.randomFrame ? Math.floor(Math.random() * sheet.totalFrames) : 0;
+    this.backendOptions.onParticleBirth?.(particle);
   }
 
   private updateParticles(dt: number): void {
@@ -1729,6 +1733,7 @@ export class ParticleSystem extends THREE.Object3D {
     this.backend = useGpu
       ? new GPUParticleBackend(preset, options.renderer!)
       : new CPUParticleBackend(preset, {
+          onParticleBirth: (particle) => this.notifyParticleBirth(particle),
           onParticleDeath: (particle) => this.notifyParticleDeath(particle),
           onParticleCollision: (particle) => this.notifyParticleCollision(particle),
         });
@@ -1828,6 +1833,18 @@ export class ParticleSystem extends THREE.Object3D {
     }
     this.backend.dispose(options);
     (this as unknown as THREE.Object3D).removeFromParent();
+  }
+
+  private notifyParticleBirth(particle: Particle): void {
+    this.preset.callbacks?.onParticleBirth?.(
+      {
+        position: particle.position.clone(),
+        velocity: particle.velocity.clone(),
+        age: particle.age,
+        lifetime: particle.lifetime,
+      },
+      this
+    );
   }
 
   private notifyParticleDeath(particle: Particle): void {
@@ -1964,6 +1981,10 @@ export class ParticleWorld {
           originalCallbacks?.onParticleDeath?.(particle, system);
           this.handleSubEmitterDeath(particle, system);
         },
+        onParticleBirth: (particle, system) => {
+          originalCallbacks?.onParticleBirth?.(particle, system);
+          this.handleSubEmitterBirth(particle, system);
+        },
         onParticleCollision: (particle, system) => {
           originalCallbacks?.onParticleCollision?.(particle, system);
           this.handleSubEmitterCollision(particle, system);
@@ -1982,6 +2003,28 @@ export class ParticleWorld {
     if (!meta) return;
 
     const targetName = system.preset.subEmitters?.onDeath;
+    if (!targetName) return;
+    if (!this.effects.get(targetName)) return;
+    if (meta.subEmitterDepth >= this.maxSubEmitterDepth) return;
+
+    const worldPosition = particle.position.clone();
+    (system as unknown as THREE.Object3D).localToWorld(worldPosition);
+
+    this.spawnInternal(
+      targetName,
+      {
+        position: worldPosition,
+        parent: this.parent,
+      },
+      meta.subEmitterDepth + 1
+    );
+  }
+
+  private handleSubEmitterBirth(particle: ParticleSnapshot, system: ParticleSystem): void {
+    const meta = this.systemSpawnMeta.get(system);
+    if (!meta) return;
+
+    const targetName = system.preset.subEmitters?.onBirth;
     if (!targetName) return;
     if (!this.effects.get(targetName)) return;
     if (meta.subEmitterDepth >= this.maxSubEmitterDepth) return;

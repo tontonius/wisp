@@ -22,13 +22,13 @@ For richer collision work (primitives, raycasts), CPU remains the intended path;
 
 Built-in sub-emitters currently support only:
 
+- `subEmitters.onBirth` on CPU presets.
 - `subEmitters.onDeath` on CPU presets.
 - `subEmitters.onCollision` on CPU presets.
 - Named child effects resolved through `ParticleWorld`.
 
 Not yet implemented:
 
-- `onBirth` sub-emitters.
 - Any GPU sub-emitter trigger path.
 
 ## No Mesh Emitters

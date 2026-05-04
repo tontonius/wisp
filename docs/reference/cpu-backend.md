@@ -69,6 +69,8 @@ Per live particle:
 10. If `subEmitters.onDeath` is set and the system is managed by `ParticleWorld`, spawn that named effect at particle death positions.
 11. Integrate rotation.
 
+During spawn, if `subEmitters.onBirth` is set and the system is managed by `ParticleWorld`, that named child effect is spawned at each CPU particle birth position.
+
 ## Collision (plane)
 
 ```ts
@@ -92,21 +94,24 @@ The plane normal is **+Y**. Particles with `position.y` below the plane after in
 
 GPU presets must not set `collision`; validation throws if `simulation: "gpu"` and `collision` are both set.
 
-## Sub-emitters (onDeath / onCollision)
+## Sub-emitters (onBirth / onDeath / onCollision)
 
 ```ts
 subEmitters?: {
+  onBirth?: string;
   onDeath?: string;
   onCollision?: string;
 };
 ```
 
 - CPU-only.
-- `onDeath` and `onCollision` are named effects looked up in `ParticleWorld.effects`.
+- `onBirth`, `onDeath`, and `onCollision` are named effects looked up in `ParticleWorld.effects`.
 - Trigger source:
+  - `onBirth`: when a CPU particle is spawned.
   - `onDeath`: every CPU particle death (lifetime expiry or `killOnCollision`).
   - `onCollision`: when a CPU particle penetrates the collision plane.
 - Spawn location:
+  - `onBirth`: spawned particle position in world space.
   - `onDeath`: particle death position in world space.
   - `onCollision`: collision-resolved position in world space.
 - Triggering requires systems spawned through `ParticleWorld` (standalone `ParticleSystem` does not resolve named child effects).

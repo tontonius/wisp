@@ -150,6 +150,11 @@ export function collectParticlePresetIssues(
     if (typeof subEmitters !== "object" || subEmitters === null) {
       errors.push("subEmitters: must be an object when set.");
     } else {
+      if (subEmitters.onBirth !== undefined) {
+        if (typeof subEmitters.onBirth !== "string" || subEmitters.onBirth.trim().length === 0) {
+          errors.push("subEmitters.onBirth: must be a non-empty effect name string when set.");
+        }
+      }
       if (subEmitters.onDeath !== undefined) {
         if (typeof subEmitters.onDeath !== "string" || subEmitters.onDeath.trim().length === 0) {
           errors.push("subEmitters.onDeath: must be a non-empty effect name string when set.");
@@ -248,7 +253,13 @@ export function collectParticlePresetIssues(
   if (presetWouldUseGpu(preset, renderer) && preset.callbacks?.onParticleCollision) {
     warnings.push("callbacks.onParticleCollision is not invoked on the GPU backend; use CPU simulation for per-particle collision callbacks.");
   }
+  if (presetWouldUseGpu(preset, renderer) && preset.callbacks?.onParticleBirth) {
+    warnings.push("callbacks.onParticleBirth is not invoked on the GPU backend; use CPU simulation for per-particle birth callbacks.");
+  }
 
+  if (presetWouldUseGpu(preset, renderer) && preset.subEmitters?.onBirth) {
+    warnings.push("subEmitters.onBirth is CPU-only and will not run on the GPU backend; use CPU simulation for built-in sub-emitters.");
+  }
   if (presetWouldUseGpu(preset, renderer) && preset.subEmitters?.onDeath) {
     warnings.push("subEmitters.onDeath is CPU-only and will not run on the GPU backend; use CPU simulation for built-in sub-emitters.");
   }
