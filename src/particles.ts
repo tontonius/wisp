@@ -6,6 +6,7 @@ export type Vec3Tuple = [number, number, number];
 export type Vec3Range = Vec3Tuple | [Vec3Tuple, Vec3Tuple];
 export type BlendMode = "alpha" | "additive" | "multiply";
 export type AlignMode = "camera" | "velocity";
+export type RendererType = "billboard" | "stretchedBillboard";
 export type SimulationMode = "cpu" | "gpu" | "auto";
 export type Curve = Array<[time: number, value: number]>;
 export type Gradient = Array<[time: number, color: THREE.ColorRepresentation]>;
@@ -105,9 +106,14 @@ export type ParticlePreset = {
   };
 
   renderer?: {
+    type?: RendererType;
     texture?: THREE.Texture;
     blendMode?: BlendMode;
     align?: AlignMode;
+    /** Only used by `renderer.type: "stretchedBillboard"`. Multiplies elongation by particle speed. Default `0.35`. */
+    stretchFactor?: number;
+    /** Only used by `renderer.type: "stretchedBillboard"`. Maximum length scale relative to base size. Default `4`. */
+    stretchMaxScale?: number;
     depthWrite?: boolean;
     depthTest?: boolean;
     textureSheet?: {
@@ -899,6 +905,9 @@ class CPUParticleBackend implements ParticleBackend {
   }
 
   private updateGeometry(camera: THREE.Camera): void {
+    const rendererType = this.preset.renderer?.type ?? "billboard";
+    const stretchFactor = this.preset.renderer?.stretchFactor ?? 0.35;
+    const stretchMaxScale = this.preset.renderer?.stretchMaxScale ?? 4;
     const align = this.preset.renderer?.align ?? "camera";
     const cameraRight = tempVectorA.setFromMatrixColumn(camera.matrixWorld, 0).normalize();
     const cameraUp = tempVectorB.setFromMatrixColumn(camera.matrixWorld, 1).normalize();
@@ -927,10 +936,20 @@ class CPUParticleBackend implements ParticleBackend {
         if (up.lengthSq() < 0.0001) up = cameraUp;
       }
 
+      if (rendererType === "stretchedBillboard" && particle.velocity.lengthSq() > 0.0001) {
+        right = tempVectorC.copy(particle.velocity).normalize();
+        up = tempVectorB.setFromMatrixColumn(camera.matrixWorld, 2).cross(right).normalize();
+        if (up.lengthSq() < 0.0001) up = cameraUp;
+      }
+
       const half = size * 0.5;
       const cos = Math.cos(particle.rotation);
       const sin = Math.sin(particle.rotation);
-      const r = right.clone().multiplyScalar(half);
+      const stretchScale =
+        rendererType === "stretchedBillboard"
+          ? THREE.MathUtils.clamp(1 + particle.velocity.length() * stretchFactor, 1, stretchMaxScale)
+          : 1;
+      const r = right.clone().multiplyScalar(half * stretchScale);
       const u = up.clone().multiplyScalar(half);
       const corners = [[-1, -1], [1, -1], [1, 1], [-1, -1], [1, 1], [-1, 1]] as const;
       const uv = this.getParticleUvs(particle, t);
@@ -1709,6 +1728,7 @@ function shouldUseGpu(preset: ParticlePreset, options: ParticleSystemOptions): b
   if (preset.gpu?.forceCpuFallback) return false;
   if (preset.collision) return false;
   if (preset.subEmitters) return false;
+  if (preset.renderer?.type === "stretchedBillboard") return false;
   if (preset.simulation === "cpu") return false;
   if (preset.simulation === "gpu") return !!options.renderer;
   if (preset.simulation === "auto") return !!options.renderer && (preset.maxParticles ?? 0) >= 2048;

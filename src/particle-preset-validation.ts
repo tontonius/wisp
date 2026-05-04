@@ -11,6 +11,7 @@ export type ParticlePresetValidationResult = {
 };
 
 const EMITTER_TYPES = new Set(["point", "sphere", "hemisphere", "cone", "box"]);
+const RENDERER_TYPES = new Set(["billboard", "stretchedBillboard"]);
 
 function isFiniteNumber(n: unknown): n is number {
   return typeof n === "number" && Number.isFinite(n);
@@ -21,6 +22,7 @@ export function presetWouldUseGpu(preset: ParticlePreset, renderer: WebGLRendere
   if (preset.gpu?.forceCpuFallback) return false;
   if (preset.collision) return false;
   if (preset.subEmitters) return false;
+  if (preset.renderer?.type === "stretchedBillboard") return false;
   if (preset.simulation === "cpu") return false;
   if (preset.simulation === "gpu") return !!renderer;
   if (preset.simulation === "auto") return !!renderer && (preset.maxParticles ?? 0) >= 2048;
@@ -169,6 +171,23 @@ export function collectParticlePresetIssues(
   }
 
   const sheet = preset.renderer?.textureSheet;
+  const rendererType = preset.renderer?.type;
+  if (rendererType !== undefined && !RENDERER_TYPES.has(rendererType)) {
+    errors.push('renderer.type: must be one of "billboard" or "stretchedBillboard" when set.');
+  }
+  if (rendererType === "stretchedBillboard" && preset.simulation === "gpu") {
+    errors.push('renderer.type "stretchedBillboard" is CPU-only; use simulation "cpu" or "auto".');
+  }
+  if (preset.renderer?.stretchFactor !== undefined) {
+    if (!isFiniteNumber(preset.renderer.stretchFactor) || preset.renderer.stretchFactor < 0) {
+      errors.push("renderer.stretchFactor: must be a finite number >= 0 when set.");
+    }
+  }
+  if (preset.renderer?.stretchMaxScale !== undefined) {
+    if (!isFiniteNumber(preset.renderer.stretchMaxScale) || preset.renderer.stretchMaxScale < 1) {
+      errors.push("renderer.stretchMaxScale: must be a finite number >= 1 when set.");
+    }
+  }
   if (sheet) {
     const { columns, rows } = sheet;
     if (!Number.isInteger(columns) || columns < 1 || !isFiniteNumber(columns)) {
@@ -256,6 +275,7 @@ export function collectParticlePresetIssues(
   if (presetWouldUseGpu(preset, renderer) && preset.callbacks?.onParticleBirth) {
     warnings.push("callbacks.onParticleBirth is not invoked on the GPU backend; use CPU simulation for per-particle birth callbacks.");
   }
+
 
   if (presetWouldUseGpu(preset, renderer) && preset.subEmitters?.onBirth) {
     warnings.push("subEmitters.onBirth is CPU-only and will not run on the GPU backend; use CPU simulation for built-in sub-emitters.");

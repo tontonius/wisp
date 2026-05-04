@@ -64,6 +64,9 @@ Pass the same renderer you pass into `ParticleSystemOptions` so validation can w
 | `renderer.textureSheet` | If set, `columns` and `rows` must be integers `>= 1` (invalid values are no longer silently clamped for authoring). |
 | `gpu.textureSize` | If set, integer `>= 1` and `textureSize² >= maxParticles` (using `maxParticles ?? 1024`). |
 | `gpu.maxSpawnPerFrame` | If set, integer `>= 1`. |
+| `renderer.type` | If set, must be `"billboard"` or `"stretchedBillboard"`. `simulation: "gpu"` + `"stretchedBillboard"` is invalid (CPU-only). |
+| `renderer.stretchFactor` | If set, must be finite and `>= 0`. |
+| `renderer.stretchMaxScale` | If set, must be finite and `>= 1`. |
 | Curves | `overLifetime.size`, `overLifetime.opacity`, and each defined `velocityOverLifetime.linear.{x,y,z}` keyframe must have finite `time` and `value`; times must be **non-decreasing**. Empty or one-point curves are allowed. |
 | Gradients | `overLifetime.color` keyframes: finite time, non-decreasing times. |
 | `start.*` ranges | For each set `start` range field, values must be finite scalars or finite tuple endpoints. |

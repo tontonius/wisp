@@ -45,7 +45,7 @@ Mesh surface or volume emission is not implemented.
 
 ## No Trails Or Ribbons
 
-Particles are rendered as billboards only.
+Particles are currently rendered as billboards (including stretched billboards), but not as continuous trails/ribbons.
 
 ## GPU Readback Is Avoided
 

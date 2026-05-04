@@ -133,6 +133,7 @@ type DemoEffectName =
   | "smokePuff"
   | "pickupSparkle"
   | "torchFire"
+  | "stretchedBillboardDemo"
   | "floorBounceDemo"
   | "onBirthSubEmittersDemo"
   | "onDeathSubEmittersDemo"
@@ -601,6 +602,42 @@ const torchFire: ParticlePreset = {
     color: [[0, "#fff8c8"], [0.35, "#ff9f1c"], [0.72, "#e53e1b"], [1, "#2b1209"]],
   },
   renderer: { texture: softDisc, blendMode: "additive", depthWrite: false },
+};
+
+const stretchedBillboardDemo: ParticlePreset = {
+  simulation: "cpu",
+  maxParticles: 220,
+  duration: 1.4,
+  loop: true,
+  prewarm: false,
+  autoDispose: false,
+  emitter: { type: "cone", radius: 0.5, angle: 0, length: 1.3 },
+  emission: { rateOverTime: [10, 15] },
+  start: {
+    lifetime: [0.35, 0.8],
+    speed: [0.5, 20.5],
+    size: [0.05, 0.1],
+    color: ["#b7f0ff", "#5eb7ff"],
+    opacity: [0.4, 0.9],
+    velocity: [[0, 0.4, 0], [0, 1.6, 0]],
+    rotation: [0, Math.PI * 2],
+    angularVelocity: [-0.2, 0.2],
+  },
+  forces: { acceleration: [0, 0, 0], drag: 2.12 },
+  overLifetime: {
+    size: [[0, 0.8], [0.5, 1], [1, 0.25]],
+    opacity: [[0, 0], [0.08, 1], [0.75, 0.85], [1, 0]],
+    color: [[0, "#ffffff"], [0.42, "#82d7ff"], [1, "#4d95ff"]],
+  },
+  renderer: {
+    type: "stretchedBillboard",
+    stretchFactor: 2,
+    stretchMaxScale: 14.8,
+    texture: hardDisc,
+    blendMode: "additive",
+    align: "velocity",
+    depthWrite: false,
+  },
 };
 
 const magicAura: ParticlePreset = {
@@ -1072,6 +1109,7 @@ const particles = new ParticleWorld(
     smokePuff,
     pickupSparkle,
     torchFire,
+    stretchedBillboardDemo,
     floorBounceDemo,
     onBirthSubEmitterChild,
     onBirthSubEmittersDemo,
@@ -1099,6 +1137,7 @@ const editablePresets: Partial<Record<DemoEffectName, ParticlePreset>> = {
   smokePuff,
   pickupSparkle,
   torchFire,
+  stretchedBillboardDemo,
   floorBounceDemo,
   onBirthSubEmittersDemo,
   onDeathSubEmittersDemo,
@@ -1348,6 +1387,7 @@ bind(controlsFolder, "clickEffect", {
     "Bullet impact sparks": "bulletImpactSparks",
     "Pickup sparkle": "pickupSparkle",
     "Torch fire": "torchFire",
+    "Stretched billboard demo": "stretchedBillboardDemo",
     "Floor bounce (CPU collision)": "floorBounceDemo",
     "Sub-emitters (CPU onBirth)": "onBirthSubEmittersDemo",
     "Sub-emitters (CPU onDeath)": "onDeathSubEmittersDemo",

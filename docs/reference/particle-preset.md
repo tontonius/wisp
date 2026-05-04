@@ -52,7 +52,7 @@ type ParticlePreset = {
 | `subEmitters` | `{ onBirth?: string; onDeath?: string; onCollision?: string }` | `undefined` | CPU-only child effect hooks. `onBirth` spawns on CPU particle spawn, `onDeath` on particle death, and `onCollision` on plane collision (when spawned through `ParticleWorld`). |
 | `velocityOverLifetime` | `VelocityOverLifetime` | No lifetime velocity | Per-age linear velocity channel. |
 | `overLifetime` | Object | Multipliers/color default to neutral values | Size, opacity, and color curves. |
-| `renderer` | Object | Default soft particle material | Texture, blend, alignment, depth, and texture sheet settings. |
+| `renderer` | Object | Default soft particle material | Type, texture, blend, alignment, depth, stretch settings, and texture sheet settings. |
 
 ## Simulation Selection
 
@@ -108,6 +108,23 @@ gpu?: {
 | `forceCpuFallback` | `false` | Forces CPU even if simulation asks for GPU. |
 
 Use `textureSize` only when you need explicit render-target dimensions. Usually `maxParticles` is enough.
+
+## Renderer Options
+
+```ts
+renderer?: {
+  type?: "billboard" | "stretchedBillboard";
+  align?: "camera" | "velocity";
+  stretchFactor?: number;
+  stretchMaxScale?: number;
+  // texture, blendMode, depthWrite, depthTest, textureSheet...
+};
+```
+
+- `type` defaults to `"billboard"`.
+- `type: "stretchedBillboard"` is CPU-only and stretches quads along velocity.
+- `stretchFactor` controls speed-to-length scaling (default `0.35`).
+- `stretchMaxScale` clamps elongation (default `4`).
 
 ## Preset Registration
 

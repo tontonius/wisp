@@ -132,6 +132,11 @@ Every update:
 - Buffer attributes are marked for update.
 - Bounding sphere is recomputed when particles are alive.
 
+Renderer notes:
+
+- `renderer.type: "billboard"` keeps symmetric quads.
+- `renderer.type: "stretchedBillboard"` elongates quads along velocity, scaled by speed (`stretchFactor`) and clamped by `stretchMaxScale`.
+
 ## Strengths
 
 Use CPU for:
