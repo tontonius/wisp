@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { assertValidParticlePreset } from "./particle-preset-validation";
 
 export type Range = number | [number, number];
+export type Vec2Tuple = [number, number];
 export type Vec3Tuple = [number, number, number];
 export type Vec3Range = Vec3Tuple | [Vec3Tuple, Vec3Tuple];
 export type BlendMode = "alpha" | "additive" | "multiply";
@@ -109,6 +110,24 @@ export type CpuBoxCollision = {
 };
 
 export type CpuCollision = CpuPlaneCollision | CpuSphereCollision | CpuBoxCollision;
+
+/** Spatial dissolve / breakup of billboard alpha over lifetime (CPU and GPU). */
+export type ParticleRendererDispersal = {
+  /** When `false`, dispersal is off. When `true` or omitted with `dispersal` set, dispersal runs. Default `true` when `renderer.dispersal` is present. */
+  enabled?: boolean;
+  /** Blend toward the noise dissolve mask (`0` = uniform alpha only, `1` = full mask). Default `1`. */
+  strength?: number;
+  /** Remaps normalized age to dissolve amount (`0` = no cutoff, `1` = full dissolve). Omit for linear `age`. */
+  amount?: Curve;
+  /** Multiplier on billboard UVs when sampling noise / map. Default `6`. */
+  noiseScale?: number;
+  /** Edge softness for the dissolve threshold. Default `0.12`. */
+  edgeSoftness?: number;
+  /** Optional grayscale map; **R** channel is compared to the dissolve threshold. Omit for procedural value noise. */
+  texture?: THREE.Texture;
+  /** Scroll speed in UV space, multiplied by system elapsed time. */
+  scroll?: Vec2Tuple;
+};
 
 export type ParticlePreset = {
   name?: string;
@@ -257,6 +276,8 @@ export type ParticlePreset = {
       frameOverLifetime?: boolean;
       randomStartFrame?: boolean;
     };
+    /** Optional noise- or texture-driven dissolve of billboard alpha over lifetime. */
+    dispersal?: ParticleRendererDispersal;
   };
 };
 
@@ -748,8 +769,34 @@ function makeEmitterGizmo(
   return gizmo;
 }
 
+/** Shared GLSL: noise + dissolve mask (must match GPU render fragment). */
+const PARTICLE_DISPERSAL_GLSL = `
+float dispersalHash(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+}
+float dispersalValueNoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(dispersalHash(i), dispersalHash(i + vec2(1.0, 0.0)), u.x),
+    mix(dispersalHash(i + vec2(0.0, 1.0)), dispersalHash(i + vec2(1.0, 1.0)), u.x),
+    u.y
+  );
+}
+float dispersalMask(float noise, float progress, float edge) {
+  float e = max(edge, 0.0001);
+  float lo = progress * (1.0 + 2.0 * e) - e;
+  float hi = lo + e;
+  return smoothstep(lo, hi, noise);
+}
+`;
+
 function makeParticleMaterial(options: NonNullable<ParticlePreset["renderer"]> = {}): THREE.ShaderMaterial {
   const softParticlesEnabled = options.softParticles ?? false;
+  const dispersalEnabled = isRendererDispersalEnabled(options);
+  const dispersal = options.dispersal;
+  const dispersalMap = dispersal?.texture ?? null;
   const material = new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: options.depthWrite ?? false,
@@ -762,14 +809,28 @@ function makeParticleMaterial(options: NonNullable<ParticlePreset["renderer"]> =
       uSoftness: { value: options.softness ?? 1.5 },
       uCameraNearFar: { value: new THREE.Vector2(0.1, 2000) },
       uCameraIsPerspective: { value: 1 },
+      uDispersalEnabled: { value: dispersalEnabled ? 1 : 0 },
+      uDispersalStrength: { value: dispersal?.strength ?? 1 },
+      uDispersalNoiseScale: { value: dispersal?.noiseScale ?? 6 },
+      uDispersalEdge: { value: dispersal?.edgeSoftness ?? 0.12 },
+      uDispersalScroll: { value: new THREE.Vector2(dispersal?.scroll?.[0] ?? 0, dispersal?.scroll?.[1] ?? 0) },
+      uDispersalTime: { value: 0 },
+      uDispersalUseMap: { value: dispersalMap ? 1 : 0 },
+      uDispersalMap: { value: dispersalMap ?? getDispersalWhitePlaceholderTexture() },
+      uDispersalAmountCurve: { value: getDispersalAmountCurvePlaceholder() },
     },
     vertexShader: `
       attribute vec4 particleColor;
+      attribute vec2 particleDispersal;
       varying vec2 vUv;
       varying vec4 vColor;
+      varying float vAgeT;
+      varying float vDispersalSeed;
       void main() {
         vUv = uv;
         vColor = particleColor;
+        vAgeT = particleDispersal.x;
+        vDispersalSeed = particleDispersal.y;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }
     `,
@@ -781,8 +842,20 @@ function makeParticleMaterial(options: NonNullable<ParticlePreset["renderer"]> =
       uniform float uSoftness;
       uniform vec2 uCameraNearFar;
       uniform int uCameraIsPerspective;
+      uniform int uDispersalEnabled;
+      uniform float uDispersalStrength;
+      uniform float uDispersalNoiseScale;
+      uniform float uDispersalEdge;
+      uniform vec2 uDispersalScroll;
+      uniform float uDispersalTime;
+      uniform int uDispersalUseMap;
+      uniform sampler2D uDispersalMap;
+      uniform sampler2D uDispersalAmountCurve;
       varying vec2 vUv;
       varying vec4 vColor;
+      varying float vAgeT;
+      varying float vDispersalSeed;
+      ${PARTICLE_DISPERSAL_GLSL}
 
       float linearizeDepth(float depth01) {
         float near = uCameraNearFar.x;
@@ -805,6 +878,14 @@ function makeParticleMaterial(options: NonNullable<ParticlePreset["renderer"]> =
           float fade = clamp((sceneDepth - particleDepth) * max(0.0001, uSoftness), 0.0, 1.0);
           outColor.a *= fade;
         }
+        if (uDispersalEnabled == 1) {
+          vec2 scroll = uDispersalScroll * uDispersalTime;
+          vec2 dUv = vUv * uDispersalNoiseScale + vec2(vDispersalSeed * 17.413, vDispersalSeed * 63.291) + scroll;
+          float n = uDispersalUseMap == 1 ? texture2D(uDispersalMap, dUv).r : dispersalValueNoise(dUv);
+          float amount = texture2D(uDispersalAmountCurve, vec2(clamp(vAgeT, 0.0, 1.0), 0.5)).r;
+          float m = dispersalMask(n, amount, uDispersalEdge);
+          outColor.a *= mix(1.0, m, clamp(uDispersalStrength, 0.0, 1.0));
+        }
         if (outColor.a < 0.001) discard;
         gl_FragColor = outColor;
       }
@@ -813,6 +894,54 @@ function makeParticleMaterial(options: NonNullable<ParticlePreset["renderer"]> =
 
   applyBlendMode(material, options.blendMode ?? "alpha");
   return material;
+}
+
+function isRendererDispersalEnabled(renderer: ParticlePreset["renderer"] | undefined): boolean {
+  const d = renderer?.dispersal;
+  if (!d) return false;
+  return d.enabled !== false;
+}
+
+/** Normalized-age → dissolve amount (`0`..`1`). Without a curve, samples the identity ramp. */
+function makeDispersalAmountCurveTexture(curve: Curve | undefined): THREE.DataTexture {
+  const width = 256;
+  const data = new Uint8Array(width * 4);
+  for (let i = 0; i < width; i++) {
+    const t = i / (width - 1);
+    const v = curve ? THREE.MathUtils.clamp(evaluateCurve(curve, t, t), 0, 1) : t;
+    const b = Math.round(v * 255);
+    data[i * 4 + 0] = b;
+    data[i * 4 + 1] = b;
+    data[i * 4 + 2] = b;
+    data[i * 4 + 3] = 255;
+  }
+  const texture = new THREE.DataTexture(data, width, 1, THREE.RGBAFormat, THREE.UnsignedByteType);
+  texture.needsUpdate = true;
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearFilter;
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  return texture;
+}
+
+let dispersalAmountCurvePlaceholder: THREE.DataTexture | undefined;
+function getDispersalAmountCurvePlaceholder(): THREE.DataTexture {
+  if (!dispersalAmountCurvePlaceholder) dispersalAmountCurvePlaceholder = makeDispersalAmountCurveTexture(undefined);
+  return dispersalAmountCurvePlaceholder;
+}
+
+let dispersalWhitePlaceholder: THREE.DataTexture | undefined;
+function getDispersalWhitePlaceholderTexture(): THREE.DataTexture {
+  if (!dispersalWhitePlaceholder) {
+    const d = new Uint8Array([255, 255, 255, 255]);
+    dispersalWhitePlaceholder = new THREE.DataTexture(d, 1, 1, THREE.RGBAFormat, THREE.UnsignedByteType);
+    dispersalWhitePlaceholder.needsUpdate = true;
+    dispersalWhitePlaceholder.magFilter = THREE.LinearFilter;
+    dispersalWhitePlaceholder.minFilter = THREE.LinearFilter;
+    dispersalWhitePlaceholder.wrapS = THREE.RepeatWrapping;
+    dispersalWhitePlaceholder.wrapT = THREE.RepeatWrapping;
+  }
+  return dispersalWhitePlaceholder;
 }
 
 function makeCurveTexture(curve: Curve | undefined, fallback = 1): THREE.DataTexture {
@@ -908,9 +1037,12 @@ class CPUParticleBackend implements ParticleBackend {
   private positions: Float32Array;
   private uvs: Float32Array;
   private colors: Float32Array;
+  private dispersalAttrs: Float32Array;
   private positionAttribute: THREE.BufferAttribute;
   private uvAttribute: THREE.BufferAttribute;
   private colorAttribute: THREE.BufferAttribute;
+  private dispersalAttribute: THREE.BufferAttribute;
+  private dispersalAmountCurveTexture: THREE.DataTexture | null = null;
   private maxParticles: number;
   private _elapsed = 0;
   private _aliveCount = 0;
@@ -934,17 +1066,26 @@ class CPUParticleBackend implements ParticleBackend {
     this.positions = new Float32Array(vertexCount * 3);
     this.uvs = new Float32Array(vertexCount * 2);
     this.colors = new Float32Array(vertexCount * 4);
+    this.dispersalAttrs = new Float32Array(vertexCount * 2);
 
     this.positionAttribute = new THREE.BufferAttribute(this.positions, 3);
     this.uvAttribute = new THREE.BufferAttribute(this.uvs, 2);
     this.colorAttribute = new THREE.BufferAttribute(this.colors, 4);
+    this.dispersalAttribute = new THREE.BufferAttribute(this.dispersalAttrs, 2);
 
     this.geometry.setAttribute("position", this.positionAttribute);
     this.geometry.setAttribute("uv", this.uvAttribute);
     this.geometry.setAttribute("particleColor", this.colorAttribute);
+    this.geometry.setAttribute("particleDispersal", this.dispersalAttribute);
     this.geometry.setDrawRange(0, 0);
 
+    if (isRendererDispersalEnabled(preset.renderer) && preset.renderer?.dispersal?.amount) {
+      this.dispersalAmountCurveTexture = makeDispersalAmountCurveTexture(preset.renderer.dispersal.amount);
+    }
     this.material = makeParticleMaterial(preset.renderer);
+    if (this.dispersalAmountCurveTexture) {
+      this.material.uniforms.uDispersalAmountCurve.value = this.dispersalAmountCurveTexture;
+    }
     this.mesh = new THREE.Mesh(this.geometry, this.material);
     this.mesh.frustumCulled = false;
     this.object.add(this.mesh);
@@ -1059,8 +1200,11 @@ class CPUParticleBackend implements ParticleBackend {
     this.geometry.dispose();
 
     const texture = this.material.uniforms.uTexture?.value as THREE.Texture | undefined;
+    const dispersalMap = this.preset.renderer?.dispersal?.texture;
     this.material.dispose();
     if (disposeTexture && texture) texture.dispose();
+    if (disposeTexture && dispersalMap && dispersalMap !== texture) dispersalMap.dispose();
+    this.dispersalAmountCurveTexture?.dispose();
 
     this._disposed = true;
   }
@@ -1098,6 +1242,7 @@ class CPUParticleBackend implements ParticleBackend {
     const u = this.material.uniforms;
     u.uCameraNearFar.value.set(camera.near, camera.far);
     u.uCameraIsPerspective.value = camera instanceof THREE.PerspectiveCamera ? 1 : 0;
+    if (u.uDispersalTime) u.uDispersalTime.value = this._elapsed;
   }
 
   private updateEmission(dt: number): void {
@@ -1417,11 +1562,13 @@ class CPUParticleBackend implements ParticleBackend {
     let vertexOffset = 0;
     let uvOffset = 0;
     let colorOffset = 0;
+    let dispersalOffset = 0;
 
     for (let n = 0; n < aliveCount; n++) {
       const particle = this.particles[this.sortIndices[n]];
 
       const t = THREE.MathUtils.clamp(particle.age / particle.lifetime, 0, 1);
+      const seed01 = particle.randomSeed - Math.floor(particle.randomSeed);
       const over = this.preset.overLifetime ?? {};
       let size = particle.startSize * evaluateCurve(over.size, t, 1);
       const sbs = this.preset.sizeBySpeed;
@@ -1482,6 +1629,8 @@ class CPUParticleBackend implements ParticleBackend {
         this.colors[colorOffset++] = finalColor.g;
         this.colors[colorOffset++] = finalColor.b;
         this.colors[colorOffset++] = opacity;
+        this.dispersalAttrs[dispersalOffset++] = t;
+        this.dispersalAttrs[dispersalOffset++] = seed01;
       }
     }
 
@@ -1489,6 +1638,7 @@ class CPUParticleBackend implements ParticleBackend {
     this.positionAttribute.needsUpdate = true;
     this.uvAttribute.needsUpdate = true;
     this.colorAttribute.needsUpdate = true;
+    this.dispersalAttribute.needsUpdate = true;
     if (aliveCount > 0) this.geometry.computeBoundingSphere();
   }
 
@@ -1644,6 +1794,7 @@ class GPUParticleBackend implements ParticleBackend {
   private sizeBySpeedCurveTexture: THREE.DataTexture;
   private colorBySpeedGradientTexture: THREE.DataTexture;
   private rotationBySpeedCurveTexture: THREE.DataTexture;
+  private dispersalAmountCurveTexture: THREE.DataTexture | null = null;
   private previousRenderTarget: THREE.WebGLRenderTarget | null = null;
   private previousXrEnabled = false;
   private simulationSpace: SimulationSpace;
@@ -1662,6 +1813,9 @@ class GPUParticleBackend implements ParticleBackend {
     this.sizeBySpeedCurveTexture = makeCurveFloatTexture(preset.sizeBySpeed?.curve, 1);
     this.colorBySpeedGradientTexture = makeGradientTexture(preset.colorBySpeed?.gradient);
     this.rotationBySpeedCurveTexture = makeCurveFloatTexture(preset.rotationBySpeed?.angularVelocity, 0);
+    if (isRendererDispersalEnabled(preset.renderer) && preset.renderer?.dispersal?.amount) {
+      this.dispersalAmountCurveTexture = makeDispersalAmountCurveTexture(preset.renderer.dispersal.amount);
+    }
 
     this.rtA = this.makeTargetSet();
     this.rtB = this.makeTargetSet();
@@ -1675,6 +1829,9 @@ class GPUParticleBackend implements ParticleBackend {
 
     this.geometry = this.makeRenderGeometry();
     this.material = this.makeRenderMaterial();
+    if (this.dispersalAmountCurveTexture) {
+      this.material.uniforms.uDispersalAmountCurve.value = this.dispersalAmountCurveTexture;
+    }
     this.mesh = new THREE.Mesh(this.geometry, this.material);
     this.applyExplicitBounds();
     this.object.add(this.mesh);
@@ -1827,11 +1984,14 @@ class GPUParticleBackend implements ParticleBackend {
     this.sizeBySpeedCurveTexture.dispose();
     this.colorBySpeedGradientTexture.dispose();
     this.rotationBySpeedCurveTexture.dispose();
+    this.dispersalAmountCurveTexture?.dispose();
     this.rtA.forEach((rt) => rt.dispose());
     this.rtB.forEach((rt) => rt.dispose());
 
     const texture = this.material.uniforms.uTexture?.value as THREE.Texture | undefined;
+    const dispersalMap = this.preset.renderer?.dispersal?.texture;
     if (disposeTexture && texture) texture.dispose();
+    if (disposeTexture && dispersalMap && dispersalMap !== texture) dispersalMap.dispose();
     this._disposed = true;
   }
 
@@ -2361,6 +2521,9 @@ class GPUParticleBackend implements ParticleBackend {
   private makeRenderMaterial(): THREE.ShaderMaterial {
     const sheet = getTextureSheetConfig(this.preset);
     const softParticlesEnabled = this.preset.renderer?.softParticles ?? false;
+    const dispersal = this.preset.renderer?.dispersal;
+    const dispersalEnabled = isRendererDispersalEnabled(this.preset.renderer);
+    const dispersalMap = dispersal?.texture ?? null;
     const material = new THREE.ShaderMaterial({
       transparent: true,
       depthWrite: this.preset.renderer?.depthWrite ?? false,
@@ -2395,6 +2558,15 @@ class GPUParticleBackend implements ParticleBackend {
         uSheetFrameOverLifetime: { value: sheet?.frameOverLifetime ? 1 : 0 },
         uTotalFrames: { value: sheet?.totalFrames ?? 1 },
         uSimulationSpace: { value: this.simulationSpace === "world" ? 1 : 0 },
+        uDispersalEnabled: { value: dispersalEnabled ? 1 : 0 },
+        uDispersalStrength: { value: dispersal?.strength ?? 1 },
+        uDispersalNoiseScale: { value: dispersal?.noiseScale ?? 6 },
+        uDispersalEdge: { value: dispersal?.edgeSoftness ?? 0.12 },
+        uDispersalScroll: { value: new THREE.Vector2(dispersal?.scroll?.[0] ?? 0, dispersal?.scroll?.[1] ?? 0) },
+        uDispersalTime: { value: 0 },
+        uDispersalUseMap: { value: dispersalMap ? 1 : 0 },
+        uDispersalMap: { value: dispersalMap ?? getDispersalWhitePlaceholderTexture() },
+        uDispersalAmountCurve: { value: getDispersalAmountCurvePlaceholder() },
       },
       vertexShader: `
         precision highp float;
@@ -2427,6 +2599,8 @@ class GPUParticleBackend implements ParticleBackend {
 
         varying vec2 vUv;
         varying vec4 vColor;
+        varying float vAgeT;
+        varying float vDispersalSeed;
 
         void main() {
           vec4 positionAge = texture2D(uPositionAge, particleUv);
@@ -2436,6 +2610,8 @@ class GPUParticleBackend implements ParticleBackend {
 
           float alive = extra.a > 1.0 ? 1.0 : 0.0;
           float ageT = clamp(positionAge.w / max(0.0001, velocityLife.w), 0.0, 1.0);
+          vAgeT = ageT;
+          vDispersalSeed = fract(colorSeed.a * 0.1031 + dot(particleUv, vec2(12.9898, 78.233)));
           float sizeMul = texture2D(uSizeCurve, vec2(ageT, 0.5)).r;
           float opacityMul = texture2D(uOpacityCurve, vec2(ageT, 0.5)).r;
           vec3 lifeColor = texture2D(uColorGradient, vec2(ageT, 0.5)).rgb;
@@ -2493,8 +2669,20 @@ class GPUParticleBackend implements ParticleBackend {
         uniform float uSoftness;
         uniform vec2 uCameraNearFar;
         uniform int uCameraIsPerspective;
+        uniform int uDispersalEnabled;
+        uniform float uDispersalStrength;
+        uniform float uDispersalNoiseScale;
+        uniform float uDispersalEdge;
+        uniform vec2 uDispersalScroll;
+        uniform float uDispersalTime;
+        uniform int uDispersalUseMap;
+        uniform sampler2D uDispersalMap;
+        uniform sampler2D uDispersalAmountCurve;
         varying vec2 vUv;
         varying vec4 vColor;
+        varying float vAgeT;
+        varying float vDispersalSeed;
+        ${PARTICLE_DISPERSAL_GLSL}
 
         float linearizeDepth(float depth01) {
           float near = uCameraNearFar.x;
@@ -2517,6 +2705,14 @@ class GPUParticleBackend implements ParticleBackend {
             float fade = clamp((sceneDepth - particleDepth) * max(0.0001, uSoftness), 0.0, 1.0);
             outColor.a *= fade;
           }
+          if (uDispersalEnabled == 1) {
+            vec2 scroll = uDispersalScroll * uDispersalTime;
+            vec2 dUv = vUv * uDispersalNoiseScale + vec2(vDispersalSeed * 17.413, vDispersalSeed * 63.291) + scroll;
+            float n = uDispersalUseMap == 1 ? texture2D(uDispersalMap, dUv).r : dispersalValueNoise(dUv);
+            float amount = texture2D(uDispersalAmountCurve, vec2(clamp(vAgeT, 0.0, 1.0), 0.5)).r;
+            float m = dispersalMask(n, amount, uDispersalEdge);
+            outColor.a *= mix(1.0, m, clamp(uDispersalStrength, 0.0, 1.0));
+          }
           if (outColor.a < 0.001) discard;
           gl_FragColor = outColor;
         }
@@ -2536,6 +2732,8 @@ class GPUParticleBackend implements ParticleBackend {
     this.material.uniforms.uCameraForward.value.copy(cameraForward);
     this.material.uniforms.uCameraNearFar.value.set(camera.near, camera.far);
     this.material.uniforms.uCameraIsPerspective.value = camera instanceof THREE.PerspectiveCamera ? 1 : 0;
+    const udt = this.material.uniforms.uDispersalTime;
+    if (udt) udt.value = this._elapsed;
   }
 }
 

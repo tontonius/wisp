@@ -48,7 +48,7 @@ Separate bottom-left Tweakpane used for recording-friendly camera motion. These 
 
 | Control | Effect |
 | --- | --- |
-| `click` | Selects the effect spawned by pointer clicks and buttons (including **Speed visual (CPU)**, **Candy vortex**, and **Shockwave** which now spawns a ring + center blast + shrapnel burst). |
+| `click` | Selects the effect spawned by pointer clicks and buttons (including **Speed visual (CPU)**, **Candy vortex**, **Blue flame (dispersal)** for `renderer.dispersal`, and **Shockwave** which spawns a ring + center blast + shrapnel burst). |
 | `Spawn at center` | Spawns the selected effect near the center of the scene. |
 | `Load selected into editor` | Copies a built-in preset into the custom editor controls. |
 | `Preview loop` | Spawns or respawns the custom effect as a loop preview. |

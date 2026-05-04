@@ -70,6 +70,7 @@ Pass the same renderer you pass into `ParticleSystemOptions` so validation can w
 | `renderer.softParticles` | If set, must be a boolean. |
 | `renderer.softness` | If set, must be finite and `> 0`. |
 | `renderer.sorting` | If set, must be `"none"`, `"distance"`, `"youngestFirst"`, or `"oldestFirst"`. |
+| `renderer.dispersal` | If set, must be an object; `enabled` must be a boolean when set; `strength` in `[0, 1]`; `noiseScale` finite and `> 0`; `edgeSoftness` finite and `> 0`; `scroll` a finite `[x, y]` tuple; `amount` a valid `Curve` when set. |
 | `limitVelocityOverLifetime.speed` | If set, must be a valid `Curve` (finite keyframe times/values, non-decreasing times). |
 | `limitVelocityOverLifetime.dampen` | If set, must be a finite number in `[0, 1]`. |
 | Curves | `overLifetime.size`, `overLifetime.opacity`, and each defined `velocityOverLifetime.linear.{x,y,z}` keyframe must have finite `time` and `value`; times must be **non-decreasing**. Empty or one-point curves are allowed. |

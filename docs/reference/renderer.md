@@ -22,6 +22,15 @@ renderer?: {
     frameOverLifetime?: boolean;
     randomStartFrame?: boolean;
   };
+  dispersal?: {
+    enabled?: boolean;
+    strength?: number;
+    amount?: Array<[number, number]>;
+    noiseScale?: number;
+    edgeSoftness?: number;
+    texture?: THREE.Texture;
+    scroll?: [number, number];
+  };
 };
 ```
 
@@ -39,6 +48,7 @@ renderer?: {
 | `softParticles` | `false` | Enables depth-based edge fading when a scene depth texture is provided at runtime. |
 | `softness` | `1.5` | Fade strength for soft particles. Higher values fade more aggressively at intersections. |
 | `textureSheet` | `undefined` | Optional flipbook/atlas settings. |
+| `dispersal` | `undefined` | Optional spatial dissolve of alpha over lifetime (see [Dispersal](#dispersal)). |
 
 ## Texture
 
@@ -155,12 +165,52 @@ Notes:
 - Pass `null` to `setSoftParticleDepthTexture(null)` to disable depth-fade at runtime.
 - For additive-only effects (sparks, glows), soft particles are often unnecessary.
 
+## Dispersal
+
+Optional **dispersal** breaks up each billboard’s alpha with a noise threshold that advances over normalized lifetime, instead of fading every pixel uniformly. It multiplies `overLifetime.opacity` (and sprite alpha): keep opacity flat and drive death mostly with dispersal, combine both for layered smoke, or use an `amount` curve so dissolve ramps only in the last part of life.
+
+```ts
+renderer: {
+  blendMode: "alpha",
+  dispersal: {
+    strength: 1,
+    noiseScale: 6,
+    edgeSoftness: 0.12,
+    scroll: [0.02, 0.01],
+    amount: [
+      [0, 0],
+      [0.65, 0],
+      [1, 1],
+    ],
+  },
+}
+```
+
+| Field | Default | Description |
+| --- | --- | --- |
+| `enabled` | `true` when `dispersal` is set | Set `false` to disable without removing the block. |
+| `strength` | `1` | How much the dissolve mask affects alpha (`0`..`1`). |
+| `amount` | Linear in age | Curve mapping normalized age → dissolve amount (`0` = no cutoff, `1` = full dissolve). |
+| `noiseScale` | `6` | UV scale for sampling procedural noise or `texture`. |
+| `edgeSoftness` | `0.12` | Width of the soft threshold band (must be greater than 0). |
+| `texture` | `undefined` | Optional map; **R** channel is used as noise. Omit for built-in value noise. |
+| `scroll` | `[0, 0]` | Added to sample UVs as `scroll * systemElapsedTime` for slow drift. |
+
+Notes:
+
+- Sampling uses the same UVs as the billboard (including texture sheet atlas UVs), so dissolve follows sprite space.
+- **Soft particles** run first; dispersal multiplies alpha afterward.
+- **Additive** blending still discards low alpha; holes can read as black against dark backgrounds—preview with your scene.
+- Texture ownership matches the main renderer texture: the library does not dispose your `dispersal.texture` unless you pass `disposeTexture: true` on `ParticleSystem.dispose` (and it is not the same object as `renderer.texture`).
+
 ## Shader Behavior
 
-The fragment shader samples `uTexture`, multiplies by vertex/lifetime color, and discards near-zero alpha:
+The fragment shader samples `uTexture`, multiplies by vertex/lifetime color, optionally applies soft particles, optionally multiplies alpha by the dispersal mask, then discards near-zero alpha:
 
 ```txt
 outColor = texture * particleColor
+soft depth fade (if enabled)
+dispersal mask on alpha (if enabled)
 discard if alpha < 0.001
 ```
 

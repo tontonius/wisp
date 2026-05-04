@@ -201,6 +201,14 @@ const customParams = {
   textureSheetFrameOverLifetime: false,
   softParticles: false,
   softness: 1.5,
+  dispersalEnabled: false,
+  dispersalStrength: 1,
+  dispersalNoiseScale: 6,
+  dispersalEdgeSoftness: 0.12,
+  dispersalScrollX: 0,
+  dispersalScrollY: 0,
+  dispersalMapSource: "procedural" as "procedural" | "demoSheet",
+  dispersalAmountLate: false,
   blendMode: "additive" as NonNullable<ParticlePreset["renderer"]>["blendMode"],
   align: "camera" as NonNullable<ParticlePreset["renderer"]>["align"],
   sorting: "distance" as NonNullable<ParticlePreset["renderer"]>["sorting"],
@@ -527,6 +535,26 @@ function makeCustomPreset(): ParticlePreset {
                 frameOverLifetime: customParams.textureSheetFrameOverLifetime,
               }
             : undefined,
+          dispersal:
+            customParams.dispersalEnabled && customParams.rendererEnabled
+              ? {
+                  strength: customParams.dispersalStrength,
+                  noiseScale: customParams.dispersalNoiseScale,
+                  edgeSoftness: customParams.dispersalEdgeSoftness,
+                  scroll: [customParams.dispersalScrollX, customParams.dispersalScrollY],
+                  texture:
+                    customParams.dispersalMapSource === "demoSheet" && demoBillboards
+                      ? demoBillboards.smokeDispersalSheet
+                      : undefined,
+                  amount: customParams.dispersalAmountLate
+                    ? [
+                        [0, 0],
+                        [0.65, 0],
+                        [1, 1],
+                      ]
+                    : undefined,
+                }
+              : undefined,
         }
       : undefined,
   };
@@ -543,9 +571,13 @@ function textureExportName(): string {
 function makeExportablePreset(): ParticlePreset {
   const preset = makeCustomPreset();
   if (preset.renderer) {
+    const dispersal = preset.renderer.dispersal;
     preset.renderer = {
       ...preset.renderer,
       texture: "__PARTICLE_TEXTURE__" as unknown as THREE.Texture,
+      dispersal: dispersal?.texture
+        ? { ...dispersal, texture: "__DISPERSAL_TEXTURE__" as unknown as THREE.Texture }
+        : dispersal,
     };
   }
   return preset;
@@ -553,15 +585,20 @@ function makeExportablePreset(): ParticlePreset {
 
 function makePresetCode(): string {
   const textureName = textureExportName();
-  const presetCode = JSON.stringify(makeExportablePreset(), null, 2).replace(/"__PARTICLE_TEXTURE__"/g, textureName);
+  let presetCode = JSON.stringify(makeExportablePreset(), null, 2).replace(/"__PARTICLE_TEXTURE__"/g, textureName);
+  presetCode = presetCode.replace(/"__DISPERSAL_TEXTURE__"/g, "demoDispersalMap");
   const textureHint =
     customParams.texture === "customImage"
       ? "// const customBillboardTexture = new THREE.TextureLoader().load(\"/particles/your-image.png\");\n// customBillboardTexture.colorSpace = THREE.SRGBColorSpace;\n\n"
       : customParams.texture === "demoSpriteSheet"
         ? "// const demoSpriteSheetTexture = new THREE.TextureLoader().load(\"/particles/your-spritesheet.png\");\n// demoSpriteSheetTexture.colorSpace = THREE.SRGBColorSpace;\n\n"
       : "";
+  const dispersalHint =
+    customParams.dispersalEnabled && customParams.dispersalMapSource === "demoSheet"
+      ? "// const demoDispersalMap = new THREE.TextureLoader().load(\"/path/to/dispersal-noise.png\");\n// demoDispersalMap.wrapS = demoDispersalMap.wrapT = THREE.RepeatWrapping;\n\n"
+      : "";
 
-  return `${textureHint}const customEffect: ParticlePreset = ${presetCode};`;
+  return `${textureHint}${dispersalHint}const customEffect: ParticlePreset = ${presetCode};`;
 }
 
 async function copyText(text: string): Promise<void> {
@@ -965,6 +1002,16 @@ function loadPresetIntoEditor(name: DemoEffectName): void {
   customParams.sorting = renderer?.sorting ?? "distance";
   customParams.softParticles = renderer?.softParticles ?? false;
   customParams.softness = renderer?.softness ?? 1.5;
+  const dispersal = renderer?.dispersal;
+  customParams.dispersalEnabled = !!dispersal && dispersal.enabled !== false;
+  customParams.dispersalStrength = dispersal?.strength ?? 1;
+  customParams.dispersalNoiseScale = dispersal?.noiseScale ?? 6;
+  customParams.dispersalEdgeSoftness = dispersal?.edgeSoftness ?? 0.12;
+  customParams.dispersalScrollX = dispersal?.scroll?.[0] ?? 0;
+  customParams.dispersalScrollY = dispersal?.scroll?.[1] ?? 0;
+  customParams.dispersalMapSource =
+    dispersal?.texture && demoBillboards && dispersal.texture === demoBillboards.smokeDispersalSheet ? "demoSheet" : "procedural";
+  customParams.dispersalAmountLate = !!dispersal?.amount?.some((row) => row[0] >= 0.5 && row[1] > 0);
   customParams.textureSheetEnabled = !!renderer?.textureSheet;
   customParams.textureSheetColumns = renderer?.textureSheet?.columns ?? 1;
   customParams.textureSheetRows = renderer?.textureSheet?.rows ?? 1;
@@ -1084,6 +1131,7 @@ bind(controlsFolder, "clickEffect", {
     "GPU storm": "gpuMagicStorm",
     "Speed visual (CPU)": "speedVisualDemo",
     "Candy vortex": "candyVortex",
+    "Blue flame (dispersal)": "blueFlameDispersal",
   },
 });
 controlsFolder.addButton({ title: "Spawn at center" }).on("click", () => spawnEffect(customParams.clickEffect, [0, 0, 0]));
@@ -1241,6 +1289,16 @@ bind(rendererFolder, "sorting", {
 });
 bind(rendererFolder, "softParticles", { label: "soft particles" });
 bind(rendererFolder, "softness", { min: 0.1, max: 8, step: 0.05 });
+
+const dispersalFolder = rendererFolder.addFolder({ title: "Dispersal", expanded: false }) as PaneLike;
+bind(dispersalFolder, "dispersalEnabled", { label: "enabled" });
+bind(dispersalFolder, "dispersalStrength", { label: "strength", min: 0, max: 1, step: 0.02 });
+bind(dispersalFolder, "dispersalNoiseScale", { label: "noise scale", min: 0.5, max: 24, step: 0.1 });
+bind(dispersalFolder, "dispersalEdgeSoftness", { label: "edge softness", min: 0.02, max: 0.5, step: 0.01 });
+bind(dispersalFolder, "dispersalScrollX", { label: "scroll x", min: -2, max: 2, step: 0.01 });
+bind(dispersalFolder, "dispersalScrollY", { label: "scroll y", min: -2, max: 2, step: 0.01 });
+bind(dispersalFolder, "dispersalMapSource", { label: "map", options: { Procedural: "procedural", "Demo sheet": "demoSheet" } });
+bind(dispersalFolder, "dispersalAmountLate", { label: "late dissolve curve" });
 
 const sheetFolder = rendererFolder.addFolder({ title: "Texture Sheet", expanded: true }) as PaneLike;
 bind(sheetFolder, "textureSheetEnabled", { label: "enabled" });

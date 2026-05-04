@@ -106,6 +106,16 @@ function validateFiniteVec3(path: string, value: unknown): string[] {
   return errors;
 }
 
+function validateFiniteVec2(path: string, value: unknown): string[] {
+  if (!Array.isArray(value) || value.length !== 2) {
+    return [`${path}: must be a [x, y] tuple when set.`];
+  }
+  const errors: string[] = [];
+  if (!isFiniteNumber(value[0])) errors.push(`${path}[0]: must be a finite number.`);
+  if (!isFiniteNumber(value[1])) errors.push(`${path}[1]: must be a finite number.`);
+  return errors;
+}
+
 export function collectParticlePresetIssues(
   preset: ParticlePreset,
   context: ParticlePresetValidationContext = {}
@@ -266,6 +276,36 @@ export function collectParticlePresetIssues(
     }
     if (!Number.isInteger(rows) || rows < 1 || !isFiniteNumber(rows)) {
       errors.push("renderer.textureSheet.rows: must be an integer >= 1.");
+    }
+  }
+
+  const dispersal = preset.renderer?.dispersal;
+  if (dispersal !== undefined) {
+    if (typeof dispersal !== "object" || dispersal === null) {
+      errors.push("renderer.dispersal: must be an object when set.");
+    } else {
+      if (dispersal.enabled !== undefined && typeof dispersal.enabled !== "boolean") {
+        errors.push("renderer.dispersal.enabled: must be a boolean when set.");
+      }
+      if (dispersal.strength !== undefined) {
+        if (!isFiniteNumber(dispersal.strength) || dispersal.strength < 0 || dispersal.strength > 1) {
+          errors.push("renderer.dispersal.strength: must be a finite number in [0, 1] when set.");
+        }
+      }
+      if (dispersal.noiseScale !== undefined) {
+        if (!isFiniteNumber(dispersal.noiseScale) || dispersal.noiseScale <= 0) {
+          errors.push("renderer.dispersal.noiseScale: must be a finite number > 0 when set.");
+        }
+      }
+      if (dispersal.edgeSoftness !== undefined) {
+        if (!isFiniteNumber(dispersal.edgeSoftness) || dispersal.edgeSoftness <= 0) {
+          errors.push("renderer.dispersal.edgeSoftness: must be a finite number > 0 when set.");
+        }
+      }
+      if (dispersal.scroll !== undefined) {
+        errors.push(...validateFiniteVec2("renderer.dispersal.scroll", dispersal.scroll));
+      }
+      errors.push(...validateCurve("renderer.dispersal.amount", dispersal.amount));
     }
   }
 

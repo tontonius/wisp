@@ -27,7 +27,8 @@ export type DemoEffectName =
   | "candyVortex"
   | "speedVisualDemo"
   | "customEffect"
-  | "explosionCombo";
+  | "explosionCombo"
+  | "blueFlameDispersal";
 
 type DemoPresetTextures = {
   softDisc: THREE.Texture;
@@ -121,6 +122,17 @@ export function createDemoPresets(textures: DemoPresetTextures): {
       depthWrite: false,
       softParticles: true,
       softness: 1.5,
+      dispersal: {
+        strength: 0.85,
+        noiseScale: 5,
+        edgeSoftness: 0.1,
+        scroll: [0.03, 0.02],
+        amount: [
+          [0, 0],
+          [0.55, 0],
+          [1, 1],
+        ],
+      },
     },
   };
 
@@ -1059,6 +1071,87 @@ export function createDemoPresets(textures: DemoPresetTextures): {
     },
   };
 
+  /** Blue torch-style flame: additive-style color ramp on alpha blend, driven by `renderer.dispersal` breakup. */
+  const blueFlameDispersal: ParticlePreset = {
+    name: "Blue flame (dispersal)",
+    simulation: "cpu",
+    maxParticles: 512,
+    duration: 1.25,
+    loop: true,
+    prewarm: false,
+    autoDispose: false,
+    emitter: { type: "cone", radius: 0.1, angle: 22, length: 3.05 },
+    emission: { rateOverTime: 140 },
+    start: {
+      lifetime: [0.6, 1.8],
+      speed: [0, 0],
+      size: [0.05, 0.22],
+      color: "#ffffff",
+      opacity: 1,
+      velocity: [
+        [0, 0, 0],
+        [0, 0.4, 0],
+      ],
+      rotation: [0, Math.PI * 2],
+      angularVelocity: 0,
+    },
+    forces: {
+      acceleration: [0, 0.87, 0],
+      drag: 0.45,
+      vortex: { center: [0, 0, 0], axis: [0, 1, 0], orbitalSpeed: 0, inward: 0, upward: 0 },
+      noise: { strength: 0.43, frequency: 2.3, scroll: [0.2, 0.35, 0.17], octaves: 2, lacunarity: 2, persistence: 0.5 },
+    },
+    velocityOverLifetime: {
+      linear: {
+        x: [
+          [0, 0],
+          [1, 0],
+        ],
+        y: [
+          [0, 0.75],
+          [1, -0.35],
+        ],
+        z: [
+          [0, 0],
+          [1, 0],
+        ],
+      },
+    },
+    overLifetime: {
+      size: [
+        [0, 0],
+        [0.18, 1],
+        [1, 2.45],
+      ],
+      opacity: [
+        [0, 0],
+        [0.12, 1],
+        [0.92, 1],
+        [1, 0],
+      ],
+      color: [
+        [0, "#ffffff"],
+        [0.45, "#70e7ff"],
+        [1, "#ff7ad9"],
+      ],
+    },
+    renderer: {
+      texture: hardDisc,
+      blendMode: "alpha",
+      align: "camera",
+      sorting: "distance",
+      depthWrite: false,
+      softParticles: false,
+      softness: 1.5,
+      dispersal: {
+        strength: 1,
+        noiseScale: 3.1,
+        edgeSoftness: 0.15,
+        scroll: [0, 0],
+      },
+    },
+  };
+
   const worldPresets: Record<string, ParticlePreset> = {
     muzzleFlash,
     bulletImpactSparks,
@@ -1088,6 +1181,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
     gpuMagicStorm,
     speedVisualDemo,
     candyVortex,
+    blueFlameDispersal,
   };
 
   const editablePresets: Partial<Record<DemoEffectName, ParticlePreset>> = {
@@ -1114,6 +1208,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
     gpuMagicStorm,
     speedVisualDemo,
     candyVortex,
+    blueFlameDispersal,
   };
 
   return { worldPresets, editablePresets };
