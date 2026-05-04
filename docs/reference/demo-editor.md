@@ -8,6 +8,22 @@ The demo in `demo/main.ts` includes a Tweakpane editor for creating and copying 
 | --- | --- |
 | `?pool=1` | Enables `ParticleWorld` inactive pooling (`pooling: true`) so repeated one-shot spawns reuse GPU/CPU backends. |
 
+## Billboard art (`demo/billboards/`)
+
+On startup, `demo/main.ts` loads PNGs via `loadDemoBillboardTextures` from `demo/billboard-textures.ts` and passes them into `createDemoPresets` as `textures.billboards`. If loading fails (network, missing files), the demo logs a warning and presets fall back to the procedural disc textures.
+
+Those PNGs are treated as **white (or light) art on black**: each bitmap is rasterized to a canvas and **alpha is derived from luminance** (`alpha *= luminance/255`), matching the Tweakpane custom image option “alpha from luminance” in `main.ts`. True RGBA assets still work; premultiplied alpha is respected via the existing alpha channel in that formula.
+
+| File | Layout (columns × rows) | Used by (when loaded) |
+| --- | --- | --- |
+| `smoke_puff.png` | Single image | `smokePuff` |
+| `1x_4_smoke_puff_sheet.png` | 4 × 1 | `shockwaveCenterExplosion` (`textureSheet.randomFrame`) |
+| `3x4_smoke_puff_dispersal.png` | 4 × 3 (from pixel grid) | `magicAuraGpu` (`textureSheet.randomFrame`) |
+| `leaves_sprite_sheet.png` | 4 × 1 | `tornadoDemo` |
+| `snowflake_sprite_sheet.png` | 4 × 1 | `snowGpu` |
+
+To reuse the same resolved URLs elsewhere (e.g. your own loader), import `demoBillboardUrls` from `demo/billboard-textures.ts` (built with `new URL(..., import.meta.url)` so Vite includes the files in the bundle).
+
 ## Scene Tab
 
 Inside the main Tweakpane as a `Scene` tab next to `Particles`. Does not affect preset export.

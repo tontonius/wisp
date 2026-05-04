@@ -17,7 +17,15 @@ import {
   sphereCollisionCenter,
   sphereCollisionRadius,
 } from "./presets";
+import { loadDemoBillboardTextures, type DemoBillboardTextureSet } from "./billboard-textures";
 import "./style.css";
+
+let demoBillboards: DemoBillboardTextureSet | undefined;
+try {
+  demoBillboards = await loadDemoBillboardTextures(new THREE.TextureLoader());
+} catch (err) {
+  console.warn("[demo] Billboard textures from demo/billboards/ failed to load; presets use procedural discs.", err);
+}
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 
@@ -578,7 +586,12 @@ function showCopyStatus(message: string): void {
     if (copyStatus.textContent === message) copyStatus.textContent = "";
   }, 2200);
 }
-const { worldPresets, editablePresets } = createDemoPresets({ softDisc, hardDisc, spark });
+const { worldPresets, editablePresets } = createDemoPresets({
+  softDisc,
+  hardDisc,
+  spark,
+  billboards: demoBillboards,
+});
 
 const particleWorldOptions = {
   renderer,

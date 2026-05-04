@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { ParticlePreset } from "../src";
+import type { DemoBillboardTextureSet } from "./billboard-textures";
 
 export type DemoEffectName =
   | "muzzleFlash"
@@ -32,6 +33,8 @@ type DemoPresetTextures = {
   softDisc: THREE.Texture;
   hardDisc: THREE.Texture;
   spark: THREE.Texture;
+  /** Loaded in `demo/main.ts` from `demo/billboards/*.png`. When set, several showcase presets use these atlases. */
+  billboards?: DemoBillboardTextureSet;
 };
 
 export const sphereCollisionCenter: [number, number, number] = [0, 1.2, 0];
@@ -43,7 +46,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
   worldPresets: Record<string, ParticlePreset>;
   editablePresets: Partial<Record<DemoEffectName, ParticlePreset>>;
 } {
-  const { softDisc, hardDisc, spark } = textures;
+  const { softDisc, hardDisc, spark, billboards: bb } = textures;
 
   const muzzleFlash: ParticlePreset = {
     maxParticles: 40,
@@ -112,7 +115,13 @@ export function createDemoPresets(textures: DemoPresetTextures): {
       opacity: [[0, 0], [0.14, 1], [1, 0]],
       color: [[0, "#aaaaaa"], [1, "#252832"]],
     },
-    renderer: { texture: softDisc, blendMode: "alpha", depthWrite: false, softParticles: true, softness: 1.5 },
+    renderer: {
+      texture: bb?.smokePuff ?? softDisc,
+      blendMode: "alpha",
+      depthWrite: false,
+      softParticles: true,
+      softness: 1.5,
+    },
   };
 
   const pickupSparkle: ParticlePreset = {
@@ -273,7 +282,13 @@ export function createDemoPresets(textures: DemoPresetTextures): {
       opacity: [[0, 0], [0.08, 1], [0.84, 0.78], [1, 0]],
       color: [[0, "#e4ebf3"], [0.35, "#9aa4b1"], [1, "#474f58"]],
     },
-    renderer: { texture: softDisc, blendMode: "alpha", depthWrite: false, depthTest: true },
+    renderer: {
+      texture: bb?.leavesSpriteSheet ?? softDisc,
+      blendMode: "alpha",
+      depthWrite: false,
+      depthTest: true,
+      ...(bb ? { textureSheet: { columns: 4, rows: 1, randomFrame: true } } : {}),
+    },
   };
 
   const orbitingEmitterWorldDemo: ParticlePreset = {
@@ -654,7 +669,8 @@ export function createDemoPresets(textures: DemoPresetTextures): {
       ],
     },
     renderer: {
-      texture: softDisc,
+      texture: bb?.smokePuffSheet1x4 ?? softDisc,
+      ...(bb ? { textureSheet: { columns: 4, rows: 1, randomFrame: true } } : {}),
       blendMode: "alpha",
       align: "camera",
       depthWrite: false,
@@ -730,13 +746,14 @@ export function createDemoPresets(textures: DemoPresetTextures): {
       color: [[0, "#ffffff"], [0.16846354166666666, "#ffec70"], [0.8229427083333334, "#a46f4c"]],
     },
     renderer: {
-      texture: softDisc,
+      texture: bb?.smokePuffSheet1x4 ?? softDisc,
       blendMode: "alpha",
       align: "camera",
       sorting: "distance",
       depthWrite: false,
       softParticles: true,
       softness: 1.5,
+      ...(bb ? { textureSheet: { columns: 4, rows: 1, randomFrame: true } } : {}),
     },
   };
 
@@ -833,7 +850,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
       lifetime: [5, 9],
       speed: 0,
       size: [0.035, 0.12],
-      color: ["#ffffff", "#cce9ff"],
+      color: ["#ffffff", "#f0f6fb"],
       opacity: [0.45, 0.9],
       velocity: [[-0.45, -0.85, -0.25], [0.45, -1.8, 0.25]],
       rotation: [0, Math.PI * 2],
@@ -843,9 +860,14 @@ export function createDemoPresets(textures: DemoPresetTextures): {
     overLifetime: {
       size: [[0, 0.7], [0.5, 1], [1, 0.9]],
       opacity: [[0, 0], [0.08, 1], [0.86, 1], [1, 0]],
-      color: [[0, "#ffffff"], [1, "#d8f2ff"]],
+      color: [[0, "#ffffff"], [1, "#edf3f7"]],
     },
-    renderer: { texture: softDisc, blendMode: "alpha", depthWrite: false },
+    renderer: {
+      texture: bb?.snowflakeSpriteSheet ?? softDisc,
+      blendMode: "alpha",
+      depthWrite: false,
+      ...(bb ? { textureSheet: { columns: 4, rows: 1, randomFrame: true } } : {}),
+    },
   };
 
   const magicAuraGpu: ParticlePreset = {
@@ -875,7 +897,12 @@ export function createDemoPresets(textures: DemoPresetTextures): {
       opacity: [[0, 0], [0.16, 1], [0.82, 0.75], [1, 0]],
       color: [[0, "#ffffff"], [0.45, "#70e7ff"], [1, "#b388ff"]],
     },
-    renderer: { texture: softDisc, blendMode: "additive", depthWrite: false },
+    renderer: {
+      texture: bb?.smokeDispersalSheet ?? softDisc,
+      blendMode: "additive",
+      depthWrite: false,
+      ...(bb ? { textureSheet: { columns: 4, rows: 3, randomFrame: false, frameOverLifetime: true } } : {}),
+    },
   };
 
   const gpuMagicStorm: ParticlePreset = {
