@@ -757,37 +757,35 @@ export function createDemoPresets(textures: DemoPresetTextures): {
       bursts: [
         {
           time: 0,
-          count: [4, 5],
+          count: [5, 10],
         },
       ],
     },
     start: {
-      lifetime: [2, 2.25],
+      lifetime: [1, 1.25],
       speed: [9.5, 13.5],
-      size: [0.3, 0.55],
+      size: [0.1, 0.1],
       color: ["#ffd88f", "#b87744"],
       opacity: [0.95, 1],
       velocity: [[-2.8, 2.8, -2.8], [2.8, 5.8, 2.8]],
       rotation: [0, Math.PI * 2],
-      angularVelocity: [-18, 18],
     },
     forces: {
       acceleration: [0, -12.5, 0],
-      drag: 0.8,
-    },
-    rotationBySpeed: {
-      speedRange: [0, 14],
-      angularVelocity: [[0, 1], [1, 22]],
+      drag: 1,
     },
     overLifetime: {
       size: [[0, 1], [0.85, 0.9], [1, 0.35]],
       opacity: [[0, 1], [0.8, 0.85], [1, 0]],
-      color: [[0, "#fff0c2"], [0.45, "#f2aa63"], [1, "#6b3d24"]],
+      color: [[0, "#ffffff"], [0.45, "#fff0c2"], [0.65, "#f2aa63"], [1, "#6b3d24"]],
     },
     renderer: {
       texture: hardDisc,
+      type: "stretchedBillboard",
+      stretchFactor: 1,
+      stretchMaxScale: 3,
       blendMode: "alpha",
-      align: "camera",
+      align: "velocity",
       depthWrite: false,
     },
   };
