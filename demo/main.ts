@@ -728,6 +728,12 @@ function spawnEffect(name: DemoEffectName, position: THREE.Vector3 | [number, nu
     particles.spawn("smokePuff", { position: smokePosition.add(new THREE.Vector3(0, 0.15, 0)) });
     return;
   }
+  if (name === "shockwave") {
+    particles.spawn("shockwave", { position });
+    particles.spawn("shockwaveCenterExplosion", { position });
+    particles.spawn("shockwaveShrapnel", { position });
+    return;
+  }
 
   const spawnPosition = Array.isArray(position) ? new THREE.Vector3(...position) : position.clone();
   if (name === "rainGpu" || name === "snowGpu") spawnPosition.y = 6.5;

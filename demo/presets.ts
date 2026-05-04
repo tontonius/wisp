@@ -615,13 +615,13 @@ export function createDemoPresets(textures: DemoPresetTextures): {
       bursts: [
         {
           time: 0,
-          count: [20, 30],
+          count: [30, 40],
         },
       ],
     },
     start: {
       lifetime: [1, 1.76],
-      speed: [14.13, 16.3],
+      speed: [20, 20],
       size: [1.265, 1.98],
       color: "#ffffff",
       opacity: [1, 1],
@@ -631,7 +631,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
     },
     forces: {
       acceleration: [0, 2.95, 0],
-      drag: 6.52,
+      drag: 4.52,
       noise: {
         strength: 0.28,
         frequency: 4.5,
@@ -660,6 +660,135 @@ export function createDemoPresets(textures: DemoPresetTextures): {
       depthWrite: false,
       softParticles: true,
       softness: 1.4,
+    },
+  };
+
+  const shockwaveCenterExplosion: ParticlePreset = {
+    simulation: "cpu",
+    maxParticles: 512,
+    duration: 2,
+    loop: false,
+    prewarm: false,
+    autoDispose: false,
+    debug: false,
+    gpu: {
+      maxSpawnPerFrame: 512,
+    },
+    emitter: {
+      type: "hemisphere",
+      radius: 0,
+      emitFrom: "volume",
+    },
+    emission: {
+      bursts: [
+        {
+          time: 0,
+          count: [30, 40],
+        },
+      ],
+    },
+    start: {
+      lifetime: [1.54, 1.8],
+      speed: [20, 20],
+      size: [1.59, 1.675],
+      color: "#ffffff",
+      opacity: [1, 1],
+      velocity: [[-3.65, 0, -3.65], [3.65, 0.9, 3.65]],
+      rotation: [0, Math.PI * 2],
+      angularVelocity: 0,
+    },
+    forces: {
+      acceleration: [0, -0.45, 0],
+      drag: 12.83,
+      noise: {
+        strength: 0.28,
+        frequency: 4.5,
+        scroll: [0.2, 0.35, 0.17],
+        octaves: 2,
+        lacunarity: 2,
+        persistence: 0.5,
+      },
+    },
+    limitVelocityOverLifetime: {
+      speed: [[0, 30], [1, 0]],
+      dampen: 1,
+    },
+    velocityOverLifetime: {
+      linear: {
+        x: [[0, 0], [1, 0]],
+        y: [[0, 0.75], [1, -0.35]],
+        z: [[0, 0], [1, 0]],
+      },
+    },
+    rotationBySpeed: {
+      speedRange: [0, 8],
+      angularVelocity: [[0, 0.65], [1, 17.6]],
+    },
+    overLifetime: {
+      size: [[0, 0], [0.18, 1], [1, 1.25]],
+      opacity: [[0, 0], [0.12, 1], [0.95, 1], [1, 0]],
+      color: [[0, "#ffffff"], [0.16846354166666666, "#ffec70"], [0.8229427083333334, "#a46f4c"]],
+    },
+    renderer: {
+      texture: softDisc,
+      blendMode: "alpha",
+      align: "camera",
+      sorting: "distance",
+      depthWrite: false,
+      softParticles: true,
+      softness: 1.5,
+    },
+  };
+
+  const shockwaveShrapnel: ParticlePreset = {
+    simulation: "cpu",
+    maxParticles: 32,
+    duration: 0.9,
+    loop: false,
+    prewarm: false,
+    autoDispose: false,
+    emitter: {
+      type: "cone",
+      radius: 0.02,
+      angle: 60,
+      length: 1,
+    },
+    emission: {
+      bursts: [
+        {
+          time: 0,
+          count: [4, 5],
+        },
+      ],
+    },
+    start: {
+      lifetime: [2, 2.25],
+      speed: [9.5, 13.5],
+      size: [0.3, 0.55],
+      color: ["#ffd88f", "#b87744"],
+      opacity: [0.95, 1],
+      velocity: [[-2.8, 2.8, -2.8], [2.8, 5.8, 2.8]],
+      rotation: [0, Math.PI * 2],
+      angularVelocity: [-18, 18],
+    },
+    forces: {
+      acceleration: [0, -12.5, 0],
+      drag: 0.8,
+    },
+    rotationBySpeed: {
+      speedRange: [0, 14],
+      angularVelocity: [[0, 1], [1, 22]],
+    },
+    overLifetime: {
+      size: [[0, 1], [0.85, 0.9], [1, 0.35]],
+      opacity: [[0, 1], [0.8, 0.85], [1, 0]],
+      color: [[0, "#fff0c2"], [0.45, "#f2aa63"], [1, "#6b3d24"]],
+    },
+    renderer: {
+      texture: hardDisc,
+      blendMode: "alpha",
+      align: "camera",
+      depthWrite: false,
     },
   };
 
@@ -929,6 +1058,8 @@ export function createDemoPresets(textures: DemoPresetTextures): {
     tornadoDemo,
     orbitingEmitterWorldDemo,
     shockwave,
+    shockwaveCenterExplosion,
+    shockwaveShrapnel,
     gpuMagicStorm,
     speedVisualDemo,
     candyVortex,
