@@ -677,12 +677,12 @@ const shockwave: ParticlePreset = {
     size: [1.265, 1.98],
     color: "#ffffff",
     opacity: [1, 1],
-    velocity: [[-0.15, 0, -0.15], [0.15, 0.9, 0.15]],
+    velocity: [[-0.15, 0, -0.15], [0.15, 0, 0.15]],
     rotation: [0, Math.PI * 2],
     angularVelocity: [-1.3, 1.3],
   },
   forces: {
-    acceleration: [0, 0.55, 0],
+    acceleration: [0, 2.95, 0],
     drag: 6.52,
     noise: {
       strength: 0.28,
@@ -691,8 +691,8 @@ const shockwave: ParticlePreset = {
   },
   overLifetime: {
     size: [[0, 0], [0.12, 1],  [1, 0]],
-    opacity: [[0, 0], [0.12, 1], [1, 0]],
-    color: [[0, "#ffdf77"], [0.45, "#9c744f"], [1, "#75433a"]],
+    opacity: [[0, 0], [0.12, 1], [0.9, 1], [1, 0]],
+    color: [[0, "#ffffff"],[0.05, "#fff39b"], [0.20, "#f4a412"],[0.55,"#b37a2f"],[0.75,"#9b4b33"], [1, "#303030"]],
   },
   renderer: {
     texture: softDisc,
