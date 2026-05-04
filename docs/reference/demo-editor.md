@@ -32,7 +32,7 @@ Separate bottom-left Tweakpane used for recording-friendly camera motion. These 
 
 | Control | Effect |
 | --- | --- |
-| `click` | Selects the effect spawned by pointer clicks and buttons (including the orbiting world-space emitter demo preset). |
+| `click` | Selects the effect spawned by pointer clicks and buttons (including the orbiting world-space emitter demo preset, **Candy vortex**, and other entries from `demo/presets.ts`). |
 | `Spawn at center` | Spawns the selected effect near the center of the scene. |
 | `Load selected into editor` | Copies a built-in preset into the custom editor controls. |
 | `Preview loop` | Spawns or respawns the custom effect as a loop preview. |
@@ -135,6 +135,18 @@ velocityOverLifetime: {
 | `acceleration y` | `forces.acceleration[1]` |
 | `acceleration z` | `forces.acceleration[2]` |
 | `drag` | `forces.drag` |
+
+## Vortex Folder
+
+| Control | Preset Field |
+| --- | --- |
+| `center x/y/z` | `forces.vortex.center` |
+| `axis x/y/z` | `forces.vortex.axis` |
+| `orbital` | `forces.vortex.orbitalSpeed` |
+| `inward` | `forces.vortex.inward` |
+| `upward` | `forces.vortex.upward` |
+
+Behavior (axis normalization, how values combine with acceleration and noise, near-axis edge case): see [Forces reference — Vortex](forces.md#vortex).
 
 ## Limit Velocity Over Lifetime Folder
 

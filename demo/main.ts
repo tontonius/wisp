@@ -248,6 +248,15 @@ const customParams = {
   noiseOctaves: 2,
   noiseLacunarity: 2,
   noisePersistence: 0.5,
+  vortexCenterX: 0,
+  vortexCenterY: 0,
+  vortexCenterZ: 0,
+  vortexAxisX: 0,
+  vortexAxisY: 1,
+  vortexAxisZ: 0,
+  vortexOrbitalSpeed: 0,
+  vortexInward: 0,
+  vortexUpward: 0,
   grow: 1.25,
 };
 
@@ -416,6 +425,13 @@ function makeCustomPreset(): ParticlePreset {
       ? {
           acceleration: [customParams.accelerationX, customParams.accelerationY, customParams.accelerationZ],
           drag: customParams.drag,
+          vortex: {
+            center: [customParams.vortexCenterX, customParams.vortexCenterY, customParams.vortexCenterZ],
+            axis: [customParams.vortexAxisX, customParams.vortexAxisY, customParams.vortexAxisZ],
+            orbitalSpeed: customParams.vortexOrbitalSpeed,
+            inward: customParams.vortexInward,
+            upward: customParams.vortexUpward,
+          },
           noise: {
             strength: customParams.noiseStrength,
             frequency: customParams.noiseFrequency,
@@ -817,6 +833,15 @@ function loadPresetIntoEditor(name: DemoEffectName): void {
   customParams.noiseOctaves = forces?.noise?.octaves ?? 2;
   customParams.noiseLacunarity = forces?.noise?.lacunarity ?? 2;
   customParams.noisePersistence = forces?.noise?.persistence ?? 0.5;
+  customParams.vortexCenterX = forces?.vortex?.center?.[0] ?? 0;
+  customParams.vortexCenterY = forces?.vortex?.center?.[1] ?? 0;
+  customParams.vortexCenterZ = forces?.vortex?.center?.[2] ?? 0;
+  customParams.vortexAxisX = forces?.vortex?.axis?.[0] ?? 0;
+  customParams.vortexAxisY = forces?.vortex?.axis?.[1] ?? 1;
+  customParams.vortexAxisZ = forces?.vortex?.axis?.[2] ?? 0;
+  customParams.vortexOrbitalSpeed = forces?.vortex?.orbitalSpeed ?? 0;
+  customParams.vortexInward = forces?.vortex?.inward ?? 0;
+  customParams.vortexUpward = forces?.vortex?.upward ?? 0;
   const limitVelocity = preset.limitVelocityOverLifetime;
   customParams.limitVelocityEnabled = !!limitVelocity;
   customParams.limitSpeedStart = curveEndpoint(limitVelocity?.speed, "first");
@@ -957,11 +982,13 @@ bind(controlsFolder, "clickEffect", {
     Explosion: "explosion",
     Shockwave: "shockwave",
     "Magic aura": "magicAura",
+    Tornado: "tornadoDemo",
     "Orbiting emitter (world space)": "orbitingEmitterWorldDemo",
     "Rain GPU": "rainGpu",
     "Snow GPU": "snowGpu",
     "Magic aura GPU": "magicAuraGpu",
     "GPU storm": "gpuMagicStorm",
+    "Candy vortex": "candyVortex",
   },
 });
 controlsFolder.addButton({ title: "Spawn at center" }).on("click", () => spawnEffect(customParams.clickEffect, [0, 0, 0]));
@@ -1043,6 +1070,16 @@ bind(forceFolder, "accelerationX", { label: "acceleration x", min: -10, max: 10,
 bind(forceFolder, "accelerationY", { label: "acceleration y", min: -10, max: 10, step: 0.01 });
 bind(forceFolder, "accelerationZ", { label: "acceleration z", min: -10, max: 10, step: 0.01 });
 bind(forceFolder, "drag", { min: 0, max: 20, step: 0.01 });
+const vortexFolder = particlesPane.addFolder({ title: "Vortex", expanded: false }) as PaneLike;
+bind(vortexFolder, "vortexCenterX", { label: "center x", min: -20, max: 20, step: 0.01 });
+bind(vortexFolder, "vortexCenterY", { label: "center y", min: -20, max: 20, step: 0.01 });
+bind(vortexFolder, "vortexCenterZ", { label: "center z", min: -20, max: 20, step: 0.01 });
+bind(vortexFolder, "vortexAxisX", { label: "axis x", min: -1, max: 1, step: 0.01 });
+bind(vortexFolder, "vortexAxisY", { label: "axis y", min: -1, max: 1, step: 0.01 });
+bind(vortexFolder, "vortexAxisZ", { label: "axis z", min: -1, max: 1, step: 0.01 });
+bind(vortexFolder, "vortexOrbitalSpeed", { label: "orbital", min: -30, max: 30, step: 0.01 });
+bind(vortexFolder, "vortexInward", { label: "inward", min: -20, max: 20, step: 0.01 });
+bind(vortexFolder, "vortexUpward", { label: "upward", min: -20, max: 20, step: 0.01 });
 const limitVelocityFolder = particlesPane.addFolder({ title: "Limit Velocity over Lifetime", expanded: false }) as PaneLike;
 bind(limitVelocityFolder, "limitVelocityEnabled", { label: "enabled" });
 bind(limitVelocityFolder, "limitSpeedStart", { label: "speed at birth", min: 0, max: 30, step: 0.01 });

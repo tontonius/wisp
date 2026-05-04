@@ -135,6 +135,18 @@ export type ParticlePreset = {
   forces?: {
     acceleration?: Vec3Tuple;
     drag?: number;
+    vortex?: {
+      /** Center of rotation in simulation space. */
+      center?: Vec3Tuple;
+      /** Vortex axis direction. Default `[0, 1, 0]`. */
+      axis?: Vec3Tuple;
+      /** Tangential acceleration around the axis. */
+      orbitalSpeed?: number;
+      /** Inward acceleration toward the axis. */
+      inward?: number;
+      /** Axial acceleration along the axis. */
+      upward?: number;
+    };
     noise?: {
       strength?: number;
       frequency?: number;
@@ -1075,6 +1087,14 @@ class CPUParticleBackend implements ParticleBackend {
     const forces = this.preset.forces ?? {};
     const acceleration = tempVectorA.set(...(forces.acceleration ?? [0, 0, 0]));
     const drag = forces.drag ?? 0;
+    const vortex = forces.vortex;
+    const vortexCenter = vortex?.center ?? [0, 0, 0];
+    const vortexAxis = tempVectorD.set(...(vortex?.axis ?? [0, 1, 0]));
+    if (vortexAxis.lengthSq() < 1e-8) vortexAxis.set(0, 1, 0);
+    else vortexAxis.normalize();
+    const vortexOrbital = vortex?.orbitalSpeed ?? 0;
+    const vortexInward = vortex?.inward ?? 0;
+    const vortexUpward = vortex?.upward ?? 0;
     const noise = forces.noise;
     const noiseStrength = noise?.strength ?? 0;
     const noiseFrequency = noise?.frequency ?? 1;
@@ -1095,6 +1115,27 @@ class CPUParticleBackend implements ParticleBackend {
       }
 
       particle.velocity.addScaledVector(acceleration, dt);
+
+      if (vortexOrbital !== 0 || vortexInward !== 0 || vortexUpward !== 0) {
+        const radial = tempVectorA.set(
+          particle.position.x - vortexCenter[0],
+          particle.position.y - vortexCenter[1],
+          particle.position.z - vortexCenter[2]
+        );
+        const axialDist = radial.dot(vortexAxis);
+        const radialPlane = tempVectorB.copy(radial).addScaledVector(vortexAxis, -axialDist);
+        const radialLen = radialPlane.length();
+        if (radialLen > 1e-5) {
+          radialPlane.multiplyScalar(1 / radialLen);
+          const tangent = tempVectorC.copy(vortexAxis).cross(radialPlane);
+          if (tangent.lengthSq() > 1e-8) {
+            tangent.normalize();
+            if (vortexOrbital !== 0) particle.velocity.addScaledVector(tangent, vortexOrbital * dt);
+          }
+          if (vortexInward !== 0) particle.velocity.addScaledVector(radialPlane, -vortexInward * dt);
+        }
+        if (vortexUpward !== 0) particle.velocity.addScaledVector(vortexAxis, vortexUpward * dt);
+      }
 
       if (noiseStrength > 0) {
         const f = noiseFrequency;
@@ -1830,6 +1871,16 @@ class GPUParticleBackend implements ParticleBackend {
     u.uColorMax.value.copy(colorMax);
     u.uAcceleration.value.set(...(forces.acceleration ?? [0, 0, 0]));
     u.uDrag.value = forces.drag ?? 0;
+    const vortex = forces.vortex;
+    const vortexAxis = tempVectorA.set(...(vortex?.axis ?? [0, 1, 0]));
+    if (vortexAxis.lengthSq() < 1e-8) vortexAxis.set(0, 1, 0);
+    else vortexAxis.normalize();
+    u.uVortexEnabled.value = vortex ? 1 : 0;
+    u.uVortexCenter.value.set(...(vortex?.center ?? [0, 0, 0]));
+    u.uVortexAxis.value.copy(vortexAxis);
+    u.uVortexOrbitalSpeed.value = vortex?.orbitalSpeed ?? 0;
+    u.uVortexInward.value = vortex?.inward ?? 0;
+    u.uVortexUpward.value = vortex?.upward ?? 0;
     u.uNoiseStrength.value = forces.noise?.strength ?? 0;
     u.uNoiseFrequency.value = forces.noise?.frequency ?? 1;
     u.uNoiseScroll.value.set(...(forces.noise?.scroll ?? [0.2, 0.35, 0.17]));
@@ -1880,6 +1931,12 @@ class GPUParticleBackend implements ParticleBackend {
         uColorMax: { value: new THREE.Color("#ffffff") },
         uAcceleration: { value: new THREE.Vector3() },
         uDrag: { value: 0 },
+        uVortexEnabled: { value: 0 },
+        uVortexCenter: { value: new THREE.Vector3() },
+        uVortexAxis: { value: new THREE.Vector3(0, 1, 0) },
+        uVortexOrbitalSpeed: { value: 0 },
+        uVortexInward: { value: 0 },
+        uVortexUpward: { value: 0 },
         uNoiseStrength: { value: 0 },
         uNoiseFrequency: { value: 1 },
         uNoiseScroll: { value: new THREE.Vector3(0.2, 0.35, 0.17) },
@@ -1938,6 +1995,12 @@ class GPUParticleBackend implements ParticleBackend {
 
         uniform vec3 uAcceleration;
         uniform float uDrag;
+        uniform int uVortexEnabled;
+        uniform vec3 uVortexCenter;
+        uniform vec3 uVortexAxis;
+        uniform float uVortexOrbitalSpeed;
+        uniform float uVortexInward;
+        uniform float uVortexUpward;
         uniform float uNoiseStrength;
         uniform float uNoiseFrequency;
         uniform vec3 uNoiseScroll;
@@ -2085,6 +2148,23 @@ class GPUParticleBackend implements ParticleBackend {
           }
 
           velocity += uAcceleration * uDeltaTime;
+
+          if (uVortexEnabled == 1) {
+            vec3 radial = pos - uVortexCenter;
+            float axialDist = dot(radial, uVortexAxis);
+            vec3 radialPlane = radial - uVortexAxis * axialDist;
+            float radialLen = length(radialPlane);
+            if (radialLen > 0.00001) {
+              vec3 radialDir = radialPlane / radialLen;
+              vec3 tangent = cross(uVortexAxis, radialDir);
+              float tangentLen = length(tangent);
+              if (tangentLen > 0.00001) {
+                velocity += (tangent / tangentLen) * uVortexOrbitalSpeed * uDeltaTime;
+              }
+              velocity -= radialDir * uVortexInward * uDeltaTime;
+            }
+            velocity += uVortexAxis * uVortexUpward * uDeltaTime;
+          }
 
           if (uNoiseStrength > 0.0) {
             vec3 noiseP = pos * uNoiseFrequency + uNoiseScroll * uTime + vec3(colorSeed.a * 0.01);

@@ -6,13 +6,20 @@
 forces?: {
   acceleration?: Vec3Tuple;
   drag?: number;
+  vortex?: {
+    center?: [number, number, number];
+    axis?: [number, number, number];
+    orbitalSpeed?: number;
+    inward?: number;
+    upward?: number;
+  };
   noise?: {
     strength?: number;
     frequency?: number;
-  scroll?: [number, number, number];
-  octaves?: number;
-  lacunarity?: number;
-  persistence?: number;
+    scroll?: [number, number, number];
+    octaves?: number;
+    lacunarity?: number;
+    persistence?: number;
   };
 };
 ```
@@ -46,6 +53,64 @@ velocity *= max(0, 1 - drag * dt)
 ```
 
 Higher values slow particles more quickly. Very high values can clamp velocity to zero in a single frame.
+
+## Vortex
+
+```ts
+vortex: {
+  center: [0, 2.6, 0],
+  axis: [0, 1, 0],
+  orbitalSpeed: 10,
+  inward: 3,
+  upward: 1,
+}
+```
+
+`vortex` pushes particle **velocity** each frame using the column through `center` in direction `axis`. It is **not** a rigid-body orbit solver and does not guarantee a perfect circle at any parameter pair.
+
+### Geometry
+
+- `center`: A point on the vortex line (the “base” of the column in preset space).
+- `axis`: Direction of the column. The implementation **normalizes** this vector; if it is too close to zero it falls back to `[0, 1, 0]`.
+
+From the particle position, the backend builds:
+
+1. **Radial in the spin plane**: vector from the particle toward the axis line, flattened to the plane perpendicular to `axis` (distance to the column in cross-section).
+2. **Tangent**: `normalize(cross(axis, radialInPlane))` — the direction particles are pushed to swirl around the axis (right-hand rule).
+
+If the particle is extremely close to the axis in that plane (length below a small epsilon), the in-plane vortex terms are skipped for that step; `upward` still applies.
+
+### What each scalar does
+
+Each update, velocity gains three independent contributions (same on CPU and GPU):
+
+- **`orbitalSpeed`**: adds `orbitalSpeed * dt` in the **tangent** direction. This continuously bends motion into a swirl. It does **not** mean “one revolution per second” or a fixed orbit radius.
+- **`inward`**: adds velocity **toward** the axis line in the spin plane (`-radialInPlane * inward * dt` after normalization). Higher values pull trajectories into a tighter column.
+- **`upward`**: adds velocity **along** `axis` (`axis * upward * dt`). Use negative values to pull particles down the column.
+
+So `orbitalSpeed` and `inward` are **not** coupled so that “equal values = stable ring orbit.” They are two separate pushes; real circular motion would require a specific balance between speed, radius, and inward pull, which this model does not enforce automatically.
+
+### Tuning and interaction with other modules
+
+Vertical (or axial) motion **stacks** with anything else that changes velocity:
+
+- `forces.acceleration` (for example gravity or a constant updraft).
+- `forces.noise`.
+- `start.velocity` and `velocityOverLifetime`.
+
+`forces.drag` runs **after** vortex and noise on the CPU (see [Force Order](#force-order)); it damps runaway tangential speed from strong `orbitalSpeed`.
+
+Practical starting point for a visible funnel: set `axis` to a clear unit direction (for example `[0, 1, 0]`), tune `inward` until the column width feels right, then add `orbitalSpeed` for swirl, then `upward` for lift. If motion is too fast along the axis, lower `upward` before stripping noise—often `upward` and constant `acceleration` on the same axis are both contributing.
+
+Defaults:
+
+- `center`: `[0, 0, 0]`
+- `axis`: `[0, 1, 0]`
+- `orbitalSpeed`: `0`
+- `inward`: `0`
+- `upward`: `0`
+
+Works on both CPU and GPU backends.
 
 ## Limit Velocity Over Lifetime
 
@@ -115,10 +180,11 @@ Per update, the CPU backend applies:
 
 1. Age increment and death check.
 2. Constant acceleration.
-3. Noise.
-4. Drag.
-5. Limit velocity over lifetime (if configured).
-6. Position integration using stored velocity plus lifetime velocity.
-7. Angular velocity.
+3. Vortex.
+4. Noise.
+5. Drag.
+6. Limit velocity over lifetime (if configured).
+7. Position integration using stored velocity plus lifetime velocity.
+8. Angular velocity.
 
 The GPU backend follows the same conceptual order inside the simulation shader.

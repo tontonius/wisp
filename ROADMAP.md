@@ -464,7 +464,7 @@ Goal: make GPU particles reliable for large background and atmosphere effects.
 - [ ] GPU emitter transform updates
 - [x] GPU bounds controls (`bounds.center` / `bounds.radius`)
 - [ ] GPU pause/resume/restart polish
-- [ ] Better noise
+- [x] Better noise (coherent FBM field + vortex-friendly controls)
 - [ ] GPU texture atlas animation modes
 - [x] Optional soft particles
 

@@ -76,6 +76,8 @@ Pass the same renderer you pass into `ParticleSystemOptions` so validation can w
 | Gradients | `overLifetime.color` keyframes: finite time, non-decreasing times. |
 | `start.*` ranges | For each set `start` range field, values must be finite scalars or finite tuple endpoints. |
 | `start.lifetime` | Upper bound of the resolved range must be `> 0`. |
+| `forces.vortex` | When set: `center`/`axis` must be finite vec3 tuples; `orbitalSpeed`, `inward`, and `upward` must be finite numbers. |
+| `forces.noise` | `strength`/`frequency` must be finite (`strength >= 0`, `frequency >= 0`); `scroll` must be a finite vec3; `octaves` integer in `[1,4]`; `lacunarity >= 1`; `persistence` in `(0,1]`. |
 | `emission.bursts` | Each burst: finite `time >= 0`, valid `count` range, optional `probability` in `[0, 1]`. |
 | `emission.rateOverTime` | If set, must be a finite scalar or finite tuple. |
 | `collision` | If set with `simulation: "gpu"`, invalid (CPU-only). Otherwise `collision.type` must be `"plane"`, `"sphere"`, or `"box"` with primitive-specific finite fields (`plane.y`, `sphere.center`/`radius`, `box.center`/`size`) and optional `bounce` / `dampening` finite and `>= 0`. |

@@ -303,6 +303,25 @@ export function collectParticlePresetIssues(
   }
 
   const noise = preset.forces?.noise;
+  const vortex = preset.forces?.vortex;
+  if (vortex) {
+    if (vortex.center !== undefined) {
+      errors.push(...validateFiniteVec3("forces.vortex.center", vortex.center));
+    }
+    if (vortex.axis !== undefined) {
+      errors.push(...validateFiniteVec3("forces.vortex.axis", vortex.axis));
+    }
+    if (vortex.orbitalSpeed !== undefined && !isFiniteNumber(vortex.orbitalSpeed)) {
+      errors.push("forces.vortex.orbitalSpeed: must be a finite number when set.");
+    }
+    if (vortex.inward !== undefined && !isFiniteNumber(vortex.inward)) {
+      errors.push("forces.vortex.inward: must be a finite number when set.");
+    }
+    if (vortex.upward !== undefined && !isFiniteNumber(vortex.upward)) {
+      errors.push("forces.vortex.upward: must be a finite number when set.");
+    }
+  }
+
   if (noise) {
     if (noise.strength !== undefined && (!isFiniteNumber(noise.strength) || noise.strength < 0)) {
       errors.push("forces.noise.strength: must be a finite number >= 0 when set.");

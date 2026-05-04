@@ -19,9 +19,11 @@ export type DemoEffectName =
   | "snowGpu"
   | "magicAuraGpu"
   | "magicAura"
+  | "tornadoDemo"
   | "orbitingEmitterWorldDemo"
   | "shockwave"
   | "gpuMagicStorm"
+  | "candyVortex"
   | "customEffect"
   | "explosionCombo";
 
@@ -222,6 +224,55 @@ export function createDemoPresets(textures: DemoPresetTextures): {
       color: [[0, "#ffffff"], [0.5, "#66d9ff"], [1, "#8e5cff"]],
     },
     renderer: { texture: softDisc, blendMode: "additive", depthWrite: false },
+  };
+
+  const tornadoDemo: ParticlePreset = {
+    simulation: "gpu",
+    simulationSpace: "world",
+    maxParticles: 9000,
+    duration: 8,
+    loop: true,
+    prewarm: true,
+    autoDispose: false,
+    bounds: { center: [0, 3, 0], radius: 8 },
+    gpu: { maxSpawnPerFrame: 700 },
+    emitter: { type: "cone", radius: 1.6, angle: 10, length: 6.4 },
+    emission: { rateOverTime: 1600 },
+    start: {
+      lifetime: [2.6, 4.8],
+      speed: [0.1, 0.9],
+      size: [0.05, 0.18],
+      color: ["#c9d0d8", "#6a727d"],
+      opacity: [0.15, 0.5],
+      velocity: [[-0.4, 1.6, -0.4], [0.4, 4.4, 0.4]],
+      rotation: [0, Math.PI * 2],
+      angularVelocity: [-2.2, 2.2],
+    },
+    forces: {
+      acceleration: [0, 0.45, 0],
+      drag: 0.22,
+      vortex: {
+        center: [0, 2.6, 0],
+        axis: [0, 1, 0],
+        orbitalSpeed: 10.5,
+        inward: 3.4,
+        upward: 1.15,
+      },
+      noise: {
+        strength: 0.38,
+        frequency: 0.42,
+        scroll: [0.08, 0.32, 0.07],
+        octaves: 2,
+        lacunarity: 2,
+        persistence: 0.5,
+      },
+    },
+    overLifetime: {
+      size: [[0, 0.24], [0.2, 1], [0.7, 1.45], [1, 0.52]],
+      opacity: [[0, 0], [0.08, 1], [0.84, 0.78], [1, 0]],
+      color: [[0, "#e4ebf3"], [0.35, "#9aa4b1"], [1, "#474f58"]],
+    },
+    renderer: { texture: softDisc, blendMode: "alpha", depthWrite: false, depthTest: true },
   };
 
   const orbitingEmitterWorldDemo: ParticlePreset = {
@@ -734,6 +785,75 @@ export function createDemoPresets(textures: DemoPresetTextures): {
     renderer: { texture: softDisc, blendMode: "additive", depthWrite: false },
   };
 
+  /** CPU cone + vortex: soft white → cyan → pink puff on the ground plane. */
+  const candyVortex: ParticlePreset = {
+    simulation: "cpu",
+    maxParticles: 3840,
+    duration: 1.25,
+    loop: true,
+    prewarm: false,
+    autoDispose: false,
+    debug: false,
+    gpu: { maxSpawnPerFrame: 512 },
+    emitter: { type: "cone", radius: 0.45, angle: 21, length: 1.5 },
+    emission: { rateOverTime: 304 },
+    start: {
+      lifetime: [3, 3],
+      speed: [1, 1],
+      size: [0.525, 0.785],
+      color: "#ffffff",
+      opacity: [1, 1],
+      rotation: 0,
+      angularVelocity: 0,
+    },
+    forces: {
+      acceleration: [0, 0, 0],
+      drag: 6.09,
+      vortex: {
+        center: [0, 14.35, 0],
+        axis: [0, 1, 0],
+        orbitalSpeed: 19.57,
+        inward: -1.3,
+        upward: 13.48,
+      },
+      noise: {
+        strength: 0,
+        frequency: 4.5,
+        scroll: [0.2, 0.35, 0.17],
+        octaves: 2,
+        lacunarity: 2,
+        persistence: 0.5,
+      },
+    },
+    overLifetime: {
+      size: [
+        [0, 0],
+        [0.18, 1],
+        [1, 1.74],
+      ],
+      opacity: [
+        [0, 0],
+        [0.12, 1],
+        [0.833046875, 1],
+        [1, 0],
+      ],
+      color: [
+        [0, "#ffffff"],
+        [0.45, "#70e7ff"],
+        [0.841640625, "#ffade8"],
+      ],
+    },
+    renderer: {
+      texture: softDisc,
+      blendMode: "alpha",
+      align: "camera",
+      sorting: "distance",
+      depthWrite: false,
+      softParticles: true,
+      softness: 2.6,
+    },
+  };
+
   const worldPresets: Record<string, ParticlePreset> = {
     muzzleFlash,
     bulletImpactSparks,
@@ -755,9 +875,11 @@ export function createDemoPresets(textures: DemoPresetTextures): {
     snowGpu,
     magicAuraGpu,
     magicAura,
+    tornadoDemo,
     orbitingEmitterWorldDemo,
     shockwave,
     gpuMagicStorm,
+    candyVortex,
   };
 
   const editablePresets: Partial<Record<DemoEffectName, ParticlePreset>> = {
@@ -778,9 +900,11 @@ export function createDemoPresets(textures: DemoPresetTextures): {
     snowGpu,
     magicAuraGpu,
     magicAura,
+    tornadoDemo,
     orbitingEmitterWorldDemo,
     shockwave,
     gpuMagicStorm,
+    candyVortex,
   };
 
   return { worldPresets, editablePresets };
