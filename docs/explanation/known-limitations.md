@@ -14,11 +14,17 @@ Implications for GPU systems:
 
 For sorted alpha effects, prefer CPU simulation. See [Renderer reference: Sorting](../reference/renderer.md#sorting).
 
-## Collisions Are CPU-Only And Planar
+## Collisions Are CPU-Only And Primitive-Based
 
-The CPU backend supports an optional infinite **horizontal plane** (`collision.type: "plane"`) in system local space. It is not arbitrary mesh or scene geometry, and the GPU backend does not simulate it.
+The CPU backend supports primitive local-space colliders:
 
-For richer collision work (primitives, raycasts), CPU remains the intended path; see [CPU backend](../reference/cpu-backend.md#collision-plane).
+- `collision.type: "plane"`
+- `collision.type: "sphere"`
+- `collision.type: "box"`
+
+It is not arbitrary mesh or scene geometry, and the GPU backend does not simulate collision.
+
+For richer collision work (raycasts/mesh), CPU remains the intended path; see [CPU backend](../reference/cpu-backend.md#collision-plane--sphere--box).
 
 ## Sub-Emitters Are CPU-Only (for now)
 

@@ -182,7 +182,7 @@ Best used for:
 ### CPU Backend Limitations
 
 - No CPU-side particle object pooling (distinct from opt-in `ParticleWorld` system pooling)
-- Plane collision only (no sphere/box/raycast yet)
+- Primitive collision only (`plane` / `sphere` / `box`; no raycast/mesh yet)
 - Sub-emitters are CPU-only (`onBirth`, `onDeath`, `onCollision`)
 - No trail/ribbon renderer yet
 - No soft particles yet
@@ -318,7 +318,7 @@ Goal: make CPU particles excellent for responsive game juice.
 ### Features
 
 - [x] CPU plane collision
-- [ ] CPU primitive collision
+- [x] CPU primitive collision (`collision.type: "sphere" | "box"`)
 - [x] CPU sub-emitters (`onBirth`, `onDeath`, `onCollision`)
 - [x] Stretched billboards
 - [x] CPU sorting (`renderer.sorting`: `none` / `distance` / `youngestFirst` / `oldestFirst`, defaults to `distance`)
@@ -338,11 +338,16 @@ collision: {
 }
 ```
 
-Then add primitives:
+Primitives now supported:
 
 ```ts
 collision: {
   type: "sphere" | "box",
+  center: [0, 1, 0],
+  // sphere
+  radius: 0.8,
+  // box
+  size: [1.6, 1.4, 1.6],
 }
 ```
 

@@ -152,7 +152,7 @@ Called when a CPU particle is spawned. The snapshot clones position and velocity
 
 CPU-only.
 
-Called when a particle penetrates the CPU collision plane and is resolved. The snapshot clones position and velocity, like `onParticleDeath`.
+Called when a particle penetrates a CPU collision primitive (`plane`, `sphere`, or `box`) and is resolved. The snapshot clones position and velocity, like `onParticleDeath`.
 
 ## ParticleWorld Auto-Cleanup
 

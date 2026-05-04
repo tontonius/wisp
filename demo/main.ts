@@ -24,8 +24,8 @@ const orbitOffset = camera.position.clone().sub(orbitTarget);
 const orbit = new THREE.Spherical().setFromVector3(orbitOffset);
 const targetOrbit = orbit.clone();
 const orbitCameraOffset = new THREE.Vector3();
-const minOrbitPhi = 0.22;
-const maxOrbitPhi = Math.PI * 0.48;
+const minOrbitPhi = 0.08;
+const maxOrbitPhi = Math.PI - 0.08;
 const minOrbitRadius = 3.2;
 const maxOrbitRadius = 14;
 
@@ -66,6 +66,15 @@ scene.add(floor);
 
 const grid = new THREE.GridHelper(16, 16, "#949494", "#949494");
 scene.add(grid);
+
+const primitiveCollisionDebugMaterial = new THREE.MeshBasicMaterial({
+  color: "#808080",
+  wireframe: false,
+  transparent: false,
+  opacity: 1,
+  depthTest: true,
+  depthWrite: true,
+});
 
 function makeSoftDiscTexture(): THREE.Texture {
   const size = 128;
@@ -135,6 +144,8 @@ type DemoEffectName =
   | "torchFire"
   | "stretchedBillboardDemo"
   | "floorBounceDemo"
+  | "sphereCollisionDemo"
+  | "boxCollisionDemo"
   | "onBirthSubEmittersDemo"
   | "onDeathSubEmittersDemo"
   | "onCollisionSubEmittersDemo"
@@ -703,6 +714,87 @@ const floorBounceDemo: ParticlePreset = {
   renderer: { texture: softDisc, blendMode: "additive", depthWrite: false },
 };
 
+const sphereCollisionCenter: [number, number, number] = [0, 1.2, 0];
+const sphereCollisionRadius = 0.72;
+
+/** Looping CPU demo: particles bounce out of a local-space sphere collider. */
+const sphereCollisionDemo: ParticlePreset = {
+  simulation: "cpu",
+  maxParticles: 240,
+  duration: 2.6,
+  loop: true,
+  prewarm: false,
+  autoDispose: false,
+  emitter: { type: "cone", radius: 0.05, angle: 20, length: 1 },
+  emission: { rateOverTime: [58, 84] },
+  collision: {
+    type: "sphere",
+    center: sphereCollisionCenter,
+    radius: sphereCollisionRadius,
+    bounce: 1,
+    dampening: 0.82,
+    killOnCollision: false,
+  },
+  start: {
+    lifetime: [1.6, 2.6],
+    speed: [0.7, 1.8],
+    size: [0.045, 0.11],
+    color: ["#f7fbff", "#94d8ff"],
+    opacity: [0.5, 0.9],
+    velocity: [[-1.2, -0.2, -1.2], [1.2, 1.9, 1.2]],
+    rotation: [0, Math.PI * 2],
+    angularVelocity: [-2.4, 2.4],
+  },
+  forces: { acceleration: [0, -3.5, 0], drag: 0.1, },
+  overLifetime: {
+    size: [[0, 0.45], [0.25, 1], [1, 0.82]],
+    opacity: [[0, 0], [0.08, 1], [0.88, 0.95], [1, 0]],
+    color: [[0, "#ffffff"], [0.42, "#b9e7ff"], [1, "#66b9ff"]],
+  },
+  renderer: { texture: softDisc, blendMode: "additive", depthWrite: false },
+};
+
+const boxCollisionCenter: [number, number, number] = [1.2, 0.45, 0];
+const boxCollisionSize: [number, number, number] = [1.4, 1.2, 1.4];
+
+/** Looping CPU demo: particles collide against a local-space axis-aligned box volume. */
+const boxCollisionDemo: ParticlePreset = {
+  simulation: "cpu",
+  maxParticles: 260,
+  duration: 2.8,
+  loop: true,
+  prewarm: false,
+  autoDispose: false,
+  emitter: { type: "cone", radius: 0.03, angle: 10, length: 0.6 },
+  emission: { rateOverTime: [64, 92] },
+  collision: {
+    type: "box",
+    center: boxCollisionCenter,
+    size: boxCollisionSize,
+    bounce: 0.02,
+    dampening: 0.8,
+    killOnCollision: false,
+  },
+  start: {
+    lifetime: [1.9, 3.1],
+    speed: [0.05, 0.18],
+    size: [0.04, 0.12],
+    color: ["#fff8df", "#ffb57a"],
+    opacity: [0.45, 0.9],
+    // Bias strongly along +X so particles shoot sideways into the box's -X face.
+    velocity: [[2.4, -0.18, -0.35], [3.4, 0.28, 0.35]],
+    rotation: [0, Math.PI * 2],
+    angularVelocity: [-2.6, 2.6],
+  },
+  forces: { acceleration: [0, -1.2, 0], drag: 0.08, noise: { strength: 0.06, frequency: 4.2 } },
+  overLifetime: {
+    size: [[0, 0.5], [0.22, 1], [1, 0.86]],
+    opacity: [[0, 0], [0.08, 1], [0.86, 0.95], [1, 0]],
+    color: [[0, "#fffef7"], [0.4, "#ffd7a1"], [1, "#ff8c52"]],
+  },
+  renderer: { texture: softDisc, blendMode: "additive", depthWrite: false },
+};
+
 const onDeathSubEmitterChild: ParticlePreset = {
   simulation: "cpu",
   maxParticles: 240,
@@ -1113,6 +1205,8 @@ const particles = new ParticleWorld(
     torchFire,
     stretchedBillboardDemo,
     floorBounceDemo,
+    sphereCollisionDemo,
+    boxCollisionDemo,
     onBirthSubEmitterChild,
     onBirthSubEmittersDemo,
     onDeathSubEmitterChild,
@@ -1141,6 +1235,8 @@ const editablePresets: Partial<Record<DemoEffectName, ParticlePreset>> = {
   torchFire,
   stretchedBillboardDemo,
   floorBounceDemo,
+  sphereCollisionDemo,
+  boxCollisionDemo,
   onBirthSubEmittersDemo,
   onDeathSubEmittersDemo,
   onCollisionSubEmittersDemo,
@@ -1151,6 +1247,25 @@ const editablePresets: Partial<Record<DemoEffectName, ParticlePreset>> = {
   shockwave,
   gpuMagicStorm,
 };
+
+const sphereCollisionHelper = new THREE.Mesh(new THREE.SphereGeometry(sphereCollisionRadius, 24, 16), primitiveCollisionDebugMaterial);
+sphereCollisionHelper.position.set(...sphereCollisionCenter);
+sphereCollisionHelper.visible = false;
+sphereCollisionHelper.renderOrder = -10;
+scene.add(sphereCollisionHelper);
+
+const boxCollisionHelper = new THREE.Mesh(new THREE.BoxGeometry(...boxCollisionSize), primitiveCollisionDebugMaterial);
+boxCollisionHelper.position.set(...boxCollisionCenter);
+boxCollisionHelper.visible = false;
+boxCollisionHelper.renderOrder = -10;
+scene.add(boxCollisionHelper);
+
+function updatePrimitiveCollisionHelpers(): void {
+  const showSphere = customParams.clickEffect === "sphereCollisionDemo";
+  const showBox = customParams.clickEffect === "boxCollisionDemo";
+  sphereCollisionHelper.visible = showSphere;
+  boxCollisionHelper.visible = showBox;
+}
 
 const paneContainer = document.createElement("div");
 paneContainer.className = "tweakpane-wrap";
@@ -1184,6 +1299,7 @@ let loopPreview: ParticleSystem | undefined;
 
 function refreshCustomPreset() {
   particles.register("customEffect", makeCustomPreset());
+  updatePrimitiveCollisionHelpers();
   if (customParams.debugAllGizmos) particles.setDebug(makeDebugOptions());
   if (loopPreview) {
     loopPreview.dispose();
@@ -1378,6 +1494,7 @@ function bind(folder: PaneLike, key: keyof typeof customParams, params?: Record<
 
 function refreshPaneBindings(): void {
   for (const binding of paneBindings) binding.refresh?.();
+  updatePrimitiveCollisionHelpers();
 }
 
 const controlsFolder = particlesPane.addFolder({ title: "Controls", expanded: true }) as PaneLike;
@@ -1392,6 +1509,8 @@ bind(controlsFolder, "clickEffect", {
     "Torch fire": "torchFire",
     "Stretched billboard demo": "stretchedBillboardDemo",
     "Floor bounce (CPU collision)": "floorBounceDemo",
+    "Sphere collision (CPU primitive)": "sphereCollisionDemo",
+    "Box collision (CPU primitive)": "boxCollisionDemo",
     "Sub-emitters (CPU onBirth)": "onBirthSubEmittersDemo",
     "Sub-emitters (CPU onDeath)": "onDeathSubEmittersDemo",
     "Sub-emitters (CPU onCollision)": "onCollisionSubEmittersDemo",
@@ -1405,7 +1524,7 @@ bind(controlsFolder, "clickEffect", {
     "GPU storm": "gpuMagicStorm",
   },
 });
-controlsFolder.addButton({ title: "Spawn at center" }).on("click", () => spawnEffect(customParams.clickEffect, [0, 0.25, 0]));
+controlsFolder.addButton({ title: "Spawn at center" }).on("click", () => spawnEffect(customParams.clickEffect, [0, 0.05, 0]));
 controlsFolder.addButton({ title: "Load selected into editor" }).on("click", () => loadPresetIntoEditor(customParams.clickEffect));
 controlsFolder.addButton({ title: "Preview loop" }).on("click", previewCustomLoop);
 controlsFolder.addButton({ title: "Clear systems" }).on("click", () => {
@@ -1417,6 +1536,7 @@ controlsFolder.addButton({ title: "Copy preset code" }).on("click", () => {
     .then(() => showCopyStatus("Preset code copied."))
     .catch(() => showCopyStatus("Could not copy preset code."));
 });
+updatePrimitiveCollisionHelpers();
 
 const mainFolder = particlesPane.addFolder({ title: "Particle System", expanded: false }) as PaneLike;
 bind(mainFolder, "simulation", { options: { CPU: "cpu", GPU: "gpu", Auto: "auto" } });

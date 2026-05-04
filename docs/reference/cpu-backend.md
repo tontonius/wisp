@@ -64,19 +64,26 @@ Per live particle:
 5. Apply drag.
 6. Evaluate velocity over lifetime.
 7. Integrate position.
-8. If `collision.type` is `"plane"`, resolve penetration against that plane (bounce, tangential dampening, or `killOnCollision`).
+8. If `collision` is set, resolve penetration against the configured primitive (`plane`, `sphere`, or `box`) with bounce/dampening or `killOnCollision`.
 9. If `subEmitters.onCollision` is set and the system is managed by `ParticleWorld`, spawn that named effect at collision positions.
 10. If `subEmitters.onDeath` is set and the system is managed by `ParticleWorld`, spawn that named effect at particle death positions.
 11. Integrate rotation.
 
 During spawn, if `subEmitters.onBirth` is set and the system is managed by `ParticleWorld`, that named child effect is spawned at each CPU particle birth position.
 
-## Collision (plane)
+## Collision (plane / sphere / box)
 
 ```ts
 collision?: {
-  type: "plane";
+  type: "plane" | "sphere" | "box";
+  // plane
   y?: number;
+  // sphere / box
+  center?: [number, number, number];
+  // sphere
+  radius?: number;
+  // box
+  size?: [number, number, number];
   bounce?: number;
   dampening?: number;
   killOnCollision?: boolean;
@@ -85,12 +92,21 @@ collision?: {
 
 | Field | Default | Description |
 | --- | --- | --- |
-| `y` | `0` | Height of the infinite `xz` plane along **local Y** (same space as particle positions and the emitter). |
-| `bounce` | `0.4` | Restitution on Y: after a hit from below the plane with downward `velocity.y`, outgoing `velocity.y` is `-bounce * velocity_y`. |
-| `dampening` | `1` | After resolving a hit, `velocity.x` and `velocity.z` are multiplied by this factor. |
-| `killOnCollision` | `false` | When true, penetrating the plane kills the particle and fires `onParticleDeath` instead of bouncing. |
+| `type` | — | Collision primitive: `plane`, `sphere`, or `box`. |
+| `y` | `0` | Plane-only: height of the infinite `xz` plane along **local Y**. |
+| `center` | `[0, 0, 0]` | Sphere/box-only: primitive center in local space. |
+| `radius` | `1` | Sphere-only: collider radius in local units. |
+| `size` | `[1, 1, 1]` | Box-only: full extents of the axis-aligned local-space box. |
+| `bounce` | `0.4` | Restitution on the collision normal. |
+| `dampening` | `1` | Tangential damping after collision response (`1` keeps full tangential speed). |
+| `killOnCollision` | `false` | When true, particles die on collision instead of bouncing/sliding. |
 
-The plane normal is **+Y**. Particles with `position.y` below the plane after integration are corrected. Spawning with the effect origin on the ground and `y: 0` matches a world floor at the spawn height.
+Implementation notes:
+
+- `plane` uses normal **+Y** and corrects particles below `y`.
+- `sphere` pushes particles to the sphere surface and responds along outward normal.
+- `box` uses an axis-aligned local-space box and resolves against the nearest face.
+- All modes run in system local space, so moving/rotating/scaling the `ParticleSystem` transforms collider behavior with it.
 
 GPU presets must not set `collision`; validation throws if `simulation: "gpu"` and `collision` are both set.
 
@@ -157,5 +173,5 @@ Use CPU for:
 - High particle counts become CPU-bound.
 - Geometry buffers update every frame.
 - Large ambience effects are better on GPU.
-- Only the infinite plane collision shape exists; no mesh or primitive colliders yet.
+- Collision is still primitive-only (`plane` / `sphere` / `box`); there is no mesh/raycast scene collision yet.
 

@@ -94,6 +94,17 @@ function validateBurstCount(path: string, count: Range): string[] {
   return validateFiniteRange(path, count);
 }
 
+function validateFiniteVec3(path: string, value: unknown): string[] {
+  if (!Array.isArray(value) || value.length !== 3) {
+    return [`${path}: must be a [x, y, z] tuple when set.`];
+  }
+  const errors: string[] = [];
+  if (!isFiniteNumber(value[0])) errors.push(`${path}[0]: must be a finite number.`);
+  if (!isFiniteNumber(value[1])) errors.push(`${path}[1]: must be a finite number.`);
+  if (!isFiniteNumber(value[2])) errors.push(`${path}[2]: must be a finite number.`);
+  return errors;
+}
+
 export function collectParticlePresetIssues(
   preset: ParticlePreset,
   context: ParticlePresetValidationContext = {}
@@ -126,20 +137,49 @@ export function collectParticlePresetIssues(
     if (preset.simulation === "gpu") {
       errors.push('collision: CPU-only; use simulation "cpu", "auto", or omit collision for GPU presets.');
     }
-    if (typeof collision !== "object" || collision === null || collision.type !== "plane") {
-      errors.push('collision: must be an object with type "plane".');
+    if (typeof collision !== "object" || collision === null) {
+      errors.push('collision: must be an object with type "plane", "sphere", or "box".');
     } else {
-      if (collision.y !== undefined && !isFiniteNumber(collision.y)) {
-        errors.push("collision.y: must be a finite number when set.");
+      if (collision.type !== "plane" && collision.type !== "sphere" && collision.type !== "box") {
+        errors.push('collision.type: must be one of "plane", "sphere", or "box".');
       }
-      if (collision.bounce !== undefined) {
+
+      if ("bounce" in collision && collision.bounce !== undefined) {
         if (!isFiniteNumber(collision.bounce) || collision.bounce < 0) {
           errors.push("collision.bounce: must be a finite number >= 0 when set.");
         }
       }
-      if (collision.dampening !== undefined) {
+      if ("dampening" in collision && collision.dampening !== undefined) {
         if (!isFiniteNumber(collision.dampening) || collision.dampening < 0) {
           errors.push("collision.dampening: must be a finite number >= 0 when set.");
+        }
+      }
+      if ("killOnCollision" in collision && collision.killOnCollision !== undefined && typeof collision.killOnCollision !== "boolean") {
+        errors.push("collision.killOnCollision: must be a boolean when set.");
+      }
+
+      if (collision.type === "plane") {
+        if (collision.y !== undefined && !isFiniteNumber(collision.y)) {
+          errors.push("collision.y: must be a finite number when set.");
+        }
+      }
+
+      if (collision.type === "sphere") {
+        if (collision.center !== undefined) errors.push(...validateFiniteVec3("collision.center", collision.center));
+        if (collision.radius !== undefined && (!isFiniteNumber(collision.radius) || collision.radius <= 0)) {
+          errors.push("collision.radius: must be a finite number > 0 when set.");
+        }
+      }
+
+      if (collision.type === "box") {
+        if (collision.center !== undefined) errors.push(...validateFiniteVec3("collision.center", collision.center));
+        if (collision.size !== undefined) {
+          errors.push(...validateFiniteVec3("collision.size", collision.size));
+          if (Array.isArray(collision.size) && collision.size.length === 3) {
+            if (isFiniteNumber(collision.size[0]) && collision.size[0] <= 0) errors.push("collision.size[0]: must be > 0.");
+            if (isFiniteNumber(collision.size[1]) && collision.size[1] <= 0) errors.push("collision.size[1]: must be > 0.");
+            if (isFiniteNumber(collision.size[2]) && collision.size[2] <= 0) errors.push("collision.size[2]: must be > 0.");
+          }
         }
       }
     }

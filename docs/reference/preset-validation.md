@@ -74,7 +74,7 @@ Pass the same renderer you pass into `ParticleSystemOptions` so validation can w
 | `start.lifetime` | Upper bound of the resolved range must be `> 0`. |
 | `emission.bursts` | Each burst: finite `time >= 0`, valid `count` range, optional `probability` in `[0, 1]`. |
 | `emission.rateOverTime` | If set, must be a finite scalar or finite tuple. |
-| `collision` | If set with `simulation: "gpu"`, invalid (CPU-only). Otherwise must be `{ type: "plane", ... }` with finite optional `y`, and optional `bounce` / `dampening` finite and `>= 0`. |
+| `collision` | If set with `simulation: "gpu"`, invalid (CPU-only). Otherwise `collision.type` must be `"plane"`, `"sphere"`, or `"box"` with primitive-specific finite fields (`plane.y`, `sphere.center`/`radius`, `box.center`/`size`) and optional `bounce` / `dampening` finite and `>= 0`. |
 | `subEmitters` | If set with `simulation: "gpu"`, invalid (CPU-only). When set, must be an object and `subEmitters.onBirth` / `subEmitters.onDeath` / `subEmitters.onCollision` (if provided) must be non-empty string effect names. |
 
 ## Warnings (no throw)

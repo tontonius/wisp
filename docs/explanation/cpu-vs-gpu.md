@@ -11,7 +11,7 @@ It can:
 - Know exactly how many particles are alive.
 - Fire `onParticleDeath`.
 - Store particle state in ordinary objects.
-- Use optional [`collision`](../reference/cpu-backend.md#collision-plane) (CPU-only infinite plane).
+- Use optional [`collision`](../reference/cpu-backend.md#collision-plane--sphere--box) (CPU-only primitives: `plane`, `sphere`, `box`).
 - Integrate more gameplay-aware behavior later.
 
 Its cost is that it updates particle state and billboard geometry on the CPU.

@@ -20,7 +20,7 @@ type ParticlePreset = {
   emission?: { rateOverTime?: Range; bursts?: Array<{ time: number; count: Range; probability?: number }> };
   start?: { ... };
   forces?: { ... };
-  collision?: CpuPlaneCollision;
+  collision?: CpuCollision;
   subEmitters?: { onBirth?: string; onDeath?: string; onCollision?: string };
   velocityOverLifetime?: VelocityOverLifetime;
   overLifetime?: { ... };
@@ -28,7 +28,7 @@ type ParticlePreset = {
 };
 ```
 
-`CpuPlaneCollision` is exported from the package entry and matches the [collision plane](cpu-backend.md#collision-plane) section on the CPU backend page.
+`CpuCollision` is exported from the package entry and matches the [collision primitives](cpu-backend.md#collision-plane--sphere--box) section on the CPU backend page.
 
 ## Top-Level Fields
 
@@ -48,8 +48,8 @@ type ParticlePreset = {
 | `emission` | Object | No emission | Continuous rate and/or scheduled bursts. |
 | `start` | Object | Individual defaults | Values sampled when each particle spawns. |
 | `forces` | Object | No force | Constant acceleration, drag, and procedural noise. |
-| `collision` | `CpuPlaneCollision` | `undefined` | CPU-only infinite plane along local `xz` at `y`; see [CPU backend](cpu-backend.md#collision-plane). |
-| `subEmitters` | `{ onBirth?: string; onDeath?: string; onCollision?: string }` | `undefined` | CPU-only child effect hooks. `onBirth` spawns on CPU particle spawn, `onDeath` on particle death, and `onCollision` on plane collision (when spawned through `ParticleWorld`). |
+| `collision` | `CpuCollision` | `undefined` | CPU-only primitive collision (`plane`, `sphere`, or `box`) in local space; see [CPU backend](cpu-backend.md#collision-plane--sphere--box). |
+| `subEmitters` | `{ onBirth?: string; onDeath?: string; onCollision?: string }` | `undefined` | CPU-only child effect hooks. `onBirth` spawns on CPU particle spawn, `onDeath` on particle death, and `onCollision` on primitive collision (when spawned through `ParticleWorld`). |
 | `velocityOverLifetime` | `VelocityOverLifetime` | No lifetime velocity | Per-age linear velocity channel. |
 | `overLifetime` | Object | Multipliers/color default to neutral values | Size, opacity, and color curves. |
 | `renderer` | Object | Default soft particle material | Type, texture, blend, alignment, depth, stretch settings, and texture sheet settings. |

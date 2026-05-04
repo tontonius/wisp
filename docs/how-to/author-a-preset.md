@@ -78,7 +78,7 @@ forces: {
 }
 ```
 
-Optional **CPU-only** ground bounce (infinite `xz` plane at local `y`):
+Optional **CPU-only** collision (example: ground bounce on an infinite `xz` plane at local `y`):
 
 ```ts
 collision: {
@@ -89,7 +89,7 @@ collision: {
 }
 ```
 
-See [CPU backend: collision plane](../reference/cpu-backend.md#collision-plane).
+You can also use `collision.type: "sphere"` or `"box"` for primitive local-space colliders. See [CPU backend: collision primitives](../reference/cpu-backend.md#collision-plane--sphere--box).
 
 Use `start.velocity` for random start spread:
 

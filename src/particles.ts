@@ -48,6 +48,38 @@ export type CpuPlaneCollision = {
   killOnCollision?: boolean;
 };
 
+/** CPU-only sphere collision in `ParticleSystem` local space. */
+export type CpuSphereCollision = {
+  type: "sphere";
+  /** Sphere center in local space. Default `[0, 0, 0]`. */
+  center?: Vec3Tuple;
+  /** Sphere radius. Default `1`. */
+  radius?: number;
+  /** Restitution on the contact normal. Default `0.4`. */
+  bounce?: number;
+  /** Tangential damping after collision response. Default `1`. */
+  dampening?: number;
+  /** When true, particles die on collision instead of bouncing/sliding. */
+  killOnCollision?: boolean;
+};
+
+/** CPU-only axis-aligned box collision in `ParticleSystem` local space. */
+export type CpuBoxCollision = {
+  type: "box";
+  /** Box center in local space. Default `[0, 0, 0]`. */
+  center?: Vec3Tuple;
+  /** Full box size on each axis. Default `[1, 1, 1]`. */
+  size?: Vec3Tuple;
+  /** Restitution on the contact normal. Default `0.4`. */
+  bounce?: number;
+  /** Tangential damping after collision response. Default `1`. */
+  dampening?: number;
+  /** When true, particles die on collision instead of bouncing/sliding. */
+  killOnCollision?: boolean;
+};
+
+export type CpuCollision = CpuPlaneCollision | CpuSphereCollision | CpuBoxCollision;
+
 export type ParticlePreset = {
   name?: string;
   simulation?: SimulationMode;
@@ -90,7 +122,7 @@ export type ParticlePreset = {
   };
 
   /** CPU backend only. Ignored on GPU. */
-  collision?: CpuPlaneCollision;
+  collision?: CpuCollision;
   /** CPU backend only. Child effect names to spawn from particle lifecycle events. */
   subEmitters?: {
     onBirth?: string;
@@ -888,6 +920,8 @@ class CPUParticleBackend implements ParticleBackend {
 
       if (drag > 0) particle.velocity.multiplyScalar(Math.max(0, 1 - drag * dt));
       const t = THREE.MathUtils.clamp(particle.age / particle.lifetime, 0, 1);
+      const over = this.preset.overLifetime ?? {};
+      const particleVisualRadius = Math.max(0, particle.startSize * evaluateCurve(over.size, t, 1) * 0.5);
       const lifetimeVelocity = this.preset.velocityOverLifetime;
       const linearVelocity = tempVectorB.set(
         evaluateCurve(lifetimeVelocity?.linear?.x, t, 0),
@@ -897,23 +931,142 @@ class CPUParticleBackend implements ParticleBackend {
       particle.position.addScaledVector(tempVectorC.copy(particle.velocity).add(linearVelocity), dt);
 
       const collision = this.preset.collision;
-      if (collision?.type === "plane") {
-        const planeY = collision.y ?? 0;
+      if (collision) {
         const eps = 1e-4;
-        if (particle.position.y < planeY - eps) {
-          particle.position.y = planeY + eps;
-          this.backendOptions.onParticleCollision?.(particle);
-          if (collision.killOnCollision) {
-            particle.alive = false;
-            this._aliveCount = Math.max(0, this._aliveCount - 1);
-            this.backendOptions.onParticleDeath?.(particle);
-            continue;
+        if (collision.type === "plane") {
+          const planeY = collision.y ?? 0;
+          const minY = planeY + particleVisualRadius + eps;
+          if (particle.position.y < minY) {
+            particle.position.y = minY;
+            this.backendOptions.onParticleCollision?.(particle);
+            if (collision.killOnCollision) {
+              particle.alive = false;
+              this._aliveCount = Math.max(0, this._aliveCount - 1);
+              this.backendOptions.onParticleDeath?.(particle);
+              continue;
+            }
+            const bounce = collision.bounce ?? 0.4;
+            if (particle.velocity.y < 0) particle.velocity.y = -bounce * particle.velocity.y;
+            const dampening = collision.dampening ?? 1;
+            particle.velocity.x *= dampening;
+            particle.velocity.z *= dampening;
           }
-          const bounce = collision.bounce ?? 0.4;
-          if (particle.velocity.y < 0) particle.velocity.y = -bounce * particle.velocity.y;
-          const dampening = collision.dampening ?? 1;
-          particle.velocity.x *= dampening;
-          particle.velocity.z *= dampening;
+        } else if (collision.type === "sphere") {
+          const center = collision.center ?? [0, 0, 0];
+          const radius = Math.max(eps, collision.radius ?? 1);
+          const contactRadius = radius + particleVisualRadius;
+          const toParticle = tempVectorA.set(
+            particle.position.x - center[0],
+            particle.position.y - center[1],
+            particle.position.z - center[2]
+          );
+          const distSq = toParticle.lengthSq();
+          const radiusSq = contactRadius * contactRadius;
+          if (distSq < radiusSq) {
+            let dist = Math.sqrt(distSq);
+            if (dist <= eps) {
+              // Fallback when position is exactly at center.
+              toParticle.copy(particle.velocity);
+              if (toParticle.lengthSq() <= eps) toParticle.set(0, 1, 0);
+              toParticle.normalize();
+              dist = 0;
+            } else {
+              toParticle.multiplyScalar(1 / dist);
+            }
+
+            particle.position.set(
+              center[0] + toParticle.x * (contactRadius + eps),
+              center[1] + toParticle.y * (contactRadius + eps),
+              center[2] + toParticle.z * (contactRadius + eps)
+            );
+            this.backendOptions.onParticleCollision?.(particle);
+            if (collision.killOnCollision) {
+              particle.alive = false;
+              this._aliveCount = Math.max(0, this._aliveCount - 1);
+              this.backendOptions.onParticleDeath?.(particle);
+              continue;
+            }
+
+            const bounce = collision.bounce ?? 0.4;
+            const dampening = collision.dampening ?? 1;
+            const normalVelocity = particle.velocity.dot(toParticle);
+            if (normalVelocity < 0) {
+              particle.velocity.addScaledVector(toParticle, -(1 + bounce) * normalVelocity);
+            }
+            tempVectorB.copy(toParticle).multiplyScalar(particle.velocity.dot(toParticle));
+            tempVectorC.copy(particle.velocity).sub(tempVectorB).multiplyScalar(dampening);
+            particle.velocity.copy(tempVectorB).add(tempVectorC);
+          }
+        } else if (collision.type === "box") {
+          const center = collision.center ?? [0, 0, 0];
+          const size = collision.size ?? [1, 1, 1];
+          const halfX = Math.max(eps, size[0] * 0.5);
+          const halfY = Math.max(eps, size[1] * 0.5);
+          const halfZ = Math.max(eps, size[2] * 0.5);
+          const minX = center[0] - halfX;
+          const maxX = center[0] + halfX;
+          const minY = center[1] - halfY;
+          const maxY = center[1] + halfY;
+          const minZ = center[2] - halfZ;
+          const maxZ = center[2] + halfZ;
+          const px = particle.position.x;
+          const py = particle.position.y;
+          const pz = particle.position.z;
+
+          if (px > minX + eps && px < maxX - eps && py > minY + eps && py < maxY - eps && pz > minZ + eps && pz < maxZ - eps) {
+            const distToMinX = px - minX;
+            const distToMaxX = maxX - px;
+            const distToMinY = py - minY;
+            const distToMaxY = maxY - py;
+            const distToMinZ = pz - minZ;
+            const distToMaxZ = maxZ - pz;
+
+            let axis: "x" | "y" | "z" = "x";
+            let useMinFace = distToMinX < distToMaxX;
+            let bestDist = Math.min(distToMinX, distToMaxX);
+
+            const yBest = Math.min(distToMinY, distToMaxY);
+            if (yBest < bestDist) {
+              bestDist = yBest;
+              axis = "y";
+              useMinFace = distToMinY < distToMaxY;
+            }
+
+            const zBest = Math.min(distToMinZ, distToMaxZ);
+            if (zBest < bestDist) {
+              axis = "z";
+              useMinFace = distToMinZ < distToMaxZ;
+            }
+
+            if (axis === "x") {
+              particle.position.x = useMinFace ? minX - (particleVisualRadius + eps) : maxX + (particleVisualRadius + eps);
+              tempVectorA.set(useMinFace ? -1 : 1, 0, 0);
+            } else if (axis === "y") {
+              particle.position.y = useMinFace ? minY - (particleVisualRadius + eps) : maxY + (particleVisualRadius + eps);
+              tempVectorA.set(0, useMinFace ? -1 : 1, 0);
+            } else {
+              particle.position.z = useMinFace ? minZ - (particleVisualRadius + eps) : maxZ + (particleVisualRadius + eps);
+              tempVectorA.set(0, 0, useMinFace ? -1 : 1);
+            }
+
+            this.backendOptions.onParticleCollision?.(particle);
+            if (collision.killOnCollision) {
+              particle.alive = false;
+              this._aliveCount = Math.max(0, this._aliveCount - 1);
+              this.backendOptions.onParticleDeath?.(particle);
+              continue;
+            }
+
+            const bounce = collision.bounce ?? 0.4;
+            const dampening = collision.dampening ?? 1;
+            const normalVelocity = particle.velocity.dot(tempVectorA);
+            if (normalVelocity < 0) {
+              particle.velocity.addScaledVector(tempVectorA, -(1 + bounce) * normalVelocity);
+            }
+            tempVectorB.copy(tempVectorA).multiplyScalar(particle.velocity.dot(tempVectorA));
+            tempVectorC.copy(particle.velocity).sub(tempVectorB).multiplyScalar(dampening);
+            particle.velocity.copy(tempVectorB).add(tempVectorC);
+          }
         }
       }
 
