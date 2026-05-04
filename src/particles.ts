@@ -1937,6 +1937,32 @@ export class ParticleWorld {
     return this;
   }
 
+  preload(name: string, count: number): this {
+    if (!Number.isInteger(count) || count < 1) {
+      throw new Error(`ParticleWorld.preload("${name}", count): count must be an integer >= 1.`);
+    }
+    if (!this.isPoolingEnabled()) {
+      throw new Error('ParticleWorld.preload requires pooling to be enabled via ParticleWorldOptions.pooling.');
+    }
+
+    const preset = this.effects.get(name);
+    if (!preset) throw new Error(`Unknown particle effect "${name}".`);
+
+    const stack = this.inactivePool.get(name) ?? [];
+    const max = this.getPoolMaxPerEffect();
+    const remainingCapacity = max === undefined ? count : Math.max(0, Math.min(count, max - stack.length));
+    if (remainingCapacity <= 0) {
+      this.inactivePool.set(name, stack);
+      return this;
+    }
+
+    for (let i = 0; i < remainingCapacity; i++) {
+      stack.push(new ParticleSystem(preset, { renderer: this.options.renderer }));
+    }
+    this.inactivePool.set(name, stack);
+    return this;
+  }
+
   spawn(name: string, options: Parameters<ParticleEffectLibrary["spawn"]>[1] = {}): ParticleSystem {
     const debug = options.debug ?? this.debug;
     const merged: ParticleSpawnOptions & { renderer?: THREE.WebGLRenderer } = {

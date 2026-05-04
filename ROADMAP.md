@@ -229,10 +229,10 @@ Goal: make the library pleasant and robust in real game scenes.
 - Demo ships the example presets below (selectable in the playground)
 - Opt-in inactive-system pooling on `ParticleWorld` (`pooling` in `ParticleWorldOptions`)
 - Preset validation at `ParticleSystem` construction (`collectParticlePresetIssues`, `assertValidParticlePreset`; see `docs/reference/preset-validation.md`)
+- `ParticleWorld.preload(name, count)` warm-cache API for inactive pooled instances
 
-**Still open**
+**Watchlist**
 
-- `preload(name, count)` (or equivalent warm-cache API)
 - Broader “safer cleanup” hardening if gaps show up in real scenes
 
 ### Features
@@ -243,6 +243,7 @@ Goal: make the library pleasant and robust in real game scenes.
 - [x] Better lifecycle state (flags + callbacks as above)
 - [~] Safer cleanup (`autoDispose` + `clear()` + optional pooling; further hardening TBD)
 - [x] Preset validation (`assertValidParticlePreset` on `ParticleSystem` construction)
+- [x] `preload(name, count)` warm-cache API on `ParticleWorld`
 - [~] Better TypeScript types (stronger shapes and reference docs; can tighten further)
 - [x] Better documentation (`docs/`)
 - [x] More example effects (see list below — all in `demo/main.ts`)

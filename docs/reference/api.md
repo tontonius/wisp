@@ -142,6 +142,7 @@ Methods:
 | Method | Returns | Description |
 | --- | --- | --- |
 | `register(name, preset)` | `this` | Registers a named preset in `effects` and disposes any inactive pooled systems for that `name` so the pool cannot return instances built from a replaced preset. |
+| `preload(name, count)` | `this` | Creates up to `count` inactive pooled instances for an effect name (respects `pooling.maxPerEffect`). Requires pooling to be enabled. |
 | `spawn(name, options?)` | `ParticleSystem` | Creates or reuses a system, applies spawn options and world defaults, tracks it in `systems`, and returns it. |
 | `setDebug(debug)` | `this` | Stores a world debug default and applies it to currently tracked systems. |
 | `update(dt, camera)` | `void` | Updates all tracked systems, auto-disposes completed one-shots or returns them to the inactive pool when pooling is enabled. |
@@ -162,10 +163,11 @@ Methods:
 
 Pooling rules:
 
-- Only `ParticleWorld.spawn` participates. Calling `world.effects.spawn` always allocates a new system and does not use the world pool.
+- Pooling is used by `ParticleWorld.spawn` (consume/recycle) and `ParticleWorld.preload` (proactive fill). Calling `world.effects.spawn` always allocates a new system and does not use the world pool.
 - A completed system is poolable only if it was spawned with the same effective WebGL renderer as `options.renderer` on the world constructor: `(spawnOptions.renderer ?? worldOptions.renderer) === worldOptions.renderer`. If a spawn passes a different `renderer` override, that instance is always fully disposed on completion (GPU render targets are tied to a specific renderer).
 - On completion with `autoDispose` true and pooling enabled for a poolable instance, the world calls `stop({ clear: true })`, removes the object from the scene graph, and pushes it onto an inactive stack for that effect name instead of calling `dispose()`.
 - Systems that were manually `dispose()`d are dropped from `systems` on the next `update` without being pooled.
+- `preload(name, count)` requires pooling (`pooling: true` or `{ maxPerEffect }`) and throws when pooling is off.
 
 Auto-disposal:
 
