@@ -10,6 +10,12 @@ export type RendererType = "billboard" | "stretchedBillboard";
 export type SortMode = "none" | "distance" | "youngestFirst" | "oldestFirst";
 export type SimulationMode = "cpu" | "gpu" | "auto";
 export type SimulationSpace = "local" | "world";
+export type ParticleBounds = {
+  /** Bounding sphere center used for culling. */
+  center?: Vec3Tuple;
+  /** Bounding sphere radius used for culling. Must be > 0. */
+  radius: number;
+};
 export type Curve = Array<[time: number, value: number]>;
 export type Gradient = Array<[time: number, color: THREE.ColorRepresentation]>;
 export type VelocityOverLifetime = {
@@ -31,6 +37,8 @@ export type ParticleDebugOptions = {
   enabled?: boolean;
   emitter?: boolean;
   spawnDirection?: boolean;
+  /** Draw explicit preset bounds sphere when `preset.bounds` is set. */
+  bounds?: boolean;
   color?: THREE.ColorRepresentation;
   opacity?: number;
   segments?: number;
@@ -90,6 +98,8 @@ export type ParticlePreset = {
    * - `"world"`: particles are simulated in world space after spawn and do not follow later emitter movement.
    */
   simulationSpace?: SimulationSpace;
+  /** Optional explicit bounds. Primarily useful for GPU systems to enable stable frustum culling. */
+  bounds?: ParticleBounds;
   maxParticles?: number;
   duration?: number;
   loop?: boolean;
@@ -455,6 +465,7 @@ function resolveDebugOptions(debug: boolean | ParticleDebugOptions | undefined):
     enabled,
     emitter: options.emitter ?? true,
     spawnDirection: options.spawnDirection ?? true,
+    bounds: options.bounds ?? true,
     color: options.color ?? DEFAULT_GIZMO_COLOR,
     opacity: options.opacity ?? 0.85,
     segments: Math.max(8, Math.floor(options.segments ?? 48)),
@@ -505,7 +516,11 @@ function addArrow(points: THREE.Vector3[], from: THREE.Vector3, to: THREE.Vector
   addLine(points, to, headCenter.clone().sub(side));
 }
 
-function makeEmitterGizmo(shape: EmitterShape = DEFAULT_EMITTER, debug: boolean | ParticleDebugOptions | undefined): THREE.LineSegments {
+function makeEmitterGizmo(
+  shape: EmitterShape = DEFAULT_EMITTER,
+  debug: boolean | ParticleDebugOptions | undefined,
+  bounds?: ParticleBounds
+): THREE.LineSegments {
   const options = resolveDebugOptions(debug);
   const points: THREE.Vector3[] = [];
   const segments = options.segments;
@@ -561,6 +576,14 @@ function makeEmitterGizmo(shape: EmitterShape = DEFAULT_EMITTER, debug: boolean 
   if (options.spawnDirection) {
     const length = shape.type === "cone" ? shape.length ?? 1 : shape.type === "box" ? Math.max(...(shape.size ?? [1, 1, 1])) * 0.55 : "radius" in shape ? (shape.radius ?? 1) * 1.25 : 0.45;
     addArrow(points, new THREE.Vector3(), new THREE.Vector3(0, Math.max(0.25, length), 0), Math.max(0.08, length * 0.12));
+  }
+
+  if (options.bounds && bounds) {
+    const center = bounds.center ?? [0, 0, 0];
+    const offset = new THREE.Vector3(center[0], center[1], center[2]);
+    addCircle(points, bounds.radius, segments, "xy", offset);
+    addCircle(points, bounds.radius, segments, "xz", offset);
+    addCircle(points, bounds.radius, segments, "yz", offset);
   }
 
   const geometry = new THREE.BufferGeometry().setFromPoints(points);
@@ -1356,10 +1379,21 @@ class GPUParticleBackend implements ParticleBackend {
     this.geometry = this.makeRenderGeometry();
     this.material = this.makeRenderMaterial();
     this.mesh = new THREE.Mesh(this.geometry, this.material);
-    this.mesh.frustumCulled = false;
+    this.applyExplicitBounds();
     this.object.add(this.mesh);
 
     if (preset.prewarm) this.prewarm();
+  }
+
+  private applyExplicitBounds(): void {
+    const bounds = this.preset.bounds;
+    if (!bounds) {
+      this.mesh.frustumCulled = false;
+      return;
+    }
+    const center = bounds.center ?? [0, 0, 0];
+    this.geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(center[0], center[1], center[2]), bounds.radius);
+    this.mesh.frustumCulled = true;
   }
 
   get isAlive(): boolean {
@@ -2134,7 +2168,7 @@ export class ParticleSystem extends THREE.Object3D {
       (this.gizmo.material as THREE.Material).dispose();
     }
 
-    this.gizmo = makeEmitterGizmo(this.preset.emitter ?? DEFAULT_EMITTER, options);
+    this.gizmo = makeEmitterGizmo(this.preset.emitter ?? DEFAULT_EMITTER, options, this.preset.bounds);
     (this as unknown as THREE.Object3D).add(this.gizmo);
     return this;
   }

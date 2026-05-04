@@ -13,6 +13,7 @@ type ParticleDebugOptions = {
   enabled?: boolean;
   emitter?: boolean;
   spawnDirection?: boolean;
+  bounds?: boolean;
   color?: THREE.ColorRepresentation;
   opacity?: number;
   segments?: number;
@@ -26,6 +27,7 @@ type ParticleDebugOptions = {
 | `enabled` | `false` for omitted/false, `true` for `true` | Whether the gizmo is visible. |
 | `emitter` | `true` | Draw emitter shape. |
 | `spawnDirection` | `true` | Draw direction arrow. |
+| `bounds` | `true` | Draw explicit `preset.bounds` sphere when present. |
 | `color` | `"#78d7ff"` | Gizmo line color. |
 | `opacity` | `0.85` | Gizmo line opacity. |
 | `segments` | `48`, minimum `8` | Circle/arc segment count. |
@@ -87,6 +89,8 @@ Cone gizmos show:
 - Cone length.
 - Angle spread target radius.
 - Direction arrow along local +Y.
+
+When `preset.bounds` is set, debug gizmos also draw the culling sphere (three great circles around `bounds.center` with `bounds.radius`).
 
 ## Disposal
 

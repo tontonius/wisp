@@ -416,7 +416,7 @@ Goal: make GPU particles reliable for large background and atmosphere effects.
 
 - [ ] Better GPU spawn scheduling
 - [ ] GPU emitter transform updates
-- [ ] GPU bounds controls
+- [x] GPU bounds controls (`bounds.center` / `bounds.radius`)
 - [ ] GPU pause/resume/restart polish
 - [ ] Better noise
 - [ ] GPU texture atlas animation modes

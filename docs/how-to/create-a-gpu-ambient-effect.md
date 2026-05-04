@@ -12,6 +12,10 @@ const snowGpu: ParticlePreset = {
   loop: true,
   prewarm: true,
   autoDispose: false,
+  bounds: {
+    center: [0, 0, 0],
+    radius: 14,
+  },
   gpu: {
     maxSpawnPerFrame: 768,
   },
@@ -67,5 +71,6 @@ particles.update(dt, camera);
 - `speed: 0` lets `start.velocity`, `forces.acceleration`, and noise define motion.
 - `prewarm: true` avoids waiting for the volume to fill.
 - `autoDispose: false` keeps the loop under your control.
+- `bounds` enables stable frustum culling for large ambient volumes; increase `radius` if the whole effect disappears near camera edges.
 - GPU `aliveCount` is approximate; do not use it as gameplay state.
 

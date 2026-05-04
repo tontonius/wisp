@@ -25,6 +25,7 @@ GPU is not used when:
 | `duration` | `1` |
 | `loop` | `false` |
 | `gpu.maxSpawnPerFrame` | `maxParticles` |
+| `bounds` | Disabled (no frustum culling) |
 
 Capacity:
 
@@ -33,6 +34,44 @@ capacity = textureSize * textureSize
 ```
 
 Only `maxParticles` slots are considered active, even if capacity is larger.
+
+## Bounds And Culling
+
+GPU systems can opt into explicit culling bounds:
+
+```ts
+bounds: {
+  center: [0, 0, 0], // optional
+  radius: 20,         // required, > 0
+}
+```
+
+Behavior:
+
+- When `bounds` is set, the GPU mesh uses frustum culling with this fixed bounding sphere.
+- When `bounds` is omitted, GPU culling is disabled to avoid accidental clipping/pop-out.
+- This is especially useful for large ambient effects (rain, snow, storms) where you know the effect volume ahead of time.
+
+When to use it:
+
+- Use `bounds` for long-running ambient GPU effects where you want predictable culling/perf.
+- Skip `bounds` while authoring if you are unsure of spread; add it after the effect shape is stable.
+
+How to pick values:
+
+1. Start with a deliberately large radius so the effect never disappears.
+2. Move the camera around the effect volume.
+3. Reduce radius until clipping starts, then increase a little for safety margin.
+4. If the effect is offset from the system origin, set `center` to match the real volume center.
+
+Troubleshooting:
+
+| Symptom | Likely cause | Fix |
+| --- | --- | --- |
+| Whole GPU effect disappears at once near screen edges | `bounds.radius` too small | Increase radius |
+| Effect disappears only from some camera angles | `bounds.center` is misplaced | Move center toward real volume center |
+| Effect never culls even when far away | `bounds` omitted (culling disabled) | Add explicit `bounds` |
+| Effect culls too late / perf still high off-screen | Bounds are much larger than needed | Decrease radius gradually |
 
 ## Render Targets
 

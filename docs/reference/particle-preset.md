@@ -9,6 +9,7 @@ type ParticlePreset = {
   name?: string;
   simulation?: SimulationMode;
   simulationSpace?: "local" | "world";
+  bounds?: { center?: [number, number, number]; radius: number };
   maxParticles?: number;
   duration?: number;
   loop?: boolean;
@@ -38,6 +39,7 @@ type ParticlePreset = {
 | `name` | `string` | Set by library registration | Human-readable or registry name. |
 | `simulation` | `"cpu" | "gpu" | "auto"` | CPU unless `auto` or `gpu` selects GPU | Backend preference. |
 | `simulationSpace` | `"local" | "world"` | `"local"` | Coordinate space for spawn/update integration. `"world"` keeps particles in world space after spawn. |
+| `bounds` | `{ center?: Vec3Tuple; radius: number }` | `undefined` | Optional explicit bounds (mainly for GPU culling). Enables frustum culling with a fixed bounding sphere. |
 | `maxParticles` | `number` | CPU: `256`, GPU: `1024` | Maximum live particle capacity. |
 | `duration` | `number` | `1` | Emission duration in seconds. |
 | `loop` | `boolean` | `false` | Whether emission restarts after `duration`. |
@@ -102,6 +104,21 @@ autoDispose?: boolean;
 `prewarm` simulates one duration before the visible start. This is useful for looping ambience such as fire, rain, snow, or aura effects.
 
 `autoDispose` is used by `ParticleWorld`, not by standalone `ParticleSystem`. One-shots default to auto-disposal when managed by a world.
+
+## Bounds
+
+```ts
+bounds?: {
+  center?: [number, number, number];
+  radius: number;
+};
+```
+
+- Primarily useful for GPU systems.
+- When set, GPU rendering uses this fixed bounding sphere for frustum culling.
+- `radius` must be greater than `0`.
+- When omitted, GPU systems stay unculled (`frustumCulled = false`) to avoid accidental pop-out.
+- If bounds are too small, the whole effect can disappear abruptly when the sphere exits the camera frustum.
 
 ## GPU Options
 

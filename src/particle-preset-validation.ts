@@ -126,6 +126,19 @@ export function collectParticlePresetIssues(
     }
   }
 
+  if (preset.bounds !== undefined) {
+    if (typeof preset.bounds !== "object" || preset.bounds === null) {
+      errors.push("bounds: must be an object with a positive radius when set.");
+    } else {
+      if (!isFiniteNumber(preset.bounds.radius) || preset.bounds.radius <= 0) {
+        errors.push("bounds.radius: must be a finite number > 0.");
+      }
+      if (preset.bounds.center !== undefined) {
+        errors.push(...validateFiniteVec3("bounds.center", preset.bounds.center));
+      }
+    }
+  }
+
   if (preset.simulationSpace !== undefined && !SIMULATION_SPACES.has(preset.simulationSpace)) {
     errors.push('simulationSpace: must be "local" or "world" when set.');
   }
