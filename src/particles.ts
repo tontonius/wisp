@@ -101,8 +101,28 @@ export type ParticleSystemOptions = {
   renderer?: THREE.WebGLRenderer;
 };
 
+export type ParticleWorldPoolingOptions = {
+  /** When set, excess inactive instances for an effect are disposed instead of pooled. Omit for no cap. */
+  maxPerEffect?: number;
+};
+
 export type ParticleWorldOptions = {
   renderer?: THREE.WebGLRenderer;
+  /**
+   * When enabled, `ParticleWorld` returns completed systems to an inactive pool instead of disposing them.
+   * Reuses GPU/CPU resources for the same registered effect name. See docs for renderer override rules.
+   */
+  pooling?: boolean | ParticleWorldPoolingOptions;
+};
+
+export type ParticleSpawnOptions = {
+  position?: THREE.Vector3 | Vec3Tuple;
+  rotation?: THREE.Euler;
+  quaternion?: THREE.Quaternion;
+  scale?: number;
+  parent?: THREE.Object3D;
+  autoPlay?: boolean;
+  debug?: boolean | ParticleDebugOptions;
 };
 
 export type ParticleSnapshot = {
@@ -1026,7 +1046,10 @@ class GPUParticleBackend implements ParticleBackend {
     this.emissionAccumulator = 0;
     this.burstCursor = 0;
     this.queuedSpawns.length = 0;
-    if (clear) this.clearTargets();
+    if (clear) {
+      this.spawnCursor = 0;
+      this.clearTargets();
+    }
   }
 
   restart(): void {
@@ -1773,6 +1796,23 @@ export class ParticleSystem extends THREE.Object3D {
   }
 }
 
+function configureSpawnedSystem(system: ParticleSystem, options: ParticleSpawnOptions): void {
+  const systemObject = system as unknown as THREE.Object3D;
+  systemObject.position.set(0, 0, 0);
+  systemObject.rotation.set(0, 0, 0);
+  systemObject.quaternion.identity();
+  systemObject.scale.set(1, 1, 1);
+  if (options.position) Array.isArray(options.position) ? systemObject.position.set(...options.position) : systemObject.position.copy(options.position);
+  if (options.rotation) systemObject.rotation.copy(options.rotation);
+  if (options.quaternion) systemObject.quaternion.copy(options.quaternion);
+  if (typeof options.scale === "number") systemObject.scale.setScalar(options.scale);
+
+  const parent = options.parent;
+  if (parent) parent.add(systemObject);
+  if (options.debug !== undefined) system.setDebug(options.debug);
+  if (options.autoPlay ?? true) system.play();
+}
+
 export class ParticleEffectLibrary {
   private presets = new Map<string, ParticlePreset>();
   private defaultParent?: THREE.Object3D;
@@ -1795,31 +1835,17 @@ export class ParticleEffectLibrary {
 
   spawn(
     name: string,
-    options: {
-      position?: THREE.Vector3 | Vec3Tuple;
-      rotation?: THREE.Euler;
-      quaternion?: THREE.Quaternion;
-      scale?: number;
-      parent?: THREE.Object3D;
-      autoPlay?: boolean;
-      renderer?: THREE.WebGLRenderer;
-      debug?: boolean | ParticleDebugOptions;
-    } = {}
+    options: ParticleSpawnOptions & { renderer?: THREE.WebGLRenderer } = {}
   ): ParticleSystem {
     const preset = this.presets.get(name);
     if (!preset) throw new Error(`Unknown particle effect "${name}".`);
 
-    const system = new ParticleSystem(preset, { renderer: options.renderer ?? this.renderer });
-    const systemObject = system as unknown as THREE.Object3D;
-    if (options.position) Array.isArray(options.position) ? systemObject.position.set(...options.position) : systemObject.position.copy(options.position);
-    if (options.rotation) systemObject.rotation.copy(options.rotation);
-    if (options.quaternion) systemObject.quaternion.copy(options.quaternion);
-    if (typeof options.scale === "number") systemObject.scale.setScalar(options.scale);
-
-    const parent = options.parent ?? this.defaultParent;
-    if (parent) parent.add(systemObject);
-    if (options.debug !== undefined) system.setDebug(options.debug);
-    if (options.autoPlay ?? true) system.play();
+    const { renderer: spawnRenderer, ...rest } = options;
+    const system = new ParticleSystem(preset, { renderer: spawnRenderer ?? this.renderer });
+    configureSpawnedSystem(system, {
+      ...rest,
+      parent: rest.parent ?? this.defaultParent,
+    });
     return system;
   }
 }
@@ -1827,21 +1853,83 @@ export class ParticleEffectLibrary {
 export class ParticleWorld {
   readonly effects: ParticleEffectLibrary;
   readonly systems = new Set<ParticleSystem>();
+  private readonly inactivePool = new Map<string, ParticleSystem[]>();
+  /** Tracks systems spawned through this world for auto-dispose pooling. */
+  private readonly systemSpawnMeta = new Map<ParticleSystem, { name: string; poolable: boolean }>();
   debug: boolean | ParticleDebugOptions = false;
 
   constructor(private parent: THREE.Object3D, presets: Record<string, ParticlePreset> = {}, private options: ParticleWorldOptions = {}) {
     this.effects = new ParticleEffectLibrary(presets, parent, options);
   }
 
+  private isPoolingEnabled(): boolean {
+    const p = this.options.pooling;
+    if (p === undefined || p === false) return false;
+    return true;
+  }
+
+  private getPoolMaxPerEffect(): number | undefined {
+    const p = this.options.pooling;
+    if (p === undefined || p === false || p === true) return undefined;
+    return p.maxPerEffect;
+  }
+
+  private disposePoolForEffect(name: string): void {
+    const stack = this.inactivePool.get(name);
+    if (!stack) return;
+    for (const s of stack) s.dispose();
+    this.inactivePool.delete(name);
+  }
+
+  private tryReturnToPool(name: string, system: ParticleSystem): void {
+    system.stop({ clear: true });
+    (system as unknown as THREE.Object3D).removeFromParent();
+    const max = this.getPoolMaxPerEffect();
+    const stack = this.inactivePool.get(name) ?? [];
+    if (max !== undefined && stack.length >= max) {
+      system.dispose();
+      return;
+    }
+    stack.push(system);
+    this.inactivePool.set(name, stack);
+  }
+
   register(name: string, preset: ParticlePreset): this {
     this.effects.register(name, preset);
+    this.disposePoolForEffect(name);
     return this;
   }
 
   spawn(name: string, options: Parameters<ParticleEffectLibrary["spawn"]>[1] = {}): ParticleSystem {
     const debug = options.debug ?? this.debug;
-    const system = this.effects.spawn(name, { parent: this.parent, renderer: this.options.renderer, ...options, ...(debug ? { debug } : {}) });
+    const merged: ParticleSpawnOptions & { renderer?: THREE.WebGLRenderer } = {
+      parent: this.parent,
+      renderer: this.options.renderer,
+      ...options,
+      ...(debug ? { debug } : {}),
+    };
+
+    const preset = this.effects.get(name);
+    if (!preset) throw new Error(`Unknown particle effect "${name}".`);
+
+    const spawnRenderer = options.renderer ?? this.options.renderer;
+    const poolable = this.isPoolingEnabled() && spawnRenderer === this.options.renderer;
+
+    let system: ParticleSystem | undefined;
+    if (poolable) {
+      const stack = this.inactivePool.get(name);
+      if (stack && stack.length > 0) system = stack.pop();
+    }
+
+    if (!system) {
+      system = new ParticleSystem(preset, { renderer: spawnRenderer });
+    }
+
+    const { renderer: _spawnRenderer, ...configureOpts } = merged;
+    configureSpawnedSystem(system, configureOpts);
+
     this.systems.add(system);
+    this.systemSpawnMeta.set(system, { name, poolable });
     return system;
   }
 
@@ -1853,10 +1941,22 @@ export class ParticleWorld {
 
   update(dt: number, camera: THREE.Camera): void {
     for (const system of [...this.systems]) {
-      system.update(dt, camera);
-      if ((system.preset.autoDispose ?? true) && system.isComplete) {
-        system.dispose();
+      if (system.isDisposed) {
         this.systems.delete(system);
+        this.systemSpawnMeta.delete(system);
+        continue;
+      }
+      system.update(dt, camera);
+      if (!(system.preset.autoDispose ?? true) || !system.isComplete) continue;
+
+      const meta = this.systemSpawnMeta.get(system);
+      this.systems.delete(system);
+      this.systemSpawnMeta.delete(system);
+
+      if (meta?.poolable && this.isPoolingEnabled()) {
+        this.tryReturnToPool(meta.name, system);
+      } else {
+        system.dispose();
       }
     }
   }
@@ -1864,5 +1964,8 @@ export class ParticleWorld {
   clear(): void {
     for (const system of this.systems) system.dispose();
     this.systems.clear();
+    this.systemSpawnMeta.clear();
+    for (const stack of this.inactivePool.values()) for (const s of stack) s.dispose();
+    this.inactivePool.clear();
   }
 }

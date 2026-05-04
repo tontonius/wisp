@@ -32,13 +32,13 @@ The preset is the authoring contract. Both CPU and GPU backends read the same sh
 - Spawns effects by name.
 - Tracks live systems.
 - Updates all systems.
-- Auto-disposes completed one-shots.
+- Auto-disposes completed one-shots, or optionally resets them into an inactive pool when `ParticleWorldOptions.pooling` is enabled.
 
 `ParticleEffectLibrary` is the lower-level registry:
 
 - Registers presets.
 - Retrieves presets.
-- Spawns a `ParticleSystem` from a name.
+- Spawns a `ParticleSystem` from a name (always allocates; does not use `ParticleWorld` pooling).
 
 `ParticleSystem` is a live effect:
 

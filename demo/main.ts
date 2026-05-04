@@ -686,6 +686,7 @@ const shockwave: ParticlePreset = {
     },
   },
   overLifetime: {
+    size: [[0, 0], [0.12, 1], [0.95, 1], [1, 0]],
     opacity: [[0, 0], [0.12, 1], [1, 0]],
     color: [[0, "#ffdf77"], [0.45, "#9c744f"], [1, "#75433a"]],
   },
@@ -816,6 +817,13 @@ const gpuMagicStorm: ParticlePreset = {
   renderer: { texture: softDisc, blendMode: "additive", depthWrite: false },
 };
 
+const particleWorldOptions = {
+  renderer,
+  ...(typeof window !== "undefined" && new URLSearchParams(window.location.search).get("pool") === "1"
+    ? { pooling: true as const }
+    : {}),
+};
+
 const particles = new ParticleWorld(
   scene,
   {
@@ -833,7 +841,7 @@ const particles = new ParticleWorld(
     gpuMagicStorm,
     customEffect: makeCustomPreset(),
   },
-  { renderer }
+  particleWorldOptions
 );
 // particles.spawn("magicAura", { position: [-2.2, 0.2, 0] });
 // particles.spawn("gpuMagicStorm", { position: [1.2, 0.3, 0] });

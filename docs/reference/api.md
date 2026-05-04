@@ -93,20 +93,15 @@ Methods:
 | `get(name)` | `ParticlePreset | undefined` | Returns a registered preset. |
 | `spawn(name, options?)` | `ParticleSystem` | Creates, transforms, parents, optionally debugs, and optionally plays a system. |
 
-Spawn options:
+Spawn options (`ParticleSpawnOptions` plus optional `renderer`):
 
 ```ts
-{
-  position?: THREE.Vector3 | Vec3Tuple;
-  rotation?: THREE.Euler;
-  quaternion?: THREE.Quaternion;
-  scale?: number;
-  parent?: THREE.Object3D;
-  autoPlay?: boolean;
-  renderer?: THREE.WebGLRenderer;
-  debug?: boolean | ParticleDebugOptions;
-}
+ParticleSpawnOptions & { renderer?: THREE.WebGLRenderer }
 ```
+
+Fields match `ParticleSpawnOptions` in the exported types table, plus:
+
+- `renderer` overrides the library renderer for this spawn.
 
 Behavior:
 
@@ -116,6 +111,7 @@ Behavior:
 - `autoPlay` defaults to `true`.
 - `renderer` overrides the library renderer for this spawn.
 - `debug` overrides preset debug settings for this spawn.
+- Before applying options, spawn resets the system’s local `position`, `rotation`, `quaternion`, and `scale` to identity defaults so reused instances do not keep the previous transform for omitted fields.
 
 ### `ParticleWorld`
 
@@ -136,22 +132,42 @@ Fields:
 | Field | Type | Description |
 | --- | --- | --- |
 | `effects` | `ParticleEffectLibrary` | The named effect registry. |
-| `systems` | `Set<ParticleSystem>` | Live systems spawned through this world. |
+| `systems` | `Set<ParticleSystem>` | Live systems spawned through `ParticleWorld.spawn` (active only; inactive pooled instances are not in this set). |
 | `debug` | `boolean | ParticleDebugOptions` | Default debug setting applied by `spawn`. |
 
 Methods:
 
 | Method | Returns | Description |
 | --- | --- | --- |
-| `register(name, preset)` | `this` | Registers a named preset in `effects`. |
-| `spawn(name, options?)` | `ParticleSystem` | Spawns through `effects`, tracks the system, and applies world defaults. |
+| `register(name, preset)` | `this` | Registers a named preset in `effects` and disposes any inactive pooled systems for that `name` so the pool cannot return instances built from a replaced preset. |
+| `spawn(name, options?)` | `ParticleSystem` | Creates or reuses a system, applies spawn options and world defaults, tracks it in `systems`, and returns it. |
 | `setDebug(debug)` | `this` | Stores a world debug default and applies it to currently tracked systems. |
-| `update(dt, camera)` | `void` | Updates all tracked systems and auto-disposes completed one-shots. |
-| `clear()` | `void` | Disposes all tracked systems and empties `systems`. |
+| `update(dt, camera)` | `void` | Updates all tracked systems, auto-disposes completed one-shots or returns them to the inactive pool when pooling is enabled. |
+| `clear()` | `void` | Disposes every tracked system, disposes all inactive pooled systems, and empties internal pool storage. |
+
+`ParticleWorldOptions`:
+
+```ts
+{
+  renderer?: THREE.WebGLRenderer;
+  pooling?: boolean | { maxPerEffect?: number };
+}
+```
+
+- `pooling: true` enables inactive pooling per registered effect name with no cap on how many completed systems are retained (watch memory in effects with huge GPU targets).
+- `pooling: { maxPerEffect: n }` caps the inactive queue per effect; additional completed systems are disposed like the non-pooling path.
+- Pooling is off when `pooling` is omitted or `false`.
+
+Pooling rules:
+
+- Only `ParticleWorld.spawn` participates. Calling `world.effects.spawn` always allocates a new system and does not use the world pool.
+- A completed system is poolable only if it was spawned with the same effective WebGL renderer as `options.renderer` on the world constructor: `(spawnOptions.renderer ?? worldOptions.renderer) === worldOptions.renderer`. If a spawn passes a different `renderer` override, that instance is always fully disposed on completion (GPU render targets are tied to a specific renderer).
+- On completion with `autoDispose` true and pooling enabled for a poolable instance, the world calls `stop({ clear: true })`, removes the object from the scene graph, and pushes it onto an inactive stack for that effect name instead of calling `dispose()`.
+- Systems that were manually `dispose()`d are dropped from `systems` on the next `update` without being pooled.
 
 Auto-disposal:
 
-- During `update`, systems with `system.preset.autoDispose ?? true` are disposed and removed from `systems` when `system.isComplete` is true.
+- During `update`, systems with `system.preset.autoDispose ?? true` and `system.isComplete` are removed from `systems`. When pooling applies, they are reset and parked in the inactive pool; otherwise they are disposed.
 - Set `autoDispose: false` for loops, persistent ambient effects, or systems you want to stop/dispose manually.
 
 ## Exported Types
@@ -171,7 +187,9 @@ Auto-disposal:
 | `ParticleDebugOptions` | Emitter gizmo options. |
 | `ParticlePreset` | Full effect description. |
 | `ParticleSystemOptions` | `{ renderer?: THREE.WebGLRenderer }` |
-| `ParticleWorldOptions` | `{ renderer?: THREE.WebGLRenderer }` |
+| `ParticleWorldOptions` | `{ renderer?: THREE.WebGLRenderer; pooling?: boolean \| { maxPerEffect?: number } }` |
+| `ParticleWorldPoolingOptions` | `{ maxPerEffect?: number }` — cap inactive instances per effect when `pooling` is an object. |
+| `ParticleSpawnOptions` | Transform, parent, `autoPlay`, and `debug` fields shared by `ParticleEffectLibrary.spawn` / `ParticleWorld.spawn` (world merge also applies default `parent` and `debug`). |
 | `ParticleSnapshot` | CPU particle-death snapshot. |
 | `ParticleLifecycleCallbacks` | Lifecycle callback object. |
 

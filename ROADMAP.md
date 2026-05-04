@@ -181,13 +181,13 @@ Best used for:
 
 ### CPU Backend Limitations
 
-- No real object/system pooling yet
+- No CPU-side particle object pooling (distinct from opt-in `ParticleWorld` system pooling)
 - No collision yet
 - No sub-emitters yet
 - No trail/ribbon renderer yet
 - No soft particles yet
 - No robust sorting strategy yet
-- No visual authoring/debug tooling yet
+- No in-engine visual authoring beyond emitter gizmos; the **demo** includes a preset playground/editor (not a runtime library feature)
 
 ### GPU Backend Limitations
 
@@ -218,17 +218,34 @@ The roadmap is split into milestones.
 
 Goal: make the library pleasant and robust in real game scenes.
 
+### Status (library + demo)
+
+**Done**
+
+- `aliveCount`, `elapsed`, and lifecycle flags (`isPlaying`, `isAlive`, `isComplete`)
+- Lifecycle callbacks (`onStart`, `onStop`, `onComplete`) and CPU `onParticleDeath`
+- Auto-cleanup via `ParticleWorld` when `autoDispose` completes a system
+- Diataxis docs in `docs/` and a demo preset editor / debug gizmos (see `docs/reference/demo-editor.md`)
+- Demo ships the example presets below (selectable in the playground)
+- Opt-in inactive-system pooling on `ParticleWorld` (`pooling` in `ParticleWorldOptions`)
+
+**Still open**
+
+- `preload(name, count)` (or equivalent warm-cache API)
+- Preset validation (warn or throw on invalid curves, sheets, counts, unsupported GPU fields, and so on)
+- Broader “safer cleanup” hardening if gaps show up in real scenes
+
 ### Features
 
-- Real system pooling
-- `aliveCount`
-- `elapsed`
-- Better lifecycle state
-- Safer cleanup
-- Preset validation
-- Better TypeScript types
-- Better documentation
-- More example effects
+- [x] Real system pooling (`ParticleWorldOptions.pooling`)
+- [x] `aliveCount`
+- [x] `elapsed`
+- [x] Better lifecycle state (flags + callbacks as above)
+- [~] Safer cleanup (`autoDispose` + `clear()` + optional pooling; further hardening TBD)
+- [ ] Preset validation
+- [~] Better TypeScript types (stronger shapes and reference docs; can tighten further)
+- [x] Better documentation (`docs/`)
+- [x] More example effects (see list below — all in `demo/main.ts`)
 
 ### Proposed API
 
@@ -245,7 +262,7 @@ inactive pool -> activate -> play -> complete -> return to pool
 
 ### Lifecycle API
 
-Add or improve:
+Implemented on `ParticleSystem` (delegates to each backend where applicable):
 
 ```ts
 system.isPlaying
@@ -278,15 +295,15 @@ CPU/GPU:
 
 ### Example Effects To Ship
 
-- Muzzle flash
-- Bullet impact sparks
-- Explosion
-- Smoke puff
-- Pickup sparkle
-- Torch fire
-- Rain GPU example
-- Snow GPU example
-- Magic aura GPU example
+- [x] Muzzle flash
+- [x] Bullet impact sparks
+- [x] Explosion
+- [x] Smoke puff
+- [x] Pickup sparkle
+- [x] Torch fire
+- [x] Rain GPU example
+- [x] Snow GPU example
+- [x] Magic aura GPU example
 
 ### Priority
 
@@ -786,8 +803,8 @@ Use GPU if:
 Implement in this order:
 
 ```txt
-1. Real ParticleWorld pooling
-2. Better lifecycle API and aliveCount
+1. (done) Real ParticleWorld pooling
+2. (done) Better lifecycle API and aliveCount
 3. Preset validation
 4. CPU plane collision
 5. CPU sub-emitters onDeath
@@ -824,6 +841,6 @@ The current library has a solid foundation:
 - GPU backend for large visual effects
 - Good enough ergonomics to start using in actual Three.js scenes
 
-The next phase should focus on stability, pooling, lifecycle clarity, CPU collisions, sub-emitters, and authoring/debug tools.
+The next phase should focus on stability, preset validation, CPU collisions, sub-emitters, and authoring/debug tools.
 
 The long-term prize is a Three.js-native particle system that feels as easy to use as Unity Shuriken, but remains lightweight, modular, and game-friendly.

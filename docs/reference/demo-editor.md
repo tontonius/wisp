@@ -2,6 +2,12 @@
 
 The demo in `demo/main.ts` includes a Tweakpane editor for creating and copying `ParticlePreset` code.
 
+## URL parameters
+
+| Query | Effect |
+| --- | --- |
+| `?pool=1` | Enables `ParticleWorld` inactive pooling (`pooling: true`) so repeated one-shot spawns reuse GPU/CPU backends. |
+
 ## Controls Folder
 
 | Control | Effect |

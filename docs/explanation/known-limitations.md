@@ -72,3 +72,9 @@ If you mutate `preset.overLifetime` or `preset.velocityOverLifetime` after spawn
 
 Dispose and respawn to apply changed curves.
 
+## Object Pooling Is Opt-In On `ParticleWorld`
+
+By default, completed `autoDispose` systems are fully disposed. You can enable inactive pooling with `ParticleWorldOptions.pooling` so completed systems are reset and reused for the same registered effect name.
+
+`ParticleEffectLibrary` spawns are never pooled. Replacing a preset via `ParticleWorld.register` disposes inactive pooled instances for that name only; already-active systems still use the preset object they were constructed with until they finish.
+
