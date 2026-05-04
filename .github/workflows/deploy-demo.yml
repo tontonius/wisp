@@ -34,10 +34,9 @@ jobs:
       - name: Build Pages artifact
         run: npm run build:pages
 
+      # Omit enablement: true — it triggers Create Pages Site and often fails with GITHUB_TOKEN.
       - name: Configure Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

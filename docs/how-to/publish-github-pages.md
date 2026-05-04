@@ -43,13 +43,15 @@ The workflow:
 
 ## Repository Settings
 
-In GitHub, configure Pages to use GitHub Actions:
+Before the first deploy succeeds, turn on Pages and point it at Actions (the workflow does **not** auto-enable Pages; doing that from Actions often hits `Resource not accessible by integration` because the default token cannot create the Pages site for every repository).
+
+In GitHub:
 
 ```txt
 Settings -> Pages -> Build and deployment -> Source -> GitHub Actions
 ```
 
-The workflow also passes `enablement: true` to `actions/configure-pages`, so the first successful run can create/enable the Pages site if the repository permits it. If the workflow still fails with a Pages `Not Found` error, enable Pages through the repository settings above and rerun the workflow.
+Save, then push to `main` (or run the workflow manually). If you see `Get Pages site failed` / `Not Found` in logs before changing this, that usually means Pages was not configured yet; set the source as above and rerun.
 
 After a successful deploy, the demo should be available at:
 
