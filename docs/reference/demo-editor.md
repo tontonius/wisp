@@ -8,6 +8,15 @@ The demo in `demo/main.ts` includes a Tweakpane editor for creating and copying 
 | --- | --- |
 | `?pool=1` | Enables `ParticleWorld` inactive pooling (`pooling: true`) so repeated one-shot spawns reuse GPU/CPU backends. |
 
+## Scene pane (top left)
+
+Separate from the particle preset editor (top right). Does not affect preset export.
+
+| Control | Effect |
+| --- | --- |
+| `Ground plane` | Shows or hides the demo floor mesh and `GridHelper`. Pointer spawn still uses the mathematical ground plane at \(y = 0\) when the mesh is hidden. |
+| `Ground color` | Color picker for the floor `MeshStandardMaterial` (does not change the grid line colors). |
+
 ## Controls Folder
 
 | Control | Effect |

@@ -49,14 +49,16 @@ light.position.set(4, 8, 5);
 scene.add(light);
 scene.add(new THREE.AmbientLight("#7788aa", 1.5));
 
-const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(16, 16),
-  new THREE.MeshStandardMaterial({ color: "#182033", roughness: 0.85, metalness: 0 })
-);
+const floorMaterial = new THREE.MeshStandardMaterial({
+  color: "#545454",
+  roughness: 0.85,
+  metalness: 0,
+});
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(16, 16), floorMaterial);
 floor.rotation.x = -Math.PI / 2;
 scene.add(floor);
 
-const grid = new THREE.GridHelper(16, 16, "#3d4a66", "#253047");
+const grid = new THREE.GridHelper(16, 16, "#949494", "#949494");
 scene.add(grid);
 
 function makeSoftDiscTexture(): THREE.Texture {
@@ -680,7 +682,7 @@ const shockwave: ParticlePreset = {
     angularVelocity: [-1.3, 1.3],
   },
   forces: {
-    acceleration: [0, -0.25, 0],
+    acceleration: [0, 0.55, 0],
     drag: 6.52,
     noise: {
       strength: 0.28,
@@ -688,12 +690,12 @@ const shockwave: ParticlePreset = {
     },
   },
   overLifetime: {
-    size: [[0, 0], [0.12, 1], [0.95, 1], [1, 0]],
+    size: [[0, 0], [0.12, 1],  [1, 0]],
     opacity: [[0, 0], [0.12, 1], [1, 0]],
     color: [[0, "#ffdf77"], [0.45, "#9c744f"], [1, "#75433a"]],
   },
   renderer: {
-    texture: hardDisc,
+    texture: softDisc,
     blendMode: "alpha",
     align: "camera",
     depthWrite: false,
@@ -713,11 +715,11 @@ const rainGpu: ParticlePreset = {
   start: {
     lifetime: [1.4, 2.6],
     speed: 0,
-    size: [0.08, 0.18],
+    size: [0.18, 0.28],
     color: ["#9fd3ff", "#d8f1ff"],
     opacity: [0.35, 0.75],
     velocity: [[-0.35, -8.5, -0.2], [0.35, -13, 0.2]],
-    rotation: [Math.PI * 0.5, Math.PI * 0.5],
+    rotation: [0,0],
   },
   forces: { acceleration: [0, -2.5, 0], drag: 0.05 },
   overLifetime: {
@@ -866,6 +868,27 @@ const editablePresets: Partial<Record<DemoEffectName, ParticlePreset>> = {
 const paneContainer = document.createElement("div");
 paneContainer.className = "tweakpane-wrap";
 document.body.appendChild(paneContainer);
+
+const scenePaneContainer = document.createElement("div");
+scenePaneContainer.className = "tweakpane-wrap-scene";
+document.body.appendChild(scenePaneContainer);
+
+const scenePaneParams = {
+  groundVisible: true,
+  groundColor: `#${floorMaterial.color.getHexString()}`,
+};
+const scenePane = new Pane({ title: "Scene", container: scenePaneContainer });
+scenePane
+  .addBinding(scenePaneParams, "groundVisible", { label: "Ground plane" })
+  .on("change", (ev) => {
+    floor.visible = ev.value;
+    grid.visible = ev.value;
+  });
+scenePane
+  .addBinding(scenePaneParams, "groundColor", { label: "Ground color", view: "color" })
+  .on("change", (ev) => {
+    floorMaterial.color.set(ev.value);
+  });
 
 const pane = new Pane({ title: "Particle effect", container: paneContainer });
 let loopPreview: ParticleSystem | undefined;
@@ -1242,7 +1265,7 @@ const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const hit = new THREE.Vector3();
 
 function shouldIgnoreUiTarget(event: Event): boolean {
-  return event.target instanceof Element && !!event.target.closest(".ui, .tweakpane-wrap");
+  return event.target instanceof Element && !!event.target.closest(".ui, .tweakpane-wrap, .tweakpane-wrap-scene");
 }
 
 function shouldIgnorePointer(event: PointerEvent): boolean {

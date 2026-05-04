@@ -56,7 +56,18 @@ canvas {
   z-index: 2;
 }
 
-.tweakpane-wrap .tp-dfwv {
+.tweakpane-wrap-scene {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  width: min(220px, calc(100vw - 40px));
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  z-index: 2;
+}
+
+.tweakpane-wrap .tp-dfwv,
+.tweakpane-wrap-scene .tp-dfwv {
   position: static;
   width: 100%;
 }
@@ -76,5 +87,12 @@ canvas {
     bottom: 12px;
     width: auto;
     max-height: 52vh;
+  }
+
+  .tweakpane-wrap-scene {
+    top: 12px;
+    left: 12px;
+    width: min(200px, calc(100vw - 24px));
+    max-height: min(200px, 28vh);
   }
 }
