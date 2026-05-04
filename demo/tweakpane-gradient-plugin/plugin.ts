@@ -136,6 +136,92 @@ export const gradientStopsPluginCss = /* css */ `
 .tp-grdt_lbl-opacity {
   display:flex;
 }
+.tp-grdt_presets {
+  margin-top: 4px;
+  border-top: 1px solid var(--grv-l, rgba(127,127,127,0.2));
+  padding-top: 6px;
+}
+.tp-grdt_presets-sum {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+  font-family: var(--font-family, monospace);
+  font-size: 11px;
+  color: var(--in-fg);
+  opacity: 0.92;
+  padding: 2px 0 8px;
+  user-select: none;
+}
+.tp-grdt_presets-sum::-webkit-details-marker {
+  display: none;
+}
+.tp-grdt_presets-lead {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.tp-grdt_presets-arrow {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid currentColor;
+  opacity: 0.75;
+  transition: transform 0.12s ease;
+  flex-shrink: 0;
+}
+.tp-grdt_presets:not([open]) .tp-grdt_presets-arrow {
+  transform: rotate(-90deg);
+}
+.tp-grdt_presets-ico {
+  display: block;
+  width: 14px;
+  height: 10px;
+  opacity: 0.5;
+  flex-shrink: 0;
+  background: linear-gradient(currentColor, currentColor) 0 0 / 10px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) 0 4px / 10px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) 0 8px / 10px 2px no-repeat;
+}
+.tp-grdt_preset-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  width: 100%;
+  margin-bottom: 2px;
+}
+.tp-grdt_preset {
+  display: block;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border-radius: var(--bld-br, 4px);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.35);
+  min-height: 22px;
+  background: var(--bs-bg, #2f2f2f);
+}
+.tp-grdt_preset:focus-visible {
+  outline: 1px solid var(--in-fg, #4488ff);
+  outline-offset: 1px;
+}
+.tp-grdt_preset:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.tp-grdt_preset-canvas {
+  display: block;
+  width: 100%;
+  height: 18px;
+  vertical-align: top;
+}
 `;
 
 export const gradientStopsInputPlugin: InputBindingPlugin<GradientStopsValue, GradientStopsValue, GradientStopsInputParams> =

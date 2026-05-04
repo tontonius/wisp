@@ -1,26 +1,13 @@
 import type { Value, ViewProps } from "@tweakpane/core";
 import type { View } from "@tweakpane/core";
-import { rgbaAt } from "./sample.js";
+import { GRADIENT_PRESETS } from "./gradient-presets.js";
+import { paintGradientStrip, rgbaAt } from "./sample.js";
 import type { GradientStopsValue } from "./types.js";
-import { cloneGradientStops } from "./types.js";
+import { cloneGradientStops, normalizeGradientStops } from "./types.js";
 
 const MIN_STOPS = 2;
 
 type Selection = { kind: "color"; index: number } | { kind: "opacity"; index: number };
-
-function checkerStyle(size: number): CanvasPattern | null {
-  const c = document.createElement("canvas");
-  c.width = size * 2;
-  c.height = size * 2;
-  const g = c.getContext("2d");
-  if (!g) return null;
-  g.fillStyle = "#bdbdbd";
-  g.fillRect(0, 0, size * 2, size * 2);
-  g.fillStyle = "#e8e8e8";
-  g.fillRect(0, 0, size, size);
-  g.fillRect(size, size, size, size);
-  return g.createPattern(c, "repeat");
-}
 
 function sortStopsPermutation<T extends [number, unknown]>(stops: T[]): number[] {
   const decorated = stops.map((row, oldIndex) => ({ row, oldIndex }));
@@ -41,7 +28,6 @@ export class GradientStopsView implements View {
 
   private readonly opRow_: HTMLElement;
   private readonly canvas_: HTMLCanvasElement;
-  private readonly ctx_: CanvasRenderingContext2D | null;
   private readonly colRow_: HTMLElement;
   private readonly colorInput_: HTMLInputElement;
   private readonly opacityInput_: HTMLInputElement;
@@ -50,11 +36,14 @@ export class GradientStopsView implements View {
   private readonly opacityLab_: HTMLLabelElement;
   private readonly colorLab_: HTMLLabelElement;
   private readonly swatch_: HTMLElement;
+  private readonly presetGrid_: HTMLElement;
+  private readonly presetPaintPairs_: Array<{ canvas: HTMLCanvasElement; value: GradientStopsValue }> = [];
 
   private selection_: Selection | null = { kind: "color", index: 0 };
   private drag_: { kind: "color" | "opacity"; index: number } | null = null;
 
   private ro_: ResizeObserver | null = null;
+  private presetRo_: ResizeObserver | null = null;
 
   private readonly onValueChange_ = () => this.syncFromModel();
 
@@ -76,7 +65,6 @@ export class GradientStopsView implements View {
 
     this.canvas_ = doc.createElement("canvas");
     this.canvas_.className = "tp-grdt_canvas";
-    this.ctx_ = this.canvas_.getContext("2d", { willReadFrequently: true });
 
     this.colRow_ = doc.createElement("div");
     this.colRow_.className = "tp-grdt_row tp-grdt_row-col";
@@ -148,6 +136,54 @@ export class GradientStopsView implements View {
 
     root.appendChild(edit);
 
+    const presetsDetails = doc.createElement("details");
+    presetsDetails.className = "tp-grdt_presets";
+    presetsDetails.open = true;
+    const presetsSum = doc.createElement("summary");
+    presetsSum.className = "tp-grdt_presets-sum";
+    const presetsLead = doc.createElement("span");
+    presetsLead.className = "tp-grdt_presets-lead";
+    const presetsArrow = doc.createElement("span");
+    presetsArrow.className = "tp-grdt_presets-arrow";
+    presetsArrow.setAttribute("aria-hidden", "true");
+    const presetsTitle = doc.createElement("span");
+    presetsTitle.className = "tp-grdt_presets-title";
+    presetsTitle.textContent = "Presets";
+    presetsLead.appendChild(presetsArrow);
+    presetsLead.appendChild(presetsTitle);
+    const presetsIcon = doc.createElement("span");
+    presetsIcon.className = "tp-grdt_presets-ico";
+    presetsIcon.setAttribute("aria-hidden", "true");
+    presetsIcon.title = "Preset library";
+    presetsSum.appendChild(presetsLead);
+    presetsSum.appendChild(presetsIcon);
+
+    this.presetGrid_ = doc.createElement("div");
+    this.presetGrid_.className = "tp-grdt_preset-grid";
+
+    for (const preset of GRADIENT_PRESETS) {
+      const btn = doc.createElement("button");
+      btn.type = "button";
+      btn.className = "tp-grdt_preset tp-btnv_b";
+      btn.title = preset.title;
+      btn.setAttribute("aria-label", `Load preset: ${preset.title}`);
+      const cnv = doc.createElement("canvas");
+      cnv.className = "tp-grdt_preset-canvas";
+      btn.appendChild(cnv);
+      this.presetPaintPairs_.push({ canvas: cnv, value: preset.value });
+      btn.addEventListener("click", () => {
+        const next = normalizeGradientStops(cloneGradientStops(preset.value));
+        this.selection_ = { kind: "color", index: 0 };
+        this.value_.setRawValue(next, { forceEmit: false, last: true });
+      });
+      this.viewProps_.bindDisabled(btn);
+      this.presetGrid_.appendChild(btn);
+    }
+
+    presetsDetails.appendChild(presetsSum);
+    presetsDetails.appendChild(this.presetGrid_);
+    root.appendChild(presetsDetails);
+
     if (!("EyeDropper" in window)) this.eyeBtn_.style.display = "none";
 
     this.swatch_.addEventListener("click", () => this.colorInput_.click());
@@ -203,6 +239,15 @@ export class GradientStopsView implements View {
 
     this.ro_ = new ResizeObserver(() => this.paintCanvas());
     this.ro_.observe(this.canvas_);
+
+    const repaintPresets = () => {
+      for (const { canvas, value } of this.presetPaintPairs_) {
+        paintGradientStrip(canvas, value, 18, 60);
+      }
+    };
+    this.presetRo_ = new ResizeObserver(() => repaintPresets());
+    this.presetRo_.observe(this.presetGrid_);
+    requestAnimationFrame(() => repaintPresets());
 
     this.syncFromModel();
   }
@@ -473,37 +518,15 @@ export class GradientStopsView implements View {
   }
 
   private paintCanvas(): void {
-    const ctx = this.ctx_;
-    if (!ctx) return;
-    const cssW = this.canvas_.clientWidth || 200;
-    const w = (this.canvas_.width = Math.max(80, Math.floor(cssW * devicePixelRatio)));
-    const h = (this.canvas_.height = Math.floor(28 * devicePixelRatio));
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    const pat = checkerStyle(Math.floor(6 * devicePixelRatio));
-    if (pat) {
-      ctx.fillStyle = pat;
-      ctx.fillRect(0, 0, w, h);
-    }
-    const v = this.value_.rawValue;
-    const img = ctx.createImageData(w, h);
-    for (let x = 0; x < w; x++) {
-      const t = w <= 1 ? 0 : x / (w - 1);
-      const [r, g, b, a] = rgbaAt(v, t);
-      for (let y = 0; y < h; y++) {
-        const i = (y * w + x) * 4;
-        img.data[i] = r;
-        img.data[i + 1] = g;
-        img.data[i + 2] = b;
-        img.data[i + 3] = Math.round(a * 255);
-      }
-    }
-    ctx.putImageData(img, 0, 0);
+    paintGradientStrip(this.canvas_, this.value_.rawValue, 28, 200);
   }
 
   public dispose(): void {
     this.value_.emitter.off("change", this.onValueChange_);
     this.ro_?.disconnect();
     this.ro_ = null;
+    this.presetRo_?.disconnect();
+    this.presetRo_ = null;
   }
 }
 

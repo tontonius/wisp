@@ -193,6 +193,7 @@ Behavior (axis normalization, how values combine with acceleration and noise, ne
 
 Gradient editor interactions:
 
+- **Presets** (collapsible block under the editor): a grid of one-click swatches (starter ramps plus **Demo: …** entries copied from `demo/presets.ts` lifetime color + opacity). Choosing a preset replaces the current color and opacity stops and loads that ramp into the main strip.
 - Drag a stop to move it.
 - Double-click on the color row or gradient bar to add a color stop.
 - Double-click on the opacity row to add an opacity stop.

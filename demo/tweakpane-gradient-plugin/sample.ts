@@ -58,3 +58,50 @@ export function rgbaAt(value: GradientStopsValue, t: number): [number, number, n
   const alpha = sampleStops(opacities, t);
   return [r, g, b, alpha];
 }
+
+function checkerStyle(size: number): CanvasPattern | null {
+  const c = document.createElement("canvas");
+  c.width = size * 2;
+  c.height = size * 2;
+  const g = c.getContext("2d");
+  if (!g) return null;
+  g.fillStyle = "#bdbdbd";
+  g.fillRect(0, 0, size * 2, size * 2);
+  g.fillStyle = "#e8e8e8";
+  g.fillRect(0, 0, size, size);
+  g.fillRect(size, size, size, size);
+  return g.createPattern(c, "repeat");
+}
+
+/** Horizontal gradient with checkerboard under transparency (main strip + preset swatches). */
+export function paintGradientStrip(
+  canvas: HTMLCanvasElement,
+  value: GradientStopsValue,
+  cssHeight: number,
+  cssWidthFallback = 200,
+): void {
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return;
+  const cssW = canvas.clientWidth || cssWidthFallback;
+  const w = (canvas.width = Math.max(40, Math.floor(cssW * devicePixelRatio)));
+  const h = (canvas.height = Math.max(8, Math.floor(cssHeight * devicePixelRatio)));
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const pat = checkerStyle(Math.floor(6 * devicePixelRatio));
+  if (pat) {
+    ctx.fillStyle = pat;
+    ctx.fillRect(0, 0, w, h);
+  }
+  const img = ctx.createImageData(w, h);
+  for (let x = 0; x < w; x++) {
+    const t = w <= 1 ? 0 : x / (w - 1);
+    const [r, g, b, a] = rgbaAt(value, t);
+    for (let y = 0; y < h; y++) {
+      const i = (y * w + x) * 4;
+      img.data[i] = r;
+      img.data[i + 1] = g;
+      img.data[i + 2] = b;
+      img.data[i + 3] = Math.round(a * 255);
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+}

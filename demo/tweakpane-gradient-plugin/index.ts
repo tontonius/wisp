@@ -1,3 +1,5 @@
+export type { GradientPresetItem } from "./gradient-presets.js";
+export { GRADIENT_PRESETS } from "./gradient-presets.js";
 export type { GradientStopsValue } from "./types.js";
 export type { GradientStopsInputParams } from "./plugin.js";
 export {
@@ -7,7 +9,7 @@ export {
   normalizeGradientStops,
   gradientsEqual,
 } from "./types.js";
-export { rgbaAt, sampleStops, sampleColorRgb } from "./sample.js";
+export { paintGradientStrip, rgbaAt, sampleStops, sampleColorRgb } from "./sample.js";
 
 import {
   gradientStopsInputPlugin,
