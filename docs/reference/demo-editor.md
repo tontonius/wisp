@@ -32,7 +32,7 @@ Separate bottom-left Tweakpane used for recording-friendly camera motion. These 
 
 | Control | Effect |
 | --- | --- |
-| `click` | Selects the effect spawned by pointer clicks and buttons (including the orbiting world-space emitter demo preset, **Candy vortex**, and other entries from `demo/presets.ts`). |
+| `click` | Selects the effect spawned by pointer clicks and buttons (including **Speed visual (CPU)**, **Candy vortex**, the orbiting world-space emitter demo, and other entries from `demo/presets.ts`). |
 | `Spawn at center` | Spawns the selected effect near the center of the scene. |
 | `Load selected into editor` | Copies a built-in preset into the custom editor controls. |
 | `Preview loop` | Spawns or respawns the custom effect as a loop preview. |
@@ -204,6 +204,38 @@ size: [[0, 0], [0.18, 1], [1, grow]]
 | `start min/max deg` | `start.rotation`, converted to radians. |
 | `enabled` | Whether `start.angularVelocity` uses the range. |
 | `angular min/max rad/s` | `start.angularVelocity` |
+
+## Color by speed Folder
+
+| Control | Preset Field |
+| --- | --- |
+| `enabled` | Whether `colorBySpeed` is included. |
+| `speed min` / `speed max` | `colorBySpeed.speedRange` |
+| `gradient` | `colorBySpeed.gradient` (color stops only; opacity stops in the gradient UI are not exported to this preset field). |
+
+See [Speed-driven modules](speed-driven.md).
+
+## Size by speed Folder
+
+| Control | Preset Field |
+| --- | --- |
+| `enabled` | Whether `sizeBySpeed` is included. |
+| `speed min` / `speed max` | `sizeBySpeed.speedRange` |
+| `mult at low speed` | `sizeBySpeed.curve` first keyframe value (`t = 0`). |
+| `mult at high speed` | `sizeBySpeed.curve` last keyframe value (`t = 1`). |
+
+The demo generates a two-point curve `[[0, multLow], [1, multHigh]]`.
+
+## Rotation by speed Folder
+
+| Control | Preset Field |
+| --- | --- |
+| `enabled` | Whether `rotationBySpeed` is included. |
+| `speed min` / `speed max` | `rotationBySpeed.speedRange` |
+| `rad/s at low speed` | `rotationBySpeed.angularVelocity` first keyframe value (`t = 0`). |
+| `rad/s at high speed` | `rotationBySpeed.angularVelocity` last keyframe value (`t = 1`). |
+
+The demo generates a two-point curve. Loading a preset with more than two keyframes uses the first and last values for the sliders.
 
 ## Renderer Folder
 

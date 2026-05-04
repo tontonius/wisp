@@ -361,6 +361,62 @@ export function collectParticlePresetIssues(
     errors.push(...validateCurve("velocityOverLifetime.linear.z", vol.z));
   }
 
+  function validateSpeedRange(path: string, range: unknown): string[] {
+    const e: string[] = [];
+    if (!Array.isArray(range) || range.length !== 2) {
+      e.push(`${path}: must be a [min, max] speed tuple when set.`);
+      return e;
+    }
+    if (!isFiniteNumber(range[0])) e.push(`${path}[0]: must be a finite number.`);
+    if (!isFiniteNumber(range[1])) e.push(`${path}[1]: must be a finite number.`);
+    if (isFiniteNumber(range[0]) && isFiniteNumber(range[1]) && range[1] < range[0]) {
+      e.push(`${path}: max speed must be >= min speed.`);
+    }
+    return e;
+  }
+
+  const cbs = preset.colorBySpeed;
+  if (cbs !== undefined) {
+    if (typeof cbs !== "object" || cbs === null) {
+      errors.push("colorBySpeed: must be an object when set.");
+    } else {
+      errors.push(...validateSpeedRange("colorBySpeed.speedRange", cbs.speedRange));
+      if (!cbs.gradient || !Array.isArray(cbs.gradient) || cbs.gradient.length === 0) {
+        errors.push("colorBySpeed.gradient: must be a non-empty gradient when colorBySpeed is set.");
+      } else {
+        errors.push(...validateGradient("colorBySpeed.gradient", cbs.gradient));
+      }
+    }
+  }
+
+  const szs = preset.sizeBySpeed;
+  if (szs !== undefined) {
+    if (typeof szs !== "object" || szs === null) {
+      errors.push("sizeBySpeed: must be an object when set.");
+    } else {
+      errors.push(...validateSpeedRange("sizeBySpeed.speedRange", szs.speedRange));
+      if (!szs.curve || !Array.isArray(szs.curve) || szs.curve.length === 0) {
+        errors.push("sizeBySpeed.curve: must be a non-empty curve when sizeBySpeed is set.");
+      } else {
+        errors.push(...validateCurve("sizeBySpeed.curve", szs.curve));
+      }
+    }
+  }
+
+  const rbs = preset.rotationBySpeed;
+  if (rbs !== undefined) {
+    if (typeof rbs !== "object" || rbs === null) {
+      errors.push("rotationBySpeed: must be an object when set.");
+    } else {
+      errors.push(...validateSpeedRange("rotationBySpeed.speedRange", rbs.speedRange));
+      if (!rbs.angularVelocity || !Array.isArray(rbs.angularVelocity) || rbs.angularVelocity.length === 0) {
+        errors.push("rotationBySpeed.angularVelocity: must be a non-empty curve when rotationBySpeed is set.");
+      } else {
+        errors.push(...validateCurve("rotationBySpeed.angularVelocity", rbs.angularVelocity));
+      }
+    }
+  }
+
   const bursts = preset.emission?.bursts;
   if (bursts) {
     bursts.forEach((b, i) => {

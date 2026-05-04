@@ -109,7 +109,7 @@ The shader:
 5. Kills particles when age exceeds lifetime.
 6. Applies constant acceleration, vortex force (if configured), coherent FBM noise, and drag.
 7. Samples linear velocity-over-lifetime.
-8. Integrates position and rotation.
+8. Integrates position and rotation (if `rotationBySpeed` is set, angular velocity is taken from its curve each step using current simulation speed).
 
 ## Render Shader
 
@@ -121,7 +121,7 @@ The render geometry is static:
 The vertex shader:
 
 - Samples GPU state textures.
-- Computes size, opacity, color, rotation, atlas frame, and alignment.
+- Computes size, opacity, color, rotation, atlas frame, and alignment (optional `colorBySpeed` / `sizeBySpeed` use current `|velocity|` from the simulation texture).
 - Expands the billboard quad.
 
 The fragment shader:
@@ -139,6 +139,7 @@ The GPU backend bakes these authoring values into lookup textures:
 - `overLifetime.opacity`.
 - `overLifetime.color`.
 - `velocityOverLifetime.linear`.
+- When set: `sizeBySpeed.curve` and `rotationBySpeed.angularVelocity` as **float** ramps (values may exceed `1`), and `colorBySpeed.gradient` as an sRGB strip. See [Speed-driven modules](speed-driven.md).
 
 Preset mutations after construction do not update these lookup textures.
 

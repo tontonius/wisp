@@ -24,6 +24,7 @@ export type DemoEffectName =
   | "shockwave"
   | "gpuMagicStorm"
   | "candyVortex"
+  | "speedVisualDemo"
   | "customEffect"
   | "explosionCombo";
 
@@ -785,6 +786,56 @@ export function createDemoPresets(textures: DemoPresetTextures): {
     renderer: { texture: softDisc, blendMode: "additive", depthWrite: false },
   };
 
+  /** CPU: speed remaps tint, size multiplier, and spin (see `colorBySpeed` / `sizeBySpeed` / `rotationBySpeed`). */
+  const speedVisualDemo: ParticlePreset = {
+    simulation: "cpu",
+    maxParticles: 480,
+    duration: 2.2,
+    loop: true,
+    emitter: { type: "box", size: [2.22, 0.22, 0.2] },
+    emission: { rateOverTime: 72 },
+    start: {
+      lifetime: [1.5, 1.5],
+      speed: [4, 7],
+      size: [0.1, 0.18],
+      color: "#ffffff",
+      opacity: [0.75, 1],
+      rotation: [0, Math.PI * 2],
+      angularVelocity: [-0.2, 0.2],
+    },
+    forces: { drag: 1.1, acceleration: [0, -0.35, 0] },
+    colorBySpeed: {
+      speedRange: [0, 7],
+      gradient: [
+        [0, "#3d7cff"],
+        [0.45, "#e8f0ff"],
+        [1, "#ff5a3c"],
+      ],
+    },
+    sizeBySpeed: {
+      speedRange: [0, 7],
+      curve: [
+        [0, 0.45],
+        [1, 2.1],
+      ],
+    },
+    rotationBySpeed: {
+      speedRange: [0, 7],
+      angularVelocity: [
+        [0, 0.4],
+        [1, 360],
+      ],
+    },
+    overLifetime: {
+      opacity: [
+        [0, 0],
+        [0.08, 1],
+        [1, 0],
+      ],
+    },
+    renderer: { texture: softDisc, blendMode: "additive", align: "velocity", depthWrite: false },
+  };
+
   /** CPU cone + vortex: soft white → cyan → pink puff on the ground plane. */
   const candyVortex: ParticlePreset = {
     simulation: "cpu",
@@ -879,6 +930,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
     orbitingEmitterWorldDemo,
     shockwave,
     gpuMagicStorm,
+    speedVisualDemo,
     candyVortex,
   };
 
@@ -904,6 +956,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
     orbitingEmitterWorldDemo,
     shockwave,
     gpuMagicStorm,
+    speedVisualDemo,
     candyVortex,
   };
 

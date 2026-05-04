@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { Pane } from "tweakpane";
 import * as EssentialsPlugin from "@tweakpane/plugin-essentials";
 import { ParticleWorld } from "../src";
-import type { Curve, ParticlePreset, ParticleSystem } from "../src";
+import type { Curve, Gradient, ParticlePreset, ParticleSystem } from "../src";
 import {
   defaultGradientStops,
   normalizeGradientStops,
@@ -257,6 +257,20 @@ const customParams = {
   vortexOrbitalSpeed: 0,
   vortexInward: 0,
   vortexUpward: 0,
+  colorBySpeedEnabled: false,
+  colorBySpeedMin: 0,
+  colorBySpeedMax: 8,
+  colorBySpeedGradient: defaultGradientStops(),
+  sizeBySpeedEnabled: false,
+  sizeBySpeedMin: 0,
+  sizeBySpeedMax: 8,
+  sizeBySpeedMulLow: 0.5,
+  sizeBySpeedMulHigh: 1.5,
+  rotationBySpeedEnabled: false,
+  rotationBySpeedMin: 0,
+  rotationBySpeedMax: 8,
+  rotationBySpeedAvLow: 0.5,
+  rotationBySpeedAvHigh: 6,
   grow: 1.25,
 };
 
@@ -455,6 +469,30 @@ function makeCustomPreset(): ParticlePreset {
             y: [[0, customParams.lifetimeVelocityYStart], [1, customParams.lifetimeVelocityYEnd]],
             z: [[0, customParams.lifetimeVelocityZStart], [1, customParams.lifetimeVelocityZEnd]],
           },
+        }
+      : undefined,
+    colorBySpeed: customParams.colorBySpeedEnabled
+      ? {
+          speedRange: [Math.min(customParams.colorBySpeedMin, customParams.colorBySpeedMax), Math.max(customParams.colorBySpeedMin, customParams.colorBySpeedMax)] as [number, number],
+          gradient: customParams.colorBySpeedGradient.colors.map(([t, c]) => [t, c] as [number, string]),
+        }
+      : undefined,
+    sizeBySpeed: customParams.sizeBySpeedEnabled
+      ? {
+          speedRange: [Math.min(customParams.sizeBySpeedMin, customParams.sizeBySpeedMax), Math.max(customParams.sizeBySpeedMin, customParams.sizeBySpeedMax)] as [number, number],
+          curve: [
+            [0, customParams.sizeBySpeedMulLow],
+            [1, customParams.sizeBySpeedMulHigh],
+          ],
+        }
+      : undefined,
+    rotationBySpeed: customParams.rotationBySpeedEnabled
+      ? {
+          speedRange: [Math.min(customParams.rotationBySpeedMin, customParams.rotationBySpeedMax), Math.max(customParams.rotationBySpeedMin, customParams.rotationBySpeedMax)] as [number, number],
+          angularVelocity: [
+            [0, customParams.rotationBySpeedAvLow],
+            [1, customParams.rotationBySpeedAvHigh],
+          ],
         }
       : undefined,
     overLifetime: {
@@ -736,6 +774,14 @@ function colorsFromPresetColor(color: NonNullable<ParticlePreset["start"]>["colo
   return [value, value];
 }
 
+function colorBySpeedGradientFromPreset(gradient: Gradient | undefined): GradientStopsValue {
+  const colors = gradient?.map(([t, c]) => [t, colorHex(c)] as [number, string]);
+  return normalizeGradientStops({
+    colors: colors && colors.length >= 2 ? colors : defaultGradientStops().colors,
+    opacities: defaultGradientStops().opacities,
+  });
+}
+
 function lifetimeGradientFromOverLifetime(
   overLifetime: NonNullable<ParticlePreset["overLifetime"]> | undefined
 ): GradientStopsValue {
@@ -842,6 +888,35 @@ function loadPresetIntoEditor(name: DemoEffectName): void {
   customParams.vortexOrbitalSpeed = forces?.vortex?.orbitalSpeed ?? 0;
   customParams.vortexInward = forces?.vortex?.inward ?? 0;
   customParams.vortexUpward = forces?.vortex?.upward ?? 0;
+
+  const cbs = preset.colorBySpeed;
+  customParams.colorBySpeedEnabled = !!cbs;
+  if (cbs) {
+    customParams.colorBySpeedMin = cbs.speedRange[0];
+    customParams.colorBySpeedMax = cbs.speedRange[1];
+    customParams.colorBySpeedGradient = colorBySpeedGradientFromPreset(cbs.gradient);
+  } else {
+    customParams.colorBySpeedGradient = defaultGradientStops();
+  }
+
+  const sbs = preset.sizeBySpeed;
+  customParams.sizeBySpeedEnabled = !!sbs;
+  if (sbs) {
+    customParams.sizeBySpeedMin = sbs.speedRange[0];
+    customParams.sizeBySpeedMax = sbs.speedRange[1];
+    customParams.sizeBySpeedMulLow = curveEndpoint(sbs.curve, "first");
+    customParams.sizeBySpeedMulHigh = curveEndpoint(sbs.curve, "last");
+  }
+
+  const rbs = preset.rotationBySpeed;
+  customParams.rotationBySpeedEnabled = !!rbs;
+  if (rbs) {
+    customParams.rotationBySpeedMin = rbs.speedRange[0];
+    customParams.rotationBySpeedMax = rbs.speedRange[1];
+    customParams.rotationBySpeedAvLow = curveEndpoint(rbs.angularVelocity, "first");
+    customParams.rotationBySpeedAvHigh = curveEndpoint(rbs.angularVelocity, "last");
+  }
+
   const limitVelocity = preset.limitVelocityOverLifetime;
   customParams.limitVelocityEnabled = !!limitVelocity;
   customParams.limitSpeedStart = curveEndpoint(limitVelocity?.speed, "first");
@@ -988,6 +1063,7 @@ bind(controlsFolder, "clickEffect", {
     "Snow GPU": "snowGpu",
     "Magic aura GPU": "magicAuraGpu",
     "GPU storm": "gpuMagicStorm",
+    "Speed visual (CPU)": "speedVisualDemo",
     "Candy vortex": "candyVortex",
   },
 });
@@ -1109,6 +1185,26 @@ bind(rotationFolder, "startRotationMax", { label: "start max deg", min: -360, ma
 bind(rotationFolder, "rotationOverLifetimeEnabled", { label: "enabled" });
 bind(rotationFolder, "angularVelocityMin", { label: "angular min rad/s", min: -20, max: 20, step: 0.01 });
 bind(rotationFolder, "angularVelocityMax", { label: "angular max rad/s", min: -20, max: 20, step: 0.01 });
+
+const colorBySpeedFolder = particlesPane.addFolder({ title: "Color by speed", expanded: false }) as PaneLike;
+bind(colorBySpeedFolder, "colorBySpeedEnabled", { label: "enabled" });
+bind(colorBySpeedFolder, "colorBySpeedMin", { label: "speed min", min: 0, max: 40, step: 0.05 });
+bind(colorBySpeedFolder, "colorBySpeedMax", { label: "speed max", min: 0, max: 40, step: 0.05 });
+bind(colorBySpeedFolder, "colorBySpeedGradient", { label: "gradient", view: "gradient" });
+
+const sizeBySpeedFolder = particlesPane.addFolder({ title: "Size by speed", expanded: false }) as PaneLike;
+bind(sizeBySpeedFolder, "sizeBySpeedEnabled", { label: "enabled" });
+bind(sizeBySpeedFolder, "sizeBySpeedMin", { label: "speed min", min: 0, max: 40, step: 0.05 });
+bind(sizeBySpeedFolder, "sizeBySpeedMax", { label: "speed max", min: 0, max: 40, step: 0.05 });
+bind(sizeBySpeedFolder, "sizeBySpeedMulLow", { label: "mult at low speed", min: 0, max: 5, step: 0.01 });
+bind(sizeBySpeedFolder, "sizeBySpeedMulHigh", { label: "mult at high speed", min: 0, max: 5, step: 0.01 });
+
+const rotationBySpeedFolder = particlesPane.addFolder({ title: "Rotation by speed", expanded: false }) as PaneLike;
+bind(rotationBySpeedFolder, "rotationBySpeedEnabled", { label: "enabled" });
+bind(rotationBySpeedFolder, "rotationBySpeedMin", { label: "speed min", min: 0, max: 40, step: 0.05 });
+bind(rotationBySpeedFolder, "rotationBySpeedMax", { label: "speed max", min: 0, max: 40, step: 0.05 });
+bind(rotationBySpeedFolder, "rotationBySpeedAvLow", { label: "rad/s at low speed", min: -30, max: 30, step: 0.05 });
+bind(rotationBySpeedFolder, "rotationBySpeedAvHigh", { label: "rad/s at high speed", min: -30, max: 30, step: 0.05 });
 
 const rendererFolder = particlesPane.addFolder({ title: "Renderer", expanded: false }) as PaneLike;
 bind(rendererFolder, "rendererEnabled", { label: "enabled" });

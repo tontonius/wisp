@@ -13,7 +13,8 @@ It is designed for game effects where the developer ergonomics matter more than 
 - Local-space or world-space simulation (`simulationSpace`)
 - Continuous emission and burst emission
 - Size, opacity, and colour over lifetime
-- Constant acceleration vector, drag, and simple noise force
+- Optional speed-driven colour, size multiplier, and spin (`colorBySpeed`, `sizeBySpeed`, `rotationBySpeed`)
+- Constant acceleration vector, drag, vortex, and coherent noise force
 - Billboard quad renderer
 - Camera-aligned and velocity-aligned particles
 - Alpha, additive, and multiply blending

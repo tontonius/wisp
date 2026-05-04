@@ -26,6 +26,9 @@ type ParticlePreset = {
   collision?: CpuCollision;
   subEmitters?: { onBirth?: string; onDeath?: string; onCollision?: string };
   velocityOverLifetime?: VelocityOverLifetime;
+  colorBySpeed?: ColorBySpeed;
+  sizeBySpeed?: SizeBySpeed;
+  rotationBySpeed?: RotationBySpeed;
   overLifetime?: { ... };
   renderer?: { ... };
 };
@@ -57,6 +60,9 @@ type ParticlePreset = {
 | `collision` | `CpuCollision` | `undefined` | CPU-only primitive collision (`plane`, `sphere`, or `box`) in local space; see [CPU backend](cpu-backend.md#collision-plane--sphere--box). |
 | `subEmitters` | `{ onBirth?: string; onDeath?: string; onCollision?: string }` | `undefined` | CPU-only child effect hooks. `onBirth` spawns on CPU particle spawn, `onDeath` on particle death, and `onCollision` on primitive collision (when spawned through `ParticleWorld`). |
 | `velocityOverLifetime` | `VelocityOverLifetime` | No lifetime velocity | Per-age linear velocity channel. |
+| `colorBySpeed` | `ColorBySpeed` | `undefined` | RGB tint from simulation speed magnitude; see [Speed-driven modules](speed-driven.md). |
+| `sizeBySpeed` | `SizeBySpeed` | `undefined` | Size multiplier from simulation speed magnitude; see [Speed-driven modules](speed-driven.md). |
+| `rotationBySpeed` | `RotationBySpeed` | `undefined` | Angular velocity from simulation speed magnitude; see [Speed-driven modules](speed-driven.md). |
 | `overLifetime` | Object | Multipliers/color default to neutral values | Size, opacity, and color curves. |
 | `renderer` | Object | Default soft particle material | Type, texture, blend, alignment, depth, stretch settings, and texture sheet settings. |
 

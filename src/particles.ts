@@ -26,6 +26,27 @@ export type VelocityOverLifetime = {
   };
 };
 
+/** Remap `|velocity|` into `[0, 1]` using linear clamp between `speedRange[0]` and `speedRange[1]`. */
+export type SpeedRemapRange = [number, number];
+
+/** Multiply final RGB after start color × over-lifetime color. Sampled by speed parameter `t`. */
+export type ColorBySpeed = {
+  speedRange: SpeedRemapRange;
+  gradient: Gradient;
+};
+
+/** Multiply size after `start.size ×` over-lifetime size curve. Sampled by speed parameter `t`. */
+export type SizeBySpeed = {
+  speedRange: SpeedRemapRange;
+  curve: Curve;
+};
+
+/** Replaces per-frame angular velocity from `start.angularVelocity` when set. Sampled by speed parameter `t` (rad/s). */
+export type RotationBySpeed = {
+  speedRange: SpeedRemapRange;
+  angularVelocity: Curve;
+};
+
 export type EmitterShape =
   | { type: "point" }
   | { type: "sphere"; radius?: number; emitFrom?: "volume" | "shell" }
@@ -182,6 +203,22 @@ export type ParticlePreset = {
   };
 
   velocityOverLifetime?: VelocityOverLifetime;
+
+  /**
+   * Tint by current speed `|velocity|` (simulation velocity only; excludes `velocityOverLifetime` offset).
+   * Multiplies RGB after `start.color` and `overLifetime.color`. CPU and GPU.
+   */
+  colorBySpeed?: ColorBySpeed;
+
+  /**
+   * Size multiplier from current speed. Multiplies after `start.size` and `overLifetime.size`. CPU and GPU.
+   */
+  sizeBySpeed?: SizeBySpeed;
+
+  /**
+   * Drive spin rate from current speed (rad/s). When set, replaces the spawned `start.angularVelocity` each frame. CPU and GPU.
+   */
+  rotationBySpeed?: RotationBySpeed;
 
   overLifetime?: {
     size?: Curve;
@@ -470,6 +507,15 @@ function evaluateGradient(gradient: Gradient | undefined, t: number, target: THR
   }
 
   return target.set(gradient[gradient.length - 1][1]);
+}
+
+/** `t` in `[0, 1]` for sampling curves/gradients keyed 0..1 from scalar speed. */
+function speedToParam(speed: number, speedRange: [number, number]): number {
+  const lo = speedRange[0];
+  const hi = speedRange[1];
+  const span = hi - lo;
+  if (Math.abs(span) < 1e-8) return 0;
+  return THREE.MathUtils.clamp((speed - lo) / span, 0, 1);
 }
 
 function randomUnitVector(): THREE.Vector3 {
@@ -782,6 +828,27 @@ function makeCurveTexture(curve: Curve | undefined, fallback = 1): THREE.DataTex
     data[i * 4 + 3] = 255;
   }
   const texture = new THREE.DataTexture(data, width, 1, THREE.RGBAFormat, THREE.UnsignedByteType);
+  texture.needsUpdate = true;
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearFilter;
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  return texture;
+}
+
+/** 1×256 float ramp for arbitrary scalar curves (e.g. size or angular velocity vs normalized speed). */
+function makeCurveFloatTexture(curve: Curve | undefined, fallback = 1): THREE.DataTexture {
+  const width = 256;
+  const data = new Float32Array(width * 4);
+  for (let i = 0; i < width; i++) {
+    const t = i / (width - 1);
+    const v = evaluateCurve(curve, t, fallback);
+    data[i * 4 + 0] = v;
+    data[i * 4 + 1] = v;
+    data[i * 4 + 2] = v;
+    data[i * 4 + 3] = 1;
+  }
+  const texture = new THREE.DataTexture(data, width, 1, THREE.RGBAFormat, THREE.FloatType);
   texture.needsUpdate = true;
   texture.magFilter = THREE.LinearFilter;
   texture.minFilter = THREE.LinearFilter;
@@ -1155,7 +1222,6 @@ class CPUParticleBackend implements ParticleBackend {
       if (drag > 0) particle.velocity.multiplyScalar(Math.max(0, 1 - drag * dt));
       const t = THREE.MathUtils.clamp(particle.age / particle.lifetime, 0, 1);
       const over = this.preset.overLifetime ?? {};
-      const particleVisualRadius = Math.max(0, particle.startSize * evaluateCurve(over.size, t, 1) * 0.5);
       const velocityLimit = this.preset.limitVelocityOverLifetime;
       if (velocityLimit?.speed) {
         const maxSpeed = Math.max(0, evaluateCurve(velocityLimit.speed, t, Number.POSITIVE_INFINITY));
@@ -1167,6 +1233,13 @@ class CPUParticleBackend implements ParticleBackend {
           particle.velocity.lerp(cappedVelocity, dampen);
         }
       }
+      const simSpeed = particle.velocity.length();
+      let sizeForCollision = evaluateCurve(over.size, t, 1);
+      const sbs = this.preset.sizeBySpeed;
+      if (sbs?.curve && sbs.speedRange) {
+        sizeForCollision *= evaluateCurve(sbs.curve, speedToParam(simSpeed, sbs.speedRange), 1);
+      }
+      const particleVisualRadius = Math.max(0, particle.startSize * sizeForCollision * 0.5);
       const lifetimeVelocity = this.preset.velocityOverLifetime;
       const linearVelocity = tempVectorB.set(
         evaluateCurve(lifetimeVelocity?.linear?.x, t, 0),
@@ -1315,7 +1388,12 @@ class CPUParticleBackend implements ParticleBackend {
         }
       }
 
-      particle.rotation += particle.angularVelocity * dt;
+      let angularVel = particle.angularVelocity;
+      const rbs = this.preset.rotationBySpeed;
+      if (rbs?.angularVelocity && rbs.speedRange) {
+        angularVel = evaluateCurve(rbs.angularVelocity, speedToParam(simSpeed, rbs.speedRange), 0);
+      }
+      particle.rotation += angularVel * dt;
     }
   }
 
@@ -1345,10 +1423,19 @@ class CPUParticleBackend implements ParticleBackend {
 
       const t = THREE.MathUtils.clamp(particle.age / particle.lifetime, 0, 1);
       const over = this.preset.overLifetime ?? {};
-      const size = particle.startSize * evaluateCurve(over.size, t, 1);
+      let size = particle.startSize * evaluateCurve(over.size, t, 1);
+      const sbs = this.preset.sizeBySpeed;
+      if (sbs?.curve && sbs.speedRange) {
+        size *= evaluateCurve(sbs.curve, speedToParam(particle.velocity.length(), sbs.speedRange), 1);
+      }
       const opacity = particle.startOpacity * evaluateCurve(over.opacity, t, 1);
       const lifeColor = evaluateGradient(over.color, t, tempColorA);
       const finalColor = tempColorB.copy(particle.startColor).multiply(lifeColor);
+      const cbs = this.preset.colorBySpeed;
+      if (cbs?.gradient && cbs.speedRange) {
+        evaluateGradient(cbs.gradient, speedToParam(particle.velocity.length(), cbs.speedRange), tempColorA);
+        finalColor.multiply(tempColorA);
+      }
 
       let right = cameraRight;
       let up = cameraUp;
@@ -1554,6 +1641,9 @@ class GPUParticleBackend implements ParticleBackend {
   private opacityCurveTexture: THREE.DataTexture;
   private colorGradientTexture: THREE.DataTexture;
   private lifetimeVelocityTexture: THREE.DataTexture;
+  private sizeBySpeedCurveTexture: THREE.DataTexture;
+  private colorBySpeedGradientTexture: THREE.DataTexture;
+  private rotationBySpeedCurveTexture: THREE.DataTexture;
   private previousRenderTarget: THREE.WebGLRenderTarget | null = null;
   private previousXrEnabled = false;
   private simulationSpace: SimulationSpace;
@@ -1569,6 +1659,9 @@ class GPUParticleBackend implements ParticleBackend {
     this.opacityCurveTexture = makeCurveTexture(preset.overLifetime?.opacity, 1);
     this.colorGradientTexture = makeGradientTexture(preset.overLifetime?.color);
     this.lifetimeVelocityTexture = makeVectorCurveTexture(preset.velocityOverLifetime);
+    this.sizeBySpeedCurveTexture = makeCurveFloatTexture(preset.sizeBySpeed?.curve, 1);
+    this.colorBySpeedGradientTexture = makeGradientTexture(preset.colorBySpeed?.gradient);
+    this.rotationBySpeedCurveTexture = makeCurveFloatTexture(preset.rotationBySpeed?.angularVelocity, 0);
 
     this.rtA = this.makeTargetSet();
     this.rtB = this.makeTargetSet();
@@ -1585,8 +1678,22 @@ class GPUParticleBackend implements ParticleBackend {
     this.mesh = new THREE.Mesh(this.geometry, this.material);
     this.applyExplicitBounds();
     this.object.add(this.mesh);
+    this.applySpeedDrivenRenderUniforms();
 
     if (preset.prewarm) this.prewarm();
+  }
+
+  private applySpeedDrivenRenderUniforms(): void {
+    const u = this.material.uniforms;
+    const p = this.preset;
+    u.uSizeBySpeedEnabled.value = p.sizeBySpeed ? 1 : 0;
+    const sbr = p.sizeBySpeed?.speedRange ?? [0, 1];
+    u.uSizeBySpeedRange.value.set(sbr[0], sbr[1]);
+    u.uSizeBySpeedCurve.value = this.sizeBySpeedCurveTexture;
+    u.uColorBySpeedEnabled.value = p.colorBySpeed ? 1 : 0;
+    const cbr = p.colorBySpeed?.speedRange ?? [0, 1];
+    u.uColorBySpeedRange.value.set(cbr[0], cbr[1]);
+    u.uColorBySpeedGradient.value = this.colorBySpeedGradientTexture;
   }
 
   private applyExplicitBounds(): void {
@@ -1717,6 +1824,9 @@ class GPUParticleBackend implements ParticleBackend {
     this.opacityCurveTexture.dispose();
     this.colorGradientTexture.dispose();
     this.lifetimeVelocityTexture.dispose();
+    this.sizeBySpeedCurveTexture.dispose();
+    this.colorBySpeedGradientTexture.dispose();
+    this.rotationBySpeedCurveTexture.dispose();
     this.rtA.forEach((rt) => rt.dispose());
     this.rtB.forEach((rt) => rt.dispose());
 
@@ -1887,6 +1997,11 @@ class GPUParticleBackend implements ParticleBackend {
     u.uNoiseOctaves.value = THREE.MathUtils.clamp(Math.floor(forces.noise?.octaves ?? 2), 1, 4);
     u.uNoiseLacunarity.value = Math.max(1, forces.noise?.lacunarity ?? 2);
     u.uNoisePersistence.value = THREE.MathUtils.clamp(forces.noise?.persistence ?? 0.5, 0.05, 1);
+    const rbs = this.preset.rotationBySpeed;
+    u.uRotationBySpeedEnabled.value = rbs ? 1 : 0;
+    const rbr = rbs?.speedRange ?? [0, 1];
+    u.uRotationBySpeedRange.value.set(rbr[0], rbr[1]);
+    u.uRotationBySpeedCurve.value = this.rotationBySpeedCurveTexture;
     u.uLifetimeVelocity.value = this.lifetimeVelocityTexture;
     u.uRandomStartFrame.value = sheet?.randomFrame ? 1 : 0;
     u.uTotalFrames.value = sheet?.totalFrames ?? 1;
@@ -1943,6 +2058,9 @@ class GPUParticleBackend implements ParticleBackend {
         uNoiseOctaves: { value: 2 },
         uNoiseLacunarity: { value: 2 },
         uNoisePersistence: { value: 0.5 },
+        uRotationBySpeedEnabled: { value: 0 },
+        uRotationBySpeedRange: { value: new THREE.Vector2(0, 1) },
+        uRotationBySpeedCurve: { value: this.rotationBySpeedCurveTexture },
         uLifetimeVelocity: { value: this.lifetimeVelocityTexture },
         uRandomStartFrame: { value: 0 },
         uTotalFrames: { value: 1 },
@@ -2007,6 +2125,9 @@ class GPUParticleBackend implements ParticleBackend {
         uniform int uNoiseOctaves;
         uniform float uNoiseLacunarity;
         uniform float uNoisePersistence;
+        uniform int uRotationBySpeedEnabled;
+        uniform vec2 uRotationBySpeedRange;
+        uniform sampler2D uRotationBySpeedCurve;
         uniform sampler2D uLifetimeVelocity;
         uniform int uRandomStartFrame;
         uniform int uTotalFrames;
@@ -2178,7 +2299,14 @@ class GPUParticleBackend implements ParticleBackend {
           float ageT = clamp(age / max(0.0001, life), 0.0, 1.0);
           vec3 lifetimeVelocity = texture2D(uLifetimeVelocity, vec2(ageT, 0.5)).rgb;
           pos += (velocity + lifetimeVelocity) * uDeltaTime;
-          extra.y += extra.z * uDeltaTime;
+          float angularVel = extra.z;
+          if (uRotationBySpeedEnabled == 1) {
+            float spd = length(velocity);
+            float ts = clamp((spd - uRotationBySpeedRange.x) / max(uRotationBySpeedRange.y - uRotationBySpeedRange.x, 0.00001), 0.0, 1.0);
+            angularVel = texture2D(uRotationBySpeedCurve, vec2(ts, 0.5)).r;
+            extra.z = angularVel;
+          }
+          extra.y += angularVel * uDeltaTime;
 
           if (uTarget == 0) gl_FragColor = vec4(pos, age);
           else if (uTarget == 1) gl_FragColor = vec4(velocity, life);
@@ -2252,6 +2380,12 @@ class GPUParticleBackend implements ParticleBackend {
         uSizeCurve: { value: this.sizeCurveTexture },
         uOpacityCurve: { value: this.opacityCurveTexture },
         uColorGradient: { value: this.colorGradientTexture },
+        uSizeBySpeedEnabled: { value: 0 },
+        uSizeBySpeedRange: { value: new THREE.Vector2(0, 1) },
+        uSizeBySpeedCurve: { value: this.sizeBySpeedCurveTexture },
+        uColorBySpeedEnabled: { value: 0 },
+        uColorBySpeedRange: { value: new THREE.Vector2(0, 1) },
+        uColorBySpeedGradient: { value: this.colorBySpeedGradientTexture },
         uCameraRight: { value: new THREE.Vector3(1, 0, 0) },
         uCameraUp: { value: new THREE.Vector3(0, 1, 0) },
         uCameraForward: { value: new THREE.Vector3(0, 0, 1) },
@@ -2275,6 +2409,12 @@ class GPUParticleBackend implements ParticleBackend {
         uniform sampler2D uSizeCurve;
         uniform sampler2D uOpacityCurve;
         uniform sampler2D uColorGradient;
+        uniform int uSizeBySpeedEnabled;
+        uniform vec2 uSizeBySpeedRange;
+        uniform sampler2D uSizeBySpeedCurve;
+        uniform int uColorBySpeedEnabled;
+        uniform vec2 uColorBySpeedRange;
+        uniform sampler2D uColorBySpeedGradient;
         uniform vec3 uCameraRight;
         uniform vec3 uCameraUp;
         uniform vec3 uCameraForward;
@@ -2304,7 +2444,10 @@ class GPUParticleBackend implements ParticleBackend {
           float rotation = extra.y;
           float startFrame = floor(extra.a / 10000.0);
           float startOpacity = max(0.0, extra.a - startFrame * 10000.0 - 2.0);
-          float size = startSize * sizeMul;
+          float spd = length(velocityLife.xyz);
+          float speedTSize = clamp((spd - uSizeBySpeedRange.x) / max(uSizeBySpeedRange.y - uSizeBySpeedRange.x, 0.00001), 0.0, 1.0);
+          float speedSizeMul = uSizeBySpeedEnabled == 1 ? texture2D(uSizeBySpeedCurve, vec2(speedTSize, 0.5)).r : 1.0;
+          float size = startSize * sizeMul * speedSizeMul;
           float opacity = startOpacity * opacityMul * alive;
 
           vec3 worldCenter = uSimulationSpace == 1 ? positionAge.xyz : (modelMatrix * vec4(positionAge.xyz, 1.0)).xyz;
@@ -2335,7 +2478,9 @@ class GPUParticleBackend implements ParticleBackend {
           }
 
           vUv = atlasUv;
-          vColor = vec4(colorSeed.rgb * lifeColor, opacity);
+          float speedTColor = clamp((spd - uColorBySpeedRange.x) / max(uColorBySpeedRange.y - uColorBySpeedRange.x, 0.00001), 0.0, 1.0);
+          vec3 speedColor = uColorBySpeedEnabled == 1 ? texture2D(uColorBySpeedGradient, vec2(speedTColor, 0.5)).rgb : vec3(1.0);
+          vColor = vec4(colorSeed.rgb * lifeColor * speedColor, opacity);
           gl_Position = projectionMatrix * viewMatrix * vec4(worldPos, 1.0);
         }
       `,

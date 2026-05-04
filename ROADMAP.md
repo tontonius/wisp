@@ -326,9 +326,9 @@ Goal: make CPU particles excellent for responsive game juice.
 - [x] Limit velocity over lifetime
 - [ ] Inherit velocity
 - [ ] Lifetime by emitter speed
-- [ ] Color by speed
-- [ ] Size by speed
-- [ ] Rotation by speed
+- [x] Color by speed (`colorBySpeed`)
+- [x] Size by speed (`sizeBySpeed`)
+- [x] Rotation by speed (`rotationBySpeed`)
 
 ### Collision
 
@@ -892,7 +892,7 @@ Implement in this order:
 13. WebGPU backend
 14. (done) Limit velocity over lifetime
 15. Inherit velocity + lifetime by emitter speed
-16. Speed-driven authoring (`colorBySpeed`, `sizeBySpeed`, `rotationBySpeed`)
+16. (done) Speed-driven authoring (`colorBySpeed`, `sizeBySpeed`, `rotationBySpeed`)
 17. External force fields / triggers / particle lights / custom data (later)
 ```
 

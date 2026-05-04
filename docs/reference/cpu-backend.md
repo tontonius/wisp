@@ -72,9 +72,11 @@ Per live particle:
 8. If `collision` is set, resolve penetration against the configured primitive (`plane`, `sphere`, or `box`) with bounce/dampening or `killOnCollision`.
 9. If `subEmitters.onCollision` is set and the system is managed by `ParticleWorld`, spawn that named effect at collision positions.
 10. If `subEmitters.onDeath` is set and the system is managed by `ParticleWorld`, spawn that named effect at particle death positions.
-11. Integrate rotation.
+11. Integrate rotation (if `rotationBySpeed` is set, angular velocity comes from that curve each frame instead of the spawned `start.angularVelocity`).
 
 During spawn, if `subEmitters.onBirth` is set and the system is managed by `ParticleWorld`, that named child effect is spawned at each CPU particle birth position.
+
+Speed-driven tint and size (`colorBySpeed`, `sizeBySpeed`) are applied when building billboard vertices from current simulation velocity. See [Speed-driven modules](speed-driven.md).
 
 ## Collision (plane / sphere / box)
 
