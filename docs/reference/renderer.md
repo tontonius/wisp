@@ -4,9 +4,13 @@ The `renderer` preset section controls particle billboard rendering.
 
 ```ts
 renderer?: {
+  type?: "billboard" | "stretchedBillboard";
   texture?: THREE.Texture;
   blendMode?: BlendMode;
   align?: AlignMode;
+  sorting?: "none" | "distance" | "youngestFirst" | "oldestFirst";
+  stretchFactor?: number;
+  stretchMaxScale?: number;
   depthWrite?: boolean;
   depthTest?: boolean;
   textureSheet?: {
@@ -23,9 +27,11 @@ renderer?: {
 
 | Field | Default | Description |
 | --- | --- | --- |
+| `type` | `"billboard"` | Quad geometry mode. |
 | `texture` | Generated soft radial disc | Billboard sprite texture. |
 | `blendMode` | `"alpha"` | Material blend mode. |
 | `align` | `"camera"` | Billboard orientation. |
+| `sorting` | `"distance"` | CPU-only draw order for alive particles (see [Sorting](#sorting)). |
 | `depthWrite` | `false` | Whether particles write to the depth buffer. |
 | `depthTest` | `true` | Whether particles test against scene depth. |
 | `textureSheet` | `undefined` | Optional flipbook/atlas settings. |
@@ -85,6 +91,27 @@ align: "camera" | "velocity"
 - The quad's horizontal axis follows particle velocity.
 - Useful for sparks, rain streaks, speed lines, and muzzle particles.
 - Falls back toward camera alignment if velocity is near zero.
+
+## Sorting
+
+```ts
+sorting: "none" | "distance" | "youngestFirst" | "oldestFirst"
+```
+
+CPU-only. Controls the order in which alive particles are written into the geometry buffer each frame. Because particles render with `depthWrite: false` by default, write order determines visual layering for transparent quads.
+
+| Value | Behavior |
+| --- | --- |
+| `"none"` | Alive particles are written in slot order. Cheapest, but layering is essentially random. |
+| `"distance"` | Back-to-front by world-space camera depth. Farther particles draw first, so closer ones overlay them. Correct for alpha blending. **Default.** |
+| `"youngestFirst"` | Younger particles are drawn last, so they appear in front of older ones. |
+| `"oldestFirst"` | Older particles are drawn last, so they appear in front of younger ones. |
+
+Notes:
+
+- The sort runs every frame on the CPU and is `O(n log n)` over alive particles. CPU effects typically have small particle counts, so the cost is negligible; if you author very large CPU systems with additive blending, set `sorting: "none"` to skip the work.
+- The GPU backend ignores `sorting` and renders unsorted. Validation logs a warning when a GPU-bound preset sets `sorting` to anything other than `"none"`.
+- `"distance"` uses the system's world-space transform, so reparenting or moving the system updates depth ordering correctly.
 
 ## Depth Options
 

@@ -182,17 +182,16 @@ Best used for:
 ### CPU Backend Limitations
 
 - No CPU-side particle object pooling (distinct from opt-in `ParticleWorld` system pooling)
-- No collision yet
-- No sub-emitters yet
+- Plane collision only (no sphere/box/raycast yet)
+- Sub-emitters are CPU-only (`onBirth`, `onDeath`, `onCollision`)
 - No trail/ribbon renderer yet
 - No soft particles yet
-- No robust sorting strategy yet
 - No in-engine visual authoring beyond emitter gizmos; the **demo** includes a preset playground/editor (not a runtime library feature)
 
 ### GPU Backend Limitations
 
 - No arbitrary scene collision
-- No sub-emitters
+- No built-in sub-emitters
 - No particle sorting
 - No CPU readback for per-particle events
 - No trails/ribbons
@@ -202,9 +201,9 @@ Best used for:
 
 ### Transparency Sorting
 
-GPU particles are currently rendered unsorted.
+CPU particles sort back-to-front by camera distance by default (`renderer.sorting: "distance"`); other modes are `"none"`, `"youngestFirst"`, and `"oldestFirst"`. GPU particles are currently rendered unsorted.
 
-Recommended strategies for now:
+Recommended strategies for GPU systems:
 
 - Prefer additive blending for sparks, fire, magic, and glows.
 - Use alpha blending with `depthWrite: false` for smoke-like effects.
@@ -318,12 +317,12 @@ Goal: make CPU particles excellent for responsive game juice.
 
 ### Features
 
-- CPU plane collision
-- CPU primitive collision
-- CPU sub-emitters
-- Stretched billboards
-- CPU sorting
-- Better local/world simulation support
+- [x] CPU plane collision
+- [ ] CPU primitive collision
+- [x] CPU sub-emitters (`onBirth`, `onDeath`, `onCollision`)
+- [x] Stretched billboards
+- [x] CPU sorting (`renderer.sorting`: `none` / `distance` / `youngestFirst` / `oldestFirst`, defaults to `distance`)
+- [ ] Better local/world simulation support
 
 ### Collision
 
@@ -410,13 +409,13 @@ Goal: make GPU particles reliable for large background and atmosphere effects.
 
 ### Features
 
-- Better GPU spawn scheduling
-- GPU emitter transform updates
-- GPU bounds controls
-- GPU pause/resume/restart polish
-- Better noise
-- GPU texture atlas animation modes
-- Optional soft particles
+- [ ] Better GPU spawn scheduling
+- [ ] GPU emitter transform updates
+- [ ] GPU bounds controls
+- [ ] GPU pause/resume/restart polish
+- [ ] Better noise
+- [ ] GPU texture atlas animation modes
+- [ ] Optional soft particles
 
 ### GPU Spawn Scheduling
 
@@ -500,15 +499,15 @@ Requires access to a scene depth texture. This should be opt-in because it touch
 
 Do not aim for perfect sorting early.
 
-Support practical modes:
+Supported modes (CPU only, shipped in Milestone 2):
 
 ```ts
 renderer: {
-  sorting: "none" | "distance" | "youngestFirst",
+  sorting: "none" | "distance" | "youngestFirst" | "oldestFirst",
 }
 ```
 
-CPU can sort particles by camera distance.
+CPU sorts particles back-to-front by world-space camera distance by default. Age-based modes (`youngestFirst`, `oldestFirst`) place the named cohort on top.
 
 GPU should mostly rely on:
 
@@ -516,6 +515,8 @@ GPU should mostly rely on:
 - Alpha blending with depth write off
 - Soft particles
 - Good particle textures
+
+GPU sorting is not planned for the MVP; the field is ignored on the GPU backend.
 
 ### Priority
 
@@ -526,6 +527,14 @@ This is the “not obviously homemade” milestone.
 ## Milestone 5 — Preset Composition And Authoring Tools
 
 Goal: stop hand-writing every curve and duplicate preset by hand.
+
+### Features
+
+- [ ] Preset inheritance/composition
+- [ ] Texture atlas helpers
+- [ ] Debug overlay and metrics
+- [ ] Debug gizmo expansion
+- [ ] Visual editor prototype
 
 ### Preset Inheritance
 
@@ -627,6 +636,12 @@ This is the “Unity Shuriken, but not cursed by committee” milestone.
 
 Goal: support effects that need continuity over time rather than independent billboard sprites.
 
+### Features
+
+- [ ] `renderer.type: "trail"`
+- [ ] `renderer.type: "ribbon"`
+- [ ] Trail API (`trail.length`, `trail.widthOverLifetime`)
+
 ### Renderer Modes
 
 ```ts
@@ -663,6 +678,12 @@ Medium-high for action games.
 ## Milestone 7 — WebGPU Backend
 
 Goal: add a modern compute-oriented GPU backend once the Three.js WebGPU stack is stable enough for library use.
+
+### Features
+
+- [ ] WebGPU backend mode
+- [ ] WebGL/WebGPU backend selection in GPU settings
+- [ ] WebGPU parity pass for core GPU features
 
 ### Potential API
 
@@ -808,15 +829,16 @@ Implement in this order:
 1. (done) Real ParticleWorld pooling
 2. (done) Better lifecycle API and aliveCount
 3. (done) Preset validation
-4. CPU plane collision
-5. CPU sub-emitters onDeath
-6. Stretched billboard renderer
-7. Debug stats and emitter gizmos
-8. Soft particles
-9. Preset inheritance/composition
-10. Texture atlas helpers
-11. Visual editor prototype
-12. WebGPU backend
+4. (done) CPU plane collision
+5. (done) CPU sub-emitters (onBirth/onDeath/onCollision)
+6. (done) Stretched billboard renderer
+7. (done) CPU sorting (renderer.sorting)
+8. Debug stats and emitter gizmos
+9. Soft particles
+10. Preset inheritance/composition
+11. Texture atlas helpers
+12. Visual editor prototype
+13. WebGPU backend
 ```
 
 This order gives the biggest visible improvement per unit of complexity.

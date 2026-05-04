@@ -321,7 +321,7 @@ velocityOverLifetime: {
 
 - collisions (CPU has an optional infinite horizontal plane; see [`docs/reference/cpu-backend.md`](docs/reference/cpu-backend.md))
 - sub-emitters
-- transparent particle sorting
+- transparent particle sorting (CPU sorts back-to-front by default via `renderer.sorting`; GPU renders unsorted)
 - mesh emitters
 - trails/ribbons
 - particle lights
@@ -513,6 +513,6 @@ Use:
 
 - `simulation: "cpu"` for muzzle flashes, hit sparks, gameplay impacts, anything that will later want collisions or sub-emitters.
 - `simulation: "gpu"` for thousands of visual-only particles.
-- additive blending for GPU particles whenever possible. Alpha smoke without sorting is acceptable, but additive magic is the happy path.
+- additive blending for GPU particles whenever possible. Alpha smoke without sorting is acceptable, but additive magic is the happy path. CPU presets get back-to-front sorting by default (`renderer.sorting: "distance"`).
 
 This is still an MVP. A good one. Not a full Unity VFX Graph replacement, because we are sane people with calendars.

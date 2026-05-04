@@ -127,7 +127,8 @@ The CPU backend uses:
 
 Every update:
 
-- Live particles write quad vertices.
+- Alive particles are gathered into a sorted index list (see below).
+- Live particles write quad vertices in sort order.
 - `setDrawRange` limits rendering to live quads.
 - Buffer attributes are marked for update.
 - Bounding sphere is recomputed when particles are alive.
@@ -136,6 +137,10 @@ Renderer notes:
 
 - `renderer.type: "billboard"` keeps symmetric quads.
 - `renderer.type: "stretchedBillboard"` elongates quads along velocity, scaled by speed (`stretchFactor`) and clamped by `stretchMaxScale`.
+
+### Particle Sorting
+
+`renderer.sorting` controls the draw order each frame. Default is `"distance"` (back-to-front by world-space camera depth), which makes alpha-blended particles layer correctly without any extra setup. Other modes are `"none"`, `"youngestFirst"`, and `"oldestFirst"`. The sort runs on the CPU at `O(n log n)` over alive particles and reuses scratch buffers (no per-frame allocation). See [Renderer reference](renderer.md#sorting) for the full table.
 
 ## Strengths
 

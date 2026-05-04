@@ -173,6 +173,7 @@ size: [[0, 0], [0.18, 1], [1, grow]]
 | `image alpha` | Demo-only preprocessing for custom images. |
 | `blend` | `renderer.blendMode` |
 | `align` | `renderer.align` |
+| `sort` | `renderer.sorting` (CPU-only; ignored on the GPU backend). |
 
 ## Texture Sheet Folder
 

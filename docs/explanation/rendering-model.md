@@ -44,7 +44,7 @@ The material is transparent and supports:
 - Additive blending.
 - Multiply blending.
 
-There is no transparent particle sorting yet. This is why additive particles are the happiest path for GPU-heavy effects.
+The CPU backend sorts particles each frame (default: back-to-front by camera depth) so alpha blending lays out correctly. The GPU backend renders unsorted, which is why additive blending — order-independent — is the happiest path for GPU-heavy effects.
 
 ## CPU Rendering
 
@@ -54,7 +54,7 @@ The CPU backend builds dynamic geometry each update:
 - UV attribute.
 - Particle color attribute.
 
-Only live particles are included in draw range.
+Alive particles are gathered into a sort order chosen by `renderer.sorting` (default `"distance"`), then quad vertices are written in that order. Only live particles are included in draw range. See [Renderer reference: Sorting](../reference/renderer.md#sorting) for the available modes and trade-offs.
 
 ## GPU Rendering
 

@@ -7,6 +7,7 @@ export type Vec3Range = Vec3Tuple | [Vec3Tuple, Vec3Tuple];
 export type BlendMode = "alpha" | "additive" | "multiply";
 export type AlignMode = "camera" | "velocity";
 export type RendererType = "billboard" | "stretchedBillboard";
+export type SortMode = "none" | "distance" | "youngestFirst" | "oldestFirst";
 export type SimulationMode = "cpu" | "gpu" | "auto";
 export type Curve = Array<[time: number, value: number]>;
 export type Gradient = Array<[time: number, color: THREE.ColorRepresentation]>;
@@ -114,6 +115,15 @@ export type ParticlePreset = {
     stretchFactor?: number;
     /** Only used by `renderer.type: "stretchedBillboard"`. Maximum length scale relative to base size. Default `4`. */
     stretchMaxScale?: number;
+    /**
+     * CPU backend only. Order in which alive particles are written into the geometry buffer.
+     * - `"none"`: slot order (cheapest).
+     * - `"distance"`: back-to-front by world-space camera depth (default; correct for alpha blending).
+     * - `"youngestFirst"`: youngest particles drawn last so they appear in front of older ones.
+     * - `"oldestFirst"`: oldest particles drawn last so they appear in front of younger ones.
+     * Ignored on the GPU backend.
+     */
+    sorting?: SortMode;
     depthWrite?: boolean;
     depthTest?: boolean;
     textureSheet?: {
@@ -644,6 +654,9 @@ class CPUParticleBackend implements ParticleBackend {
   private burstCursor = 0;
   private _disposed = false;
   private sortedBursts: Array<{ time: number; count: Range; probability?: number }>;
+  private sortMode: SortMode;
+  private sortIndices: number[];
+  private sortKeys: Float32Array;
 
   constructor(private preset: ParticlePreset, private backendOptions: ParticleBackendOptions = {}) {
     this.maxParticles = preset.maxParticles ?? 256;
@@ -668,6 +681,10 @@ class CPUParticleBackend implements ParticleBackend {
     this.mesh = new THREE.Mesh(this.geometry, this.material);
     this.mesh.frustumCulled = false;
     this.object.add(this.mesh);
+
+    this.sortMode = preset.renderer?.sorting ?? "distance";
+    this.sortIndices = new Array(this.maxParticles);
+    this.sortKeys = new Float32Array(this.maxParticles);
 
     for (let i = 0; i < this.maxParticles; i++) this.particles.push(this.createDeadParticle());
     if (preset.prewarm) this.prewarm();
@@ -912,13 +929,15 @@ class CPUParticleBackend implements ParticleBackend {
     const cameraRight = tempVectorA.setFromMatrixColumn(camera.matrixWorld, 0).normalize();
     const cameraUp = tempVectorB.setFromMatrixColumn(camera.matrixWorld, 1).normalize();
 
+    const aliveCount = this.collectAliveIndices(camera);
+    this.sortAliveIndices(aliveCount);
+
     let vertexOffset = 0;
     let uvOffset = 0;
     let colorOffset = 0;
-    let aliveCount = 0;
 
-    for (const particle of this.particles) {
-      if (!particle.alive) continue;
+    for (let n = 0; n < aliveCount; n++) {
+      const particle = this.particles[this.sortIndices[n]];
 
       const t = THREE.MathUtils.clamp(particle.age / particle.lifetime, 0, 1);
       const over = this.preset.overLifetime ?? {};
@@ -972,8 +991,6 @@ class CPUParticleBackend implements ParticleBackend {
         this.colors[colorOffset++] = finalColor.b;
         this.colors[colorOffset++] = opacity;
       }
-
-      aliveCount++;
     }
 
     this.geometry.setDrawRange(0, aliveCount * 6);
@@ -981,6 +998,101 @@ class CPUParticleBackend implements ParticleBackend {
     this.uvAttribute.needsUpdate = true;
     this.colorAttribute.needsUpdate = true;
     if (aliveCount > 0) this.geometry.computeBoundingSphere();
+  }
+
+  private collectAliveIndices(camera: THREE.Camera): number {
+    const mode = this.sortMode;
+    let aliveCount = 0;
+
+    if (mode === "distance") {
+      this.object.updateWorldMatrix(true, false);
+      const matrixWorld = this.object.matrixWorld;
+      // Camera forward (third matrix column) and camera world position.
+      const forwardX = camera.matrixWorld.elements[8];
+      const forwardY = camera.matrixWorld.elements[9];
+      const forwardZ = camera.matrixWorld.elements[10];
+      const camX = camera.matrixWorld.elements[12];
+      const camY = camera.matrixWorld.elements[13];
+      const camZ = camera.matrixWorld.elements[14];
+      const e = matrixWorld.elements;
+      for (let i = 0; i < this.particles.length; i++) {
+        const p = this.particles[i];
+        if (!p.alive) continue;
+        // Inline matrixWorld * particle.position to avoid Vector3 allocations.
+        const lx = p.position.x;
+        const ly = p.position.y;
+        const lz = p.position.z;
+        const wx = e[0] * lx + e[4] * ly + e[8] * lz + e[12];
+        const wy = e[1] * lx + e[5] * ly + e[9] * lz + e[13];
+        const wz = e[2] * lx + e[6] * ly + e[10] * lz + e[14];
+        // In Three.js the camera looks down -Z, so depth-from-camera = -forward · (worldPos - camPos).
+        const dx = wx - camX;
+        const dy = wy - camY;
+        const dz = wz - camZ;
+        const depth = -(forwardX * dx + forwardY * dy + forwardZ * dz);
+        this.sortIndices[aliveCount] = i;
+        this.sortKeys[aliveCount] = depth;
+        aliveCount++;
+      }
+    } else if (mode === "youngestFirst" || mode === "oldestFirst") {
+      const sign = mode === "youngestFirst" ? -1 : 1;
+      for (let i = 0; i < this.particles.length; i++) {
+        const p = this.particles[i];
+        if (!p.alive) continue;
+        this.sortIndices[aliveCount] = i;
+        this.sortKeys[aliveCount] = sign * p.age;
+        aliveCount++;
+      }
+    } else {
+      for (let i = 0; i < this.particles.length; i++) {
+        const p = this.particles[i];
+        if (!p.alive) continue;
+        this.sortIndices[aliveCount] = i;
+        aliveCount++;
+      }
+    }
+
+    this._aliveCount = aliveCount;
+    return aliveCount;
+  }
+
+  private sortAliveIndices(aliveCount: number): void {
+    if (this.sortMode === "none" || aliveCount < 2) return;
+    // Sort indices ascending by their key. For "distance" we want farthest first (largest depth first),
+    // so collectAliveIndices stored depth in keys and we sort descending here.
+    // For "youngestFirst"/"oldestFirst" we want the named cohort drawn LAST, so we sort
+    // ascending by key (-age for youngestFirst, +age for oldestFirst), placing the winning
+    // particles at the end of the buffer.
+    const keys = this.sortKeys;
+    const indices = this.sortIndices;
+    if (this.sortMode === "distance") {
+      // Insertion sort is fast for typical CPU counts (≤ a few hundred) and avoids closure allocations.
+      for (let i = 1; i < aliveCount; i++) {
+        const idx = indices[i];
+        const key = keys[i];
+        let j = i - 1;
+        while (j >= 0 && keys[j] < key) {
+          indices[j + 1] = indices[j];
+          keys[j + 1] = keys[j];
+          j--;
+        }
+        indices[j + 1] = idx;
+        keys[j + 1] = key;
+      }
+    } else {
+      for (let i = 1; i < aliveCount; i++) {
+        const idx = indices[i];
+        const key = keys[i];
+        let j = i - 1;
+        while (j >= 0 && keys[j] > key) {
+          indices[j + 1] = indices[j];
+          keys[j + 1] = keys[j];
+          j--;
+        }
+        indices[j + 1] = idx;
+        keys[j + 1] = key;
+      }
+    }
   }
 
   private getParticleUvs(particle: Particle, t: number): { u0: number; v0: number; u1: number; v1: number } {

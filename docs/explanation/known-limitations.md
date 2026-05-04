@@ -2,15 +2,17 @@
 
 This system is useful, but it is still an MVP.
 
-## No Transparent Particle Sorting
+## GPU Particles Are Not Sorted
 
-Particles are not sorted back-to-front.
+The CPU backend sorts alive particles each frame (default `renderer.sorting: "distance"`, back-to-front). The GPU backend renders particles unsorted and ignores `renderer.sorting`.
 
-Implications:
+Implications for GPU systems:
 
 - Additive blending works well.
-- Alpha smoke can be acceptable.
+- Alpha smoke can be acceptable with `depthWrite: false`.
 - Dense overlapping alpha particles may render in visually incorrect order.
+
+For sorted alpha effects, prefer CPU simulation. See [Renderer reference: Sorting](../reference/renderer.md#sorting).
 
 ## Collisions Are CPU-Only And Planar
 

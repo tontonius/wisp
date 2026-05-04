@@ -115,6 +115,7 @@ Use `textureSize` only when you need explicit render-target dimensions. Usually 
 renderer?: {
   type?: "billboard" | "stretchedBillboard";
   align?: "camera" | "velocity";
+  sorting?: "none" | "distance" | "youngestFirst" | "oldestFirst";
   stretchFactor?: number;
   stretchMaxScale?: number;
   // texture, blendMode, depthWrite, depthTest, textureSheet...
@@ -123,6 +124,7 @@ renderer?: {
 
 - `type` defaults to `"billboard"`.
 - `type: "stretchedBillboard"` is CPU-only and stretches quads along velocity.
+- `sorting` is CPU-only and defaults to `"distance"` (back-to-front by world-space camera depth). See [Renderer reference: Sorting](renderer.md#sorting).
 - `stretchFactor` controls speed-to-length scaling (default `0.35`).
 - `stretchMaxScale` clamps elongation (default `4`).
 

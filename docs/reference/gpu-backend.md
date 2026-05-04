@@ -134,7 +134,7 @@ Current GPU backend does not support:
 - CPU particle death callbacks.
 - Collision.
 - Sub-emitters.
-- Transparent particle sorting.
+- Transparent particle sorting (the GPU backend ignores `renderer.sorting`; rely on additive blending or `depthWrite: false` alpha).
 - Mesh emitters.
 - Trails/ribbons.
 - CPU readback.

@@ -179,6 +179,7 @@ const customParams = {
   textureSheetFrameOverLifetime: false,
   blendMode: "additive" as NonNullable<ParticlePreset["renderer"]>["blendMode"],
   align: "camera" as NonNullable<ParticlePreset["renderer"]>["align"],
+  sorting: "distance" as NonNullable<ParticlePreset["renderer"]>["sorting"],
   emitter: "sphere" as EmitterType,
   emitFrom: "volume" as "volume" | "shell",
   radius: 0.45,
@@ -414,6 +415,7 @@ function makeCustomPreset(): ParticlePreset {
           texture: getSelectedTexture(),
           blendMode: customParams.blendMode,
           align: customParams.align,
+          sorting: customParams.sorting,
           depthWrite: false,
           textureSheet: customParams.textureSheetEnabled
             ? {
@@ -1347,6 +1349,7 @@ function loadPresetIntoEditor(name: DemoEffectName): void {
   customParams.texture = textureNameForTexture(renderer?.texture);
   customParams.blendMode = renderer?.blendMode ?? "alpha";
   customParams.align = renderer?.align ?? "camera";
+  customParams.sorting = renderer?.sorting ?? "distance";
   customParams.textureSheetEnabled = !!renderer?.textureSheet;
   customParams.textureSheetColumns = renderer?.textureSheet?.columns ?? 1;
   customParams.textureSheetRows = renderer?.textureSheet?.rows ?? 1;
@@ -1507,6 +1510,10 @@ imageAlphaBinding.on("change", () => {
 });
 bind(rendererFolder, "blendMode", { label: "blend", options: { Alpha: "alpha", Additive: "additive", Multiply: "multiply" } });
 bind(rendererFolder, "align", { options: { Camera: "camera", Velocity: "velocity" } });
+bind(rendererFolder, "sorting", {
+  label: "sort",
+  options: { None: "none", Distance: "distance", "Youngest in front": "youngestFirst", "Oldest in front": "oldestFirst" },
+});
 
 const sheetFolder = rendererFolder.addFolder({ title: "Texture Sheet", expanded: true }) as PaneLike;
 bind(sheetFolder, "textureSheetEnabled", { label: "enabled" });

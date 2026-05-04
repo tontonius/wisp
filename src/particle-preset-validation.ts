@@ -12,6 +12,7 @@ export type ParticlePresetValidationResult = {
 
 const EMITTER_TYPES = new Set(["point", "sphere", "hemisphere", "cone", "box"]);
 const RENDERER_TYPES = new Set(["billboard", "stretchedBillboard"]);
+const SORTING_MODES = new Set(["none", "distance", "youngestFirst", "oldestFirst"]);
 
 function isFiniteNumber(n: unknown): n is number {
   return typeof n === "number" && Number.isFinite(n);
@@ -188,6 +189,10 @@ export function collectParticlePresetIssues(
       errors.push("renderer.stretchMaxScale: must be a finite number >= 1 when set.");
     }
   }
+  const sorting = preset.renderer?.sorting;
+  if (sorting !== undefined && !SORTING_MODES.has(sorting)) {
+    errors.push(`renderer.sorting: must be one of ${[...SORTING_MODES].map((s) => `"${s}"`).join(", ")} when set.`);
+  }
   if (sheet) {
     const { columns, rows } = sheet;
     if (!Number.isInteger(columns) || columns < 1 || !isFiniteNumber(columns)) {
@@ -289,6 +294,10 @@ export function collectParticlePresetIssues(
 
   if (preset.collision && preset.simulation === "auto" && renderer && (preset.maxParticles ?? 0) >= 2048) {
     warnings.push('simulation "auto" would otherwise select GPU at this capacity, but collision forces CPU simulation.');
+  }
+
+  if (presetWouldUseGpu(preset, renderer) && sorting !== undefined && sorting !== "none") {
+    warnings.push('renderer.sorting is CPU-only; the GPU backend ignores it. Use simulation "cpu" or "auto" with a CPU configuration for sorted particles.');
   }
 
   return { errors, warnings };
