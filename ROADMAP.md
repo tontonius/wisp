@@ -323,6 +323,12 @@ Goal: make CPU particles excellent for responsive game juice.
 - [x] Stretched billboards
 - [x] CPU sorting (`renderer.sorting`: `none` / `distance` / `youngestFirst` / `oldestFirst`, defaults to `distance`)
 - [x] Better local/world simulation support (`simulationSpace: "local" | "world"`)
+- [ ] Limit velocity over lifetime
+- [ ] Inherit velocity
+- [ ] Lifetime by emitter speed
+- [ ] Color by speed
+- [ ] Size by speed
+- [ ] Rotation by speed
 
 ### Collision
 
@@ -400,6 +406,46 @@ Use cases:
 - Dash streaks
 - Sword slashes
 - Magic missiles
+
+### Missing Gameplay-Oriented Motion Modules
+
+These are high-value controls inspired by Unity’s module model and should stay preset-driven:
+
+```ts
+limitVelocityOverLifetime: {
+  speed: 6,
+  dampen: 0.25,
+}
+
+inheritVelocity: {
+  factor: 0.5,
+}
+
+lifetimeByEmitterSpeed: {
+  speedRange: [0, 12],
+  lifetimeRange: [1.8, 0.4],
+}
+
+colorBySpeed: {
+  speedRange: [0, 10],
+  gradient: [[0, "#ffffff"], [1, "#ff6a22"]],
+}
+
+sizeBySpeed: {
+  speedRange: [0, 10],
+  curve: [[0, 0.6], [1, 1.2]],
+}
+
+rotationBySpeed: {
+  speedRange: [0, 10],
+  angularVelocity: [[0, 0], [1, 8]],
+}
+```
+
+Notes:
+
+- Keep these CPU-first initially.
+- GPU support can follow once data plumbing/perf constraints are clear.
 
 
 ### Priority
@@ -844,6 +890,10 @@ Implement in this order:
 11. Texture atlas helpers
 12. Visual editor prototype
 13. WebGPU backend
+14. Limit velocity over lifetime
+15. Inherit velocity + lifetime by emitter speed
+16. Speed-driven authoring (`colorBySpeed`, `sizeBySpeed`, `rotationBySpeed`)
+17. External force fields / triggers / particle lights / custom data (later)
 ```
 
 This order gives the biggest visible improvement per unit of complexity.
