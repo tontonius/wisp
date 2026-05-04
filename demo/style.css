@@ -66,8 +66,19 @@ canvas {
   z-index: 2;
 }
 
+.tweakpane-wrap-capture {
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
+  width: min(280px, calc(100vw - 40px));
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  z-index: 2;
+}
+
 .tweakpane-wrap .tp-dfwv,
-.tweakpane-wrap-scene .tp-dfwv {
+.tweakpane-wrap-scene .tp-dfwv,
+.tweakpane-wrap-capture .tp-dfwv {
   position: static;
   width: 100%;
 }
@@ -93,6 +104,13 @@ canvas {
     top: 12px;
     left: 12px;
     width: min(200px, calc(100vw - 24px));
+    max-height: min(200px, 28vh);
+  }
+
+  .tweakpane-wrap-capture {
+    left: 12px;
+    bottom: 12px;
+    width: min(240px, calc(100vw - 24px));
     max-height: min(200px, 28vh);
   }
 }

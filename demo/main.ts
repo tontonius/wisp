@@ -528,6 +528,10 @@ const scenePaneParams = {
   groundVisible: true,
   groundColor: `#${floorMaterial.color.getHexString()}`,
 };
+const capturePaneParams = {
+  orbitCamera: false,
+  orbitSpeedDegPerSecond: 18,
+};
 
 const pane = new Pane({ title: "Particle effect", container: paneContainer });
 pane.registerPlugin(tweakpaneGradientPluginBundle);
@@ -551,6 +555,18 @@ scenePane
   .on("change", (ev) => {
     floorMaterial.color.set(ev.value);
   });
+
+const capturePaneContainer = document.createElement("div");
+capturePaneContainer.className = "tweakpane-wrap-capture";
+document.body.appendChild(capturePaneContainer);
+const capturePane = new Pane({ title: "Capture", container: capturePaneContainer });
+capturePane.addBinding(capturePaneParams, "orbitCamera", { label: "Auto orbit" });
+capturePane.addBinding(capturePaneParams, "orbitSpeedDegPerSecond", {
+  label: "Speed (deg/s)",
+  min: -120,
+  max: 120,
+  step: 1,
+});
 let loopPreview: ParticleSystem | undefined;
 
 function refreshCustomPreset() {
@@ -780,7 +796,7 @@ bind(controlsFolder, "clickEffect", {
     "GPU storm": "gpuMagicStorm",
   },
 });
-controlsFolder.addButton({ title: "Spawn at center" }).on("click", () => spawnEffect(customParams.clickEffect, [0, 0.05, 0]));
+controlsFolder.addButton({ title: "Spawn at center" }).on("click", () => spawnEffect(customParams.clickEffect, [0, 0, 0]));
 controlsFolder.addButton({ title: "Load selected into editor" }).on("click", () => loadPresetIntoEditor(customParams.clickEffect));
 controlsFolder.addButton({ title: "Preview loop" }).on("click", previewCustomLoop);
 controlsFolder.addButton({ title: "Clear systems" }).on("click", () => {
@@ -933,7 +949,7 @@ const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const hit = new THREE.Vector3();
 
 function shouldIgnoreUiTarget(event: Event): boolean {
-  return event.target instanceof Element && !!event.target.closest(".ui, .tweakpane-wrap, .tweakpane-wrap-scene");
+  return event.target instanceof Element && !!event.target.closest(".ui, .tweakpane-wrap, .tweakpane-wrap-scene, .tweakpane-wrap-capture");
 }
 
 function shouldIgnorePointer(event: PointerEvent): boolean {
@@ -992,6 +1008,9 @@ const clock = new THREE.Clock();
 function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 1 / 30);
+  if (capturePaneParams.orbitCamera) {
+    targetOrbit.theta += THREE.MathUtils.degToRad(capturePaneParams.orbitSpeedDegPerSecond) * dt;
+  }
   updateCameraOrbit();
   particles.update(dt, camera);
   renderer.render(scene, camera);

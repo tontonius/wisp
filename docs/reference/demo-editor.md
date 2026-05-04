@@ -17,6 +17,15 @@ Inside the main Tweakpane as a `Scene` tab next to `Particles`. Does not affect 
 | `Ground plane` | Shows or hides the demo floor mesh and `GridHelper`. Pointer spawn still uses the mathematical ground plane at \(y = 0\) when the mesh is hidden. |
 | `Ground color` | Color picker for the floor `MeshStandardMaterial` (does not change the grid line colors). |
 
+## Capture Pane
+
+Separate bottom-left Tweakpane used for recording-friendly camera motion. These controls are demo-only and do not affect exported presets.
+
+| Control | Effect |
+| --- | --- |
+| `Orbit camera` | Toggles continuous camera orbit around the scene target. |
+| `Orbit deg/s` | Constant angular speed in degrees per second (negative reverses direction). |
+
 ## Controls Folder
 
 | Control | Effect |
