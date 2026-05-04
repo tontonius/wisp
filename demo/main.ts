@@ -135,6 +135,7 @@ type DemoEffectName =
   | "torchFire"
   | "floorBounceDemo"
   | "onDeathSubEmittersDemo"
+  | "onCollisionSubEmittersDemo"
   | "rainGpu"
   | "snowGpu"
   | "magicAuraGpu"
@@ -711,6 +712,63 @@ const onDeathSubEmittersDemo: ParticlePreset = {
   renderer: { texture: softDisc, blendMode: "additive", depthWrite: false },
 };
 
+const onCollisionSubEmitterChild: ParticlePreset = {
+  simulation: "cpu",
+  maxParticles: 320,
+  duration: 0.24,
+  emitter: { type: "sphere", radius: 0.02, emitFrom: "volume" },
+  emission: { bursts: [{ time: 0, count: [16, 28] }] },
+  start: {
+    lifetime: [0.2, 0.52],
+    speed: [1.6, 3.8],
+    size: [0.05, 0.13],
+    color: ["#dff6ff", "#6ec8ff"],
+    opacity: [0.65, 1],
+    velocity: [[-1.35, 0.2, -1.35], [1.35, 1.55, 1.35]],
+  },
+  forces: { acceleration: [0, -8.4, 0], drag: 1.35, noise: { strength: 0.08, frequency: 5.5 } },
+  overLifetime: {
+    size: [[0, 0.55], [0.22, 1], [1, 0]],
+    opacity: [[0, 0], [0.04, 1], [0.72, 0.85], [1, 0]],
+    color: [[0, "#ffffff"], [0.38, "#8fddff"], [0.78, "#4fb2ff"], [1, "#0f4a88"]],
+  },
+  renderer: { texture: softDisc, blendMode: "additive", align: "velocity", depthWrite: false },
+};
+
+const onCollisionSubEmittersDemo: ParticlePreset = {
+  simulation: "cpu",
+  maxParticles: 180,
+  duration: 2.2,
+  loop: true,
+  prewarm: false,
+  autoDispose: false,
+  emitter: { type: "cone", radius: 0.09, angle: 42, length: 1 },
+  emission: { bursts: [{ time: 0, count: [42, 64] }] },
+  collision: {
+    type: "plane",
+    y: 0,
+    bounce: 0.35,
+    dampening: 0.72,
+    killOnCollision: true,
+  },
+  subEmitters: { onCollision: "onCollisionSubEmitterChild" },
+  start: {
+    lifetime: [1.15, 1.85],
+    speed: [3.9, 4.4],
+    size: [0.06, 0.14],
+    color: ["#cbe8ff", "#8ac9ff"],
+    opacity: [0.45, 0.85],
+    velocity: [[-0.95, 2.2, -0.95], [0.95, 3.8, 0.95]],
+  },
+  forces: { acceleration: [0, -8.4, 0], drag: 0.1, noise: { strength: 0.08, frequency: 4.5 } },
+  overLifetime: {
+    size: [[0, 0.4], [0.2, 1], [1, 0.85]],
+    opacity: [[0, 0], [0.05, 1], [0.9, 1], [1, 0]],
+    color: [[0, "#ffffff"], [0.4, "#9fdaff"], [1, "#5caaff"]],
+  },
+  renderer: { texture: softDisc, blendMode: "additive", depthWrite: false },
+};
+
 const explosion: ParticlePreset = {
   maxParticles: 220,
   duration: 0.25,
@@ -967,6 +1025,8 @@ const particles = new ParticleWorld(
     floorBounceDemo,
     onDeathSubEmitterChild,
     onDeathSubEmittersDemo,
+    onCollisionSubEmitterChild,
+    onCollisionSubEmittersDemo,
     rainGpu,
     snowGpu,
     magicAuraGpu,
@@ -989,6 +1049,7 @@ const editablePresets: Partial<Record<DemoEffectName, ParticlePreset>> = {
   torchFire,
   floorBounceDemo,
   onDeathSubEmittersDemo,
+  onCollisionSubEmittersDemo,
   rainGpu,
   snowGpu,
   magicAuraGpu,
@@ -1236,6 +1297,7 @@ bind(controlsFolder, "clickEffect", {
     "Torch fire": "torchFire",
     "Floor bounce (CPU collision)": "floorBounceDemo",
     "Sub-emitters (CPU onDeath)": "onDeathSubEmittersDemo",
+    "Sub-emitters (CPU onCollision)": "onCollisionSubEmittersDemo",
     Smoke: "smokePuff",
     Explosion: "explosion",
     Shockwave: "shockwave",

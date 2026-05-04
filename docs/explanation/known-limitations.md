@@ -18,17 +18,17 @@ The CPU backend supports an optional infinite **horizontal plane** (`collision.t
 
 For richer collision work (primitives, raycasts), CPU remains the intended path; see [CPU backend](../reference/cpu-backend.md#collision-plane).
 
-## Sub-Emitters Are CPU On-Death Only (for now)
+## Sub-Emitters Are CPU-Only (for now)
 
 Built-in sub-emitters currently support only:
 
 - `subEmitters.onDeath` on CPU presets.
+- `subEmitters.onCollision` on CPU presets.
 - Named child effects resolved through `ParticleWorld`.
 
 Not yet implemented:
 
 - `onBirth` sub-emitters.
-- `onCollision` sub-emitters.
 - Any GPU sub-emitter trigger path.
 
 ## No Mesh Emitters

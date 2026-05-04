@@ -92,6 +92,7 @@ export type ParticlePreset = {
   /** CPU backend only. Child effect names to spawn from particle lifecycle events. */
   subEmitters?: {
     onDeath?: string;
+    onCollision?: string;
   };
 
   velocityOverLifetime?: VelocityOverLifetime;
@@ -158,10 +159,12 @@ export type ParticleLifecycleCallbacks = {
   onStop?: (system: ParticleSystem) => void;
   onComplete?: (system: ParticleSystem) => void;
   onParticleDeath?: (particle: ParticleSnapshot, system: ParticleSystem) => void;
+  onParticleCollision?: (particle: ParticleSnapshot, system: ParticleSystem) => void;
 };
 
 type ParticleBackendOptions = {
   onParticleDeath?: (particle: Particle) => void;
+  onParticleCollision?: (particle: Particle) => void;
 };
 
 type Particle = {
@@ -871,13 +874,14 @@ class CPUParticleBackend implements ParticleBackend {
         const planeY = collision.y ?? 0;
         const eps = 1e-4;
         if (particle.position.y < planeY - eps) {
+          particle.position.y = planeY + eps;
+          this.backendOptions.onParticleCollision?.(particle);
           if (collision.killOnCollision) {
             particle.alive = false;
             this._aliveCount = Math.max(0, this._aliveCount - 1);
             this.backendOptions.onParticleDeath?.(particle);
             continue;
           }
-          particle.position.y = planeY + eps;
           const bounce = collision.bounce ?? 0.4;
           if (particle.velocity.y < 0) particle.velocity.y = -bounce * particle.velocity.y;
           const dampening = collision.dampening ?? 1;
@@ -1726,6 +1730,7 @@ export class ParticleSystem extends THREE.Object3D {
       ? new GPUParticleBackend(preset, options.renderer!)
       : new CPUParticleBackend(preset, {
           onParticleDeath: (particle) => this.notifyParticleDeath(particle),
+          onParticleCollision: (particle) => this.notifyParticleCollision(particle),
         });
     (this as unknown as THREE.Object3D).add(this.backend.object);
     this.setDebug(preset.debug);
@@ -1827,6 +1832,18 @@ export class ParticleSystem extends THREE.Object3D {
 
   private notifyParticleDeath(particle: Particle): void {
     this.preset.callbacks?.onParticleDeath?.(
+      {
+        position: particle.position.clone(),
+        velocity: particle.velocity.clone(),
+        age: particle.age,
+        lifetime: particle.lifetime,
+      },
+      this
+    );
+  }
+
+  private notifyParticleCollision(particle: Particle): void {
+    this.preset.callbacks?.onParticleCollision?.(
       {
         position: particle.position.clone(),
         velocity: particle.velocity.clone(),
@@ -1947,6 +1964,10 @@ export class ParticleWorld {
           originalCallbacks?.onParticleDeath?.(particle, system);
           this.handleSubEmitterDeath(particle, system);
         },
+        onParticleCollision: (particle, system) => {
+          originalCallbacks?.onParticleCollision?.(particle, system);
+          this.handleSubEmitterCollision(particle, system);
+        },
       },
     };
   }
@@ -1966,7 +1987,29 @@ export class ParticleWorld {
     if (meta.subEmitterDepth >= this.maxSubEmitterDepth) return;
 
     const worldPosition = particle.position.clone();
-    system.localToWorld(worldPosition);
+    (system as unknown as THREE.Object3D).localToWorld(worldPosition);
+
+    this.spawnInternal(
+      targetName,
+      {
+        position: worldPosition,
+        parent: this.parent,
+      },
+      meta.subEmitterDepth + 1
+    );
+  }
+
+  private handleSubEmitterCollision(particle: ParticleSnapshot, system: ParticleSystem): void {
+    const meta = this.systemSpawnMeta.get(system);
+    if (!meta) return;
+
+    const targetName = system.preset.subEmitters?.onCollision;
+    if (!targetName) return;
+    if (!this.effects.get(targetName)) return;
+    if (meta.subEmitterDepth >= this.maxSubEmitterDepth) return;
+
+    const worldPosition = particle.position.clone();
+    (system as unknown as THREE.Object3D).localToWorld(worldPosition);
 
     this.spawnInternal(
       targetName,

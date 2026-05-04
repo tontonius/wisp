@@ -149,9 +149,16 @@ export function collectParticlePresetIssues(
     }
     if (typeof subEmitters !== "object" || subEmitters === null) {
       errors.push("subEmitters: must be an object when set.");
-    } else if (subEmitters.onDeath !== undefined) {
-      if (typeof subEmitters.onDeath !== "string" || subEmitters.onDeath.trim().length === 0) {
-        errors.push("subEmitters.onDeath: must be a non-empty effect name string when set.");
+    } else {
+      if (subEmitters.onDeath !== undefined) {
+        if (typeof subEmitters.onDeath !== "string" || subEmitters.onDeath.trim().length === 0) {
+          errors.push("subEmitters.onDeath: must be a non-empty effect name string when set.");
+        }
+      }
+      if (subEmitters.onCollision !== undefined) {
+        if (typeof subEmitters.onCollision !== "string" || subEmitters.onCollision.trim().length === 0) {
+          errors.push("subEmitters.onCollision: must be a non-empty effect name string when set.");
+        }
       }
     }
   }
@@ -238,9 +245,15 @@ export function collectParticlePresetIssues(
   if (presetWouldUseGpu(preset, renderer) && preset.callbacks?.onParticleDeath) {
     warnings.push("callbacks.onParticleDeath is not invoked on the GPU backend; use CPU simulation for per-particle death callbacks.");
   }
+  if (presetWouldUseGpu(preset, renderer) && preset.callbacks?.onParticleCollision) {
+    warnings.push("callbacks.onParticleCollision is not invoked on the GPU backend; use CPU simulation for per-particle collision callbacks.");
+  }
 
   if (presetWouldUseGpu(preset, renderer) && preset.subEmitters?.onDeath) {
     warnings.push("subEmitters.onDeath is CPU-only and will not run on the GPU backend; use CPU simulation for built-in sub-emitters.");
+  }
+  if (presetWouldUseGpu(preset, renderer) && preset.subEmitters?.onCollision) {
+    warnings.push("subEmitters.onCollision is CPU-only and will not run on the GPU backend; use CPU simulation for built-in sub-emitters.");
   }
 
   if (preset.collision && preset.simulation === "auto" && renderer && (preset.maxParticles ?? 0) >= 2048) {

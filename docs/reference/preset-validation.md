@@ -71,7 +71,7 @@ Pass the same renderer you pass into `ParticleSystemOptions` so validation can w
 | `emission.bursts` | Each burst: finite `time >= 0`, valid `count` range, optional `probability` in `[0, 1]`. |
 | `emission.rateOverTime` | If set, must be a finite scalar or finite tuple. |
 | `collision` | If set with `simulation: "gpu"`, invalid (CPU-only). Otherwise must be `{ type: "plane", ... }` with finite optional `y`, and optional `bounce` / `dampening` finite and `>= 0`. |
-| `subEmitters` | If set with `simulation: "gpu"`, invalid (CPU-only). When set, must be an object and `subEmitters.onDeath` (if provided) must be a non-empty string effect name. |
+| `subEmitters` | If set with `simulation: "gpu"`, invalid (CPU-only). When set, must be an object and `subEmitters.onDeath` / `subEmitters.onCollision` (if provided) must be non-empty string effect names. |
 
 ## Warnings (no throw)
 
@@ -79,7 +79,9 @@ Pass the same renderer you pass into `ParticleSystemOptions` so validation can w
 | --- | --- |
 | `simulation: "gpu"` and no `renderer` in context | Same situation as before: CPU fallback; you are reminded to pass a renderer. |
 | Resolved GPU path and `callbacks.onParticleDeath` set | Death callbacks are CPU-only; they will not run on GPU. |
+| Resolved GPU path and `callbacks.onParticleCollision` set | Collision callbacks are CPU-only; they will not run on GPU. |
 | Resolved GPU path and `subEmitters.onDeath` set | Built-in sub-emitters are CPU-only; they will not run on GPU. |
+| Resolved GPU path and `subEmitters.onCollision` set | Built-in sub-emitters are CPU-only; they will not run on GPU. |
 | `simulation: "auto"`, `collision` set, renderer present, and `maxParticles >= 2048` | Auto would pick GPU at that capacity, but collision forces CPU. |
 
 ## See Also
