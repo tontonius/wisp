@@ -135,8 +135,17 @@ velocityOverLifetime: {
 | `acceleration y` | `forces.acceleration[1]` |
 | `acceleration z` | `forces.acceleration[2]` |
 | `drag` | `forces.drag` |
-| `noise strength` | `forces.noise.strength` |
-| `noise frequency` | `forces.noise.frequency` |
+
+## Noise Folder
+
+| Control | Preset Field |
+| --- | --- |
+| `strength` | `forces.noise.strength` |
+| `frequency` | `forces.noise.frequency` |
+| `scroll x/y/z` | `forces.noise.scroll` |
+| `octaves` | `forces.noise.octaves` |
+| `lacunarity` | `forces.noise.lacunarity` |
+| `persistence` | `forces.noise.persistence` |
 
 ## Color Over Lifetime Folder
 

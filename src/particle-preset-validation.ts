@@ -294,6 +294,28 @@ export function collectParticlePresetIssues(
     }
   }
 
+  const noise = preset.forces?.noise;
+  if (noise) {
+    if (noise.strength !== undefined && (!isFiniteNumber(noise.strength) || noise.strength < 0)) {
+      errors.push("forces.noise.strength: must be a finite number >= 0 when set.");
+    }
+    if (noise.frequency !== undefined && (!isFiniteNumber(noise.frequency) || noise.frequency < 0)) {
+      errors.push("forces.noise.frequency: must be a finite number >= 0 when set.");
+    }
+    if (noise.scroll !== undefined) {
+      errors.push(...validateFiniteVec3("forces.noise.scroll", noise.scroll));
+    }
+    if (noise.octaves !== undefined && (!Number.isInteger(noise.octaves) || noise.octaves < 1 || noise.octaves > 4)) {
+      errors.push("forces.noise.octaves: must be an integer in [1, 4] when set.");
+    }
+    if (noise.lacunarity !== undefined && (!isFiniteNumber(noise.lacunarity) || noise.lacunarity < 1)) {
+      errors.push("forces.noise.lacunarity: must be a finite number >= 1 when set.");
+    }
+    if (noise.persistence !== undefined && (!isFiniteNumber(noise.persistence) || noise.persistence <= 0 || noise.persistence > 1)) {
+      errors.push("forces.noise.persistence: must be a finite number in (0, 1] when set.");
+    }
+  }
+
   errors.push(...validateCurve("overLifetime.size", preset.overLifetime?.size));
   errors.push(...validateCurve("overLifetime.opacity", preset.overLifetime?.opacity));
   errors.push(...validateGradient("overLifetime.color", preset.overLifetime?.color));

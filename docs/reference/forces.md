@@ -9,6 +9,10 @@ forces?: {
   noise?: {
     strength?: number;
     frequency?: number;
+  scroll?: [number, number, number];
+  octaves?: number;
+  lacunarity?: number;
+  persistence?: number;
   };
 };
 ```
@@ -49,19 +53,27 @@ Higher values slow particles more quickly. Very high values can clamp velocity t
 noise: {
   strength: 0.35,
   frequency: 4.5,
+  scroll: [0.2, 0.35, 0.17],
+  octaves: 2,
+  lacunarity: 2,
+  persistence: 0.5,
 }
 ```
 
-Noise is simple deterministic sinusoidal turbulence. It is not spatial curl noise.
+Noise uses coherent 3D value-noise FBM (Perlin-like behavior), sampled from particle position and animated by `scroll`.
 
 Fields:
 
 | Field | Default | Description |
 | --- | --- | --- |
 | `strength` | `0` | Amplitude of velocity perturbation. |
-| `frequency` | `1` | Temporal frequency of the sine/cosine perturbation. |
+| `frequency` | `1` | Spatial scale of the noise field (`higher = finer detail`). |
+| `scroll` | `[0.2, 0.35, 0.17]` | World-space advection speed of the noise field over time. |
+| `octaves` | `2` | FBM octave count (`1..4`). |
+| `lacunarity` | `2` | Frequency multiplier per octave (`>= 1`). |
+| `persistence` | `0.5` | Amplitude multiplier per octave (`0 < p <= 1`). |
 
-CPU and GPU both use similar formulas with particle seed and age.
+CPU and GPU both use coherent position-based formulas with per-particle offsets.
 
 Use it for:
 
@@ -72,9 +84,8 @@ Use it for:
 
 Avoid it for:
 
-- Physically accurate turbulence.
+- Exact physically based fluid simulation.
 - Collision response.
-- Stable vector fields.
 
 ## Force Order
 

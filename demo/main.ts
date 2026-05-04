@@ -221,6 +221,12 @@ const customParams = {
   drag: 0.45,
   noiseStrength: 0.28,
   noiseFrequency: 4.5,
+  noiseScrollX: 0.2,
+  noiseScrollY: 0.35,
+  noiseScrollZ: 0.17,
+  noiseOctaves: 2,
+  noiseLacunarity: 2,
+  noisePersistence: 0.5,
   grow: 1.25,
 };
 
@@ -389,7 +395,14 @@ function makeCustomPreset(): ParticlePreset {
       ? {
           acceleration: [customParams.accelerationX, customParams.accelerationY, customParams.accelerationZ],
           drag: customParams.drag,
-          noise: { strength: customParams.noiseStrength, frequency: customParams.noiseFrequency },
+          noise: {
+            strength: customParams.noiseStrength,
+            frequency: customParams.noiseFrequency,
+            scroll: [customParams.noiseScrollX, customParams.noiseScrollY, customParams.noiseScrollZ],
+            octaves: Math.floor(customParams.noiseOctaves),
+            lacunarity: customParams.noiseLacunarity,
+            persistence: customParams.noisePersistence,
+          },
         }
       : undefined,
     velocityOverLifetime: customParams.velocityOverLifetimeEnabled
@@ -769,6 +782,12 @@ function loadPresetIntoEditor(name: DemoEffectName): void {
   customParams.drag = forces?.drag ?? 0;
   customParams.noiseStrength = forces?.noise?.strength ?? 0;
   customParams.noiseFrequency = forces?.noise?.frequency ?? 1;
+  customParams.noiseScrollX = forces?.noise?.scroll?.[0] ?? 0.2;
+  customParams.noiseScrollY = forces?.noise?.scroll?.[1] ?? 0.35;
+  customParams.noiseScrollZ = forces?.noise?.scroll?.[2] ?? 0.17;
+  customParams.noiseOctaves = forces?.noise?.octaves ?? 2;
+  customParams.noiseLacunarity = forces?.noise?.lacunarity ?? 2;
+  customParams.noisePersistence = forces?.noise?.persistence ?? 0.5;
 
   const velocityOverLifetime = preset.velocityOverLifetime;
   customParams.velocityOverLifetimeEnabled = !!velocityOverLifetime;
@@ -961,8 +980,15 @@ bind(forceFolder, "accelerationX", { label: "acceleration x", min: -10, max: 10,
 bind(forceFolder, "accelerationY", { label: "acceleration y", min: -10, max: 10, step: 0.01 });
 bind(forceFolder, "accelerationZ", { label: "acceleration z", min: -10, max: 10, step: 0.01 });
 bind(forceFolder, "drag", { min: 0, max: 20, step: 0.01 });
-bind(forceFolder, "noiseStrength", { label: "noise strength", min: 0, max: 5, step: 0.01 });
-bind(forceFolder, "noiseFrequency", { label: "noise frequency", min: 0.1, max: 20, step: 0.1 });
+const noiseFolder = particlesPane.addFolder({ title: "Noise", expanded: false }) as PaneLike;
+bind(noiseFolder, "noiseStrength", { label: "strength", min: 0, max: 5, step: 0.01 });
+bind(noiseFolder, "noiseFrequency", { label: "frequency", min: 0.1, max: 20, step: 0.1 });
+bind(noiseFolder, "noiseScrollX", { label: "scroll x", min: -5, max: 5, step: 0.01 });
+bind(noiseFolder, "noiseScrollY", { label: "scroll y", min: -5, max: 5, step: 0.01 });
+bind(noiseFolder, "noiseScrollZ", { label: "scroll z", min: -5, max: 5, step: 0.01 });
+bind(noiseFolder, "noiseOctaves", { label: "octaves", min: 1, max: 4, step: 1 });
+bind(noiseFolder, "noiseLacunarity", { label: "lacunarity", min: 1, max: 4, step: 0.05 });
+bind(noiseFolder, "noisePersistence", { label: "persistence", min: 0.05, max: 1, step: 0.01 });
 
 const colorFolder = particlesPane.addFolder({ title: "Color / alpha over lifetime", expanded: false }) as PaneLike;
 bind(colorFolder, "colorOverLifetimeEnabled", { label: "color gradient enabled" });

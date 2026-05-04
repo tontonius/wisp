@@ -135,7 +135,18 @@ export type ParticlePreset = {
   forces?: {
     acceleration?: Vec3Tuple;
     drag?: number;
-    noise?: { strength?: number; frequency?: number };
+    noise?: {
+      strength?: number;
+      frequency?: number;
+      /** World-space advection speed for the noise field. */
+      scroll?: Vec3Tuple;
+      /** Number of FBM octaves (1-4 recommended). */
+      octaves?: number;
+      /** Frequency multiplier per octave. */
+      lacunarity?: number;
+      /** Amplitude multiplier per octave. */
+      persistence?: number;
+    };
   };
 
   /** CPU backend only. Ignored on GPU. */
@@ -334,6 +345,62 @@ function randomColor(value: THREE.ColorRepresentation | [THREE.ColorRepresentati
     return tempColorA.clone().lerp(tempColorB, Math.random());
   }
   return new THREE.Color(value);
+}
+
+function hash3(x: number, y: number, z: number): number {
+  const n = Math.sin(x * 127.1 + y * 311.7 + z * 74.7) * 43758.5453123;
+  return n - Math.floor(n);
+}
+
+function smoothstep01(t: number): number {
+  return t * t * (3 - 2 * t);
+}
+
+function valueNoise3(x: number, y: number, z: number): number {
+  const ix = Math.floor(x);
+  const iy = Math.floor(y);
+  const iz = Math.floor(z);
+  const fx = smoothstep01(x - ix);
+  const fy = smoothstep01(y - iy);
+  const fz = smoothstep01(z - iz);
+
+  const c000 = hash3(ix, iy, iz);
+  const c100 = hash3(ix + 1, iy, iz);
+  const c010 = hash3(ix, iy + 1, iz);
+  const c110 = hash3(ix + 1, iy + 1, iz);
+  const c001 = hash3(ix, iy, iz + 1);
+  const c101 = hash3(ix + 1, iy, iz + 1);
+  const c011 = hash3(ix, iy + 1, iz + 1);
+  const c111 = hash3(ix + 1, iy + 1, iz + 1);
+
+  const x00 = THREE.MathUtils.lerp(c000, c100, fx);
+  const x10 = THREE.MathUtils.lerp(c010, c110, fx);
+  const x01 = THREE.MathUtils.lerp(c001, c101, fx);
+  const x11 = THREE.MathUtils.lerp(c011, c111, fx);
+  const y0 = THREE.MathUtils.lerp(x00, x10, fy);
+  const y1 = THREE.MathUtils.lerp(x01, x11, fy);
+  return THREE.MathUtils.lerp(y0, y1, fz);
+}
+
+function fbmNoise3(
+  x: number,
+  y: number,
+  z: number,
+  octaves: number,
+  lacunarity: number,
+  persistence: number
+): number {
+  let frequency = 1;
+  let amplitude = 1;
+  let sum = 0;
+  let norm = 0;
+  for (let i = 0; i < octaves; i++) {
+    sum += valueNoise3(x * frequency, y * frequency, z * frequency) * amplitude;
+    norm += amplitude;
+    frequency *= lacunarity;
+    amplitude *= persistence;
+  }
+  return norm > 0 ? sum / norm : 0;
 }
 
 function evaluateCurve(curve: Curve | undefined, t: number, fallback = 1): number {
@@ -934,8 +1001,13 @@ class CPUParticleBackend implements ParticleBackend {
     const forces = this.preset.forces ?? {};
     const acceleration = tempVectorA.set(...(forces.acceleration ?? [0, 0, 0]));
     const drag = forces.drag ?? 0;
-    const noiseStrength = forces.noise?.strength ?? 0;
-    const noiseFrequency = forces.noise?.frequency ?? 1;
+    const noise = forces.noise;
+    const noiseStrength = noise?.strength ?? 0;
+    const noiseFrequency = noise?.frequency ?? 1;
+    const noiseScroll = noise?.scroll ?? [0.2, 0.35, 0.17];
+    const noiseOctaves = THREE.MathUtils.clamp(Math.floor(noise?.octaves ?? 2), 1, 4);
+    const noiseLacunarity = Math.max(1, noise?.lacunarity ?? 2);
+    const noisePersistence = THREE.MathUtils.clamp(noise?.persistence ?? 0.5, 0.05, 1);
 
     for (const particle of this.particles) {
       if (!particle.alive) continue;
@@ -953,10 +1025,16 @@ class CPUParticleBackend implements ParticleBackend {
       if (noiseStrength > 0) {
         const f = noiseFrequency;
         const s = noiseStrength;
-        const seed = particle.randomSeed;
-        particle.velocity.x += Math.sin((particle.age + seed) * f * 1.17) * s * dt;
-        particle.velocity.y += Math.sin((particle.age + seed) * f * 1.71) * s * dt;
-        particle.velocity.z += Math.cos((particle.age + seed) * f * 1.31) * s * dt;
+        const tNoise = this._elapsed;
+        const px = particle.position.x * f + tNoise * noiseScroll[0] + particle.randomSeed * 0.01;
+        const py = particle.position.y * f + tNoise * noiseScroll[1] + particle.randomSeed * 0.013;
+        const pz = particle.position.z * f + tNoise * noiseScroll[2] + particle.randomSeed * 0.017;
+        const nx = fbmNoise3(px + 17.1, py + 3.2, pz + 5.9, noiseOctaves, noiseLacunarity, noisePersistence) * 2 - 1;
+        const ny = fbmNoise3(px - 11.4, py + 19.7, pz + 7.3, noiseOctaves, noiseLacunarity, noisePersistence) * 2 - 1;
+        const nz = fbmNoise3(px + 4.8, py - 13.6, pz + 23.1, noiseOctaves, noiseLacunarity, noisePersistence) * 2 - 1;
+        particle.velocity.x += nx * s * dt;
+        particle.velocity.y += ny * s * dt;
+        particle.velocity.z += nz * s * dt;
       }
 
       if (drag > 0) particle.velocity.multiplyScalar(Math.max(0, 1 - drag * dt));
@@ -1659,6 +1737,10 @@ class GPUParticleBackend implements ParticleBackend {
     u.uDrag.value = forces.drag ?? 0;
     u.uNoiseStrength.value = forces.noise?.strength ?? 0;
     u.uNoiseFrequency.value = forces.noise?.frequency ?? 1;
+    u.uNoiseScroll.value.set(...(forces.noise?.scroll ?? [0.2, 0.35, 0.17]));
+    u.uNoiseOctaves.value = THREE.MathUtils.clamp(Math.floor(forces.noise?.octaves ?? 2), 1, 4);
+    u.uNoiseLacunarity.value = Math.max(1, forces.noise?.lacunarity ?? 2);
+    u.uNoisePersistence.value = THREE.MathUtils.clamp(forces.noise?.persistence ?? 0.5, 0.05, 1);
     u.uLifetimeVelocity.value = this.lifetimeVelocityTexture;
     u.uRandomStartFrame.value = sheet?.randomFrame ? 1 : 0;
     u.uTotalFrames.value = sheet?.totalFrames ?? 1;
@@ -1705,6 +1787,10 @@ class GPUParticleBackend implements ParticleBackend {
         uDrag: { value: 0 },
         uNoiseStrength: { value: 0 },
         uNoiseFrequency: { value: 1 },
+        uNoiseScroll: { value: new THREE.Vector3(0.2, 0.35, 0.17) },
+        uNoiseOctaves: { value: 2 },
+        uNoiseLacunarity: { value: 2 },
+        uNoisePersistence: { value: 0.5 },
         uLifetimeVelocity: { value: this.lifetimeVelocityTexture },
         uRandomStartFrame: { value: 0 },
         uTotalFrames: { value: 1 },
@@ -1759,6 +1845,10 @@ class GPUParticleBackend implements ParticleBackend {
         uniform float uDrag;
         uniform float uNoiseStrength;
         uniform float uNoiseFrequency;
+        uniform vec3 uNoiseScroll;
+        uniform int uNoiseOctaves;
+        uniform float uNoiseLacunarity;
+        uniform float uNoisePersistence;
         uniform sampler2D uLifetimeVelocity;
         uniform int uRandomStartFrame;
         uniform int uTotalFrames;
@@ -1767,6 +1857,41 @@ class GPUParticleBackend implements ParticleBackend {
 
         float hash(float n) { return fract(sin(n) * 43758.5453123); }
         float rand(float index, float salt) { return hash(index * 17.131 + salt * 113.71 + uSpawnSeed); }
+        float hash3(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453123); }
+        vec3 smooth3(vec3 t) { return t * t * (3.0 - 2.0 * t); }
+        float valueNoise3(vec3 p) {
+          vec3 i = floor(p);
+          vec3 f = smooth3(fract(p));
+          float c000 = hash3(i + vec3(0.0, 0.0, 0.0));
+          float c100 = hash3(i + vec3(1.0, 0.0, 0.0));
+          float c010 = hash3(i + vec3(0.0, 1.0, 0.0));
+          float c110 = hash3(i + vec3(1.0, 1.0, 0.0));
+          float c001 = hash3(i + vec3(0.0, 0.0, 1.0));
+          float c101 = hash3(i + vec3(1.0, 0.0, 1.0));
+          float c011 = hash3(i + vec3(0.0, 1.0, 1.0));
+          float c111 = hash3(i + vec3(1.0, 1.0, 1.0));
+          float x00 = mix(c000, c100, f.x);
+          float x10 = mix(c010, c110, f.x);
+          float x01 = mix(c001, c101, f.x);
+          float x11 = mix(c011, c111, f.x);
+          float y0 = mix(x00, x10, f.y);
+          float y1 = mix(x01, x11, f.y);
+          return mix(y0, y1, f.z);
+        }
+        float fbmNoise3(vec3 p, int octaves, float lacunarity, float persistence) {
+          float sum = 0.0;
+          float norm = 0.0;
+          float amp = 1.0;
+          float freq = 1.0;
+          for (int i = 0; i < 4; i++) {
+            if (i >= octaves) break;
+            sum += valueNoise3(p * freq) * amp;
+            norm += amp;
+            freq *= lacunarity;
+            amp *= persistence;
+          }
+          return norm > 0.0 ? sum / norm : 0.0;
+        }
 
         vec3 randomUnitVector(float index) {
           float z = rand(index, 1.0) * 2.0 - 1.0;
@@ -1867,11 +1992,11 @@ class GPUParticleBackend implements ParticleBackend {
           velocity += uAcceleration * uDeltaTime;
 
           if (uNoiseStrength > 0.0) {
-            float f = uNoiseFrequency;
-            float seed = colorSeed.a;
-            velocity.x += sin((age + seed) * f * 1.17) * uNoiseStrength * uDeltaTime;
-            velocity.y += sin((age + seed) * f * 1.71) * uNoiseStrength * uDeltaTime;
-            velocity.z += cos((age + seed) * f * 1.31) * uNoiseStrength * uDeltaTime;
+            vec3 noiseP = pos * uNoiseFrequency + uNoiseScroll * uTime + vec3(colorSeed.a * 0.01);
+            float nx = fbmNoise3(noiseP + vec3(17.1, 3.2, 5.9), uNoiseOctaves, uNoiseLacunarity, uNoisePersistence) * 2.0 - 1.0;
+            float ny = fbmNoise3(noiseP + vec3(-11.4, 19.7, 7.3), uNoiseOctaves, uNoiseLacunarity, uNoisePersistence) * 2.0 - 1.0;
+            float nz = fbmNoise3(noiseP + vec3(4.8, -13.6, 23.1), uNoiseOctaves, uNoiseLacunarity, uNoisePersistence) * 2.0 - 1.0;
+            velocity += vec3(nx, ny, nz) * uNoiseStrength * uDeltaTime;
           }
 
           if (uDrag > 0.0) velocity *= max(0.0, 1.0 - uDrag * uDeltaTime);
