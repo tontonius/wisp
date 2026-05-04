@@ -322,7 +322,7 @@ Goal: make CPU particles excellent for responsive game juice.
 - [x] CPU sub-emitters (`onBirth`, `onDeath`, `onCollision`)
 - [x] Stretched billboards
 - [x] CPU sorting (`renderer.sorting`: `none` / `distance` / `youngestFirst` / `oldestFirst`, defaults to `distance`)
-- [ ] Better local/world simulation support
+- [x] Better local/world simulation support (`simulationSpace: "local" | "world"`)
 
 ### Collision
 

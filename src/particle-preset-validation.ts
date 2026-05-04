@@ -13,6 +13,7 @@ export type ParticlePresetValidationResult = {
 const EMITTER_TYPES = new Set(["point", "sphere", "hemisphere", "cone", "box"]);
 const RENDERER_TYPES = new Set(["billboard", "stretchedBillboard"]);
 const SORTING_MODES = new Set(["none", "distance", "youngestFirst", "oldestFirst"]);
+const SIMULATION_SPACES = new Set(["local", "world"]);
 
 function isFiniteNumber(n: unknown): n is number {
   return typeof n === "number" && Number.isFinite(n);
@@ -123,6 +124,10 @@ export function collectParticlePresetIssues(
     if (!isFiniteNumber(preset.duration) || preset.duration < 0) {
       errors.push("duration: must be a finite number >= 0 when set.");
     }
+  }
+
+  if (preset.simulationSpace !== undefined && !SIMULATION_SPACES.has(preset.simulationSpace)) {
+    errors.push('simulationSpace: must be "local" or "world" when set.');
   }
 
   if (preset.emitter !== undefined) {

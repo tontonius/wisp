@@ -53,6 +53,11 @@ velocity = emitterDirection * start.speed + start.velocity
 
 If no dead slot exists, the spawn is skipped.
 
+Simulation-space notes:
+
+- `simulationSpace: "local"` (default): spawned particles remain in local space and follow later system transforms.
+- `simulationSpace: "world"`: spawn samples are transformed to world space once, then simulated in world space.
+
 ## Update Behavior
 
 Per live particle:
@@ -93,10 +98,10 @@ collision?: {
 | Field | Default | Description |
 | --- | --- | --- |
 | `type` | — | Collision primitive: `plane`, `sphere`, or `box`. |
-| `y` | `0` | Plane-only: height of the infinite `xz` plane along **local Y**. |
-| `center` | `[0, 0, 0]` | Sphere/box-only: primitive center in local space. |
-| `radius` | `1` | Sphere-only: collider radius in local units. |
-| `size` | `[1, 1, 1]` | Box-only: full extents of the axis-aligned local-space box. |
+| `y` | `0` | Plane-only: height of the infinite `xz` plane along simulation-space Y. |
+| `center` | `[0, 0, 0]` | Sphere/box-only: primitive center in simulation space. |
+| `radius` | `1` | Sphere-only: collider radius in simulation-space units. |
+| `size` | `[1, 1, 1]` | Box-only: full extents of the axis-aligned simulation-space box. |
 | `bounce` | `0.4` | Restitution on the collision normal. |
 | `dampening` | `1` | Tangential damping after collision response (`1` keeps full tangential speed). |
 | `killOnCollision` | `false` | When true, particles die on collision instead of bouncing/sliding. |
@@ -105,8 +110,10 @@ Implementation notes:
 
 - `plane` uses normal **+Y** and corrects particles below `y`.
 - `sphere` pushes particles to the sphere surface and responds along outward normal.
-- `box` uses an axis-aligned local-space box and resolves against the nearest face.
-- All modes run in system local space, so moving/rotating/scaling the `ParticleSystem` transforms collider behavior with it.
+- `box` uses an axis-aligned box and resolves against the nearest face.
+- Collision space matches `simulationSpace`.
+- In `local` space, moving/rotating/scaling the `ParticleSystem` transforms collider behavior with it.
+- In `world` space, colliders stay fixed in world coordinates unless the preset values are changed.
 
 GPU presets must not set `collision`; validation throws if `simulation: "gpu"` and `collision` are both set.
 

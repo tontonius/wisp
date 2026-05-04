@@ -10,6 +10,7 @@ It is designed for game effects where the developer ergonomics matter more than 
 - CPU backend for precise gameplay-ish effects
 - GPU backend for large visual effects using WebGL render-target ping-pong simulation
 - Point, sphere, hemisphere, cone, and box emitters
+- Local-space or world-space simulation (`simulationSpace`)
 - Continuous emission and burst emission
 - Size, opacity, and colour over lifetime
 - Constant acceleration vector, drag, and simple noise force
@@ -36,11 +37,7 @@ Then open the Vite URL.
 ## Demo controls
 
 ```txt
-Click = CPU explosion + smoke
-1     = CPU muzzle flash
-2     = CPU smoke puff
-3     = CPU explosion
-4     = spawn another GPU magic storm burst
+Click = spawn selected effect from the demo controls
 ```
 
 The scene starts with a small CPU aura on the left and a larger GPU magic storm on the right.

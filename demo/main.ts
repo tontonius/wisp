@@ -568,6 +568,16 @@ capturePane.addBinding(capturePaneParams, "orbitSpeedDegPerSecond", {
   step: 1,
 });
 let loopPreview: ParticleSystem | undefined;
+let orbitingEmitterDemo:
+  | {
+      system: ParticleSystem;
+      center: THREE.Vector3;
+      angle: number;
+      radius: number;
+      speed: number;
+      height: number;
+    }
+  | undefined;
 
 function refreshCustomPreset() {
   particles.register("customEffect", makeCustomPreset());
@@ -599,6 +609,23 @@ function spawnEffect(name: DemoEffectName, position: THREE.Vector3 | [number, nu
 
   const spawnPosition = Array.isArray(position) ? new THREE.Vector3(...position) : position.clone();
   if (name === "rainGpu" || name === "snowGpu") spawnPosition.y = 6.5;
+  if (name === "orbitingEmitterWorldDemo") {
+    if (orbitingEmitterDemo) {
+      orbitingEmitterDemo.system.dispose();
+      particles.systems.delete(orbitingEmitterDemo.system);
+      orbitingEmitterDemo = undefined;
+    }
+    const system = particles.spawn(name, { position: spawnPosition });
+    orbitingEmitterDemo = {
+      system,
+      center: spawnPosition.clone(),
+      angle: 0,
+      radius: 3.8,
+      speed: 0.65,
+      height: Math.max(0.35, spawnPosition.y + 0.7),
+    };
+    return;
+  }
 
   const system = particles.spawn(name, { position: spawnPosition });
   if (name === "gpuMagicStorm") system.emit(1500);
@@ -790,6 +817,7 @@ bind(controlsFolder, "clickEffect", {
     Explosion: "explosion",
     Shockwave: "shockwave",
     "Magic aura": "magicAura",
+    "Orbiting emitter (world space)": "orbitingEmitterWorldDemo",
     "Rain GPU": "rainGpu",
     "Snow GPU": "snowGpu",
     "Magic aura GPU": "magicAuraGpu",
@@ -802,6 +830,7 @@ controlsFolder.addButton({ title: "Preview loop" }).on("click", previewCustomLoo
 controlsFolder.addButton({ title: "Clear systems" }).on("click", () => {
   particles.clear();
   loopPreview = undefined;
+  orbitingEmitterDemo = undefined;
 });
 controlsFolder.addButton({ title: "Copy preset code" }).on("click", () => {
   copyText(makePresetCode())
@@ -988,21 +1017,6 @@ window.addEventListener(
   },
   { passive: false }
 );
-window.addEventListener("keydown", (event) => {
-  if (event.target instanceof HTMLInputElement) return;
-  if (event.key === "1") spawnEffect("muzzleFlash", [-2, 1, 0]);
-  if (event.key === "2") spawnEffect("bulletImpactSparks", [-1, 0.35, 0]);
-  if (event.key === "3") spawnEffect("explosion", [2, 0, 0]);
-  if (event.key === "4") spawnEffect("smokePuff", [0, 0, 0]);
-  if (event.key === "5") spawnEffect("pickupSparkle", [0, 0.5, 0]);
-  if (event.key === "6") spawnEffect("torchFire", [0, 0.1, 0]);
-  if (event.key === "b" || event.key === "B") spawnEffect("floorBounceDemo", [0, 0.05, 0]);
-  if (event.key === "7") spawnEffect("rainGpu", [0, 6.5, 0]);
-  if (event.key === "8") spawnEffect("snowGpu", [0, 6.5, 0]);
-  if (event.key === "9") spawnEffect("magicAuraGpu", [0, 0.2, 0]);
-  if (event.key === "0") spawnEffect("shockwave", [0, 0.05, 0]);
-});
-
 const clock = new THREE.Clock();
 
 function animate() {
@@ -1010,6 +1024,16 @@ function animate() {
   const dt = Math.min(clock.getDelta(), 1 / 30);
   if (capturePaneParams.orbitCamera) {
     targetOrbit.theta += THREE.MathUtils.degToRad(capturePaneParams.orbitSpeedDegPerSecond) * dt;
+  }
+  if (orbitingEmitterDemo) {
+    if (orbitingEmitterDemo.system.isDisposed) {
+      orbitingEmitterDemo = undefined;
+    } else {
+      orbitingEmitterDemo.angle += dt * orbitingEmitterDemo.speed;
+      const x = orbitingEmitterDemo.center.x + Math.cos(orbitingEmitterDemo.angle) * orbitingEmitterDemo.radius;
+      const z = orbitingEmitterDemo.center.z + Math.sin(orbitingEmitterDemo.angle) * orbitingEmitterDemo.radius;
+      (orbitingEmitterDemo.system as unknown as THREE.Object3D).position.set(x, orbitingEmitterDemo.height, z);
+    }
   }
   updateCameraOrbit();
   particles.update(dt, camera);

@@ -9,6 +9,7 @@ export type AlignMode = "camera" | "velocity";
 export type RendererType = "billboard" | "stretchedBillboard";
 export type SortMode = "none" | "distance" | "youngestFirst" | "oldestFirst";
 export type SimulationMode = "cpu" | "gpu" | "auto";
+export type SimulationSpace = "local" | "world";
 export type Curve = Array<[time: number, value: number]>;
 export type Gradient = Array<[time: number, color: THREE.ColorRepresentation]>;
 export type VelocityOverLifetime = {
@@ -35,10 +36,10 @@ export type ParticleDebugOptions = {
   segments?: number;
 };
 
-/** CPU-only infinite plane with normal +Y (`xz` plane). Positions and `y` are in `ParticleSystem` local space (same as the emitter). */
+/** CPU-only infinite plane with normal +Y (`xz` plane). Coordinates are in `simulationSpace` (`local` by default). */
 export type CpuPlaneCollision = {
   type: "plane";
-  /** Plane height along local Y. Default `0`. */
+  /** Plane height along simulation-space Y. Default `0`. */
   y?: number;
   /** Restitution on the plane normal: outgoing `velocity.y` is `-bounce * incoming_velocity_y` when moving into the plane from above. Default `0.4`. */
   bounce?: number;
@@ -48,10 +49,10 @@ export type CpuPlaneCollision = {
   killOnCollision?: boolean;
 };
 
-/** CPU-only sphere collision in `ParticleSystem` local space. */
+/** CPU-only sphere collision in `simulationSpace` (`local` by default). */
 export type CpuSphereCollision = {
   type: "sphere";
-  /** Sphere center in local space. Default `[0, 0, 0]`. */
+  /** Sphere center in simulation space. Default `[0, 0, 0]`. */
   center?: Vec3Tuple;
   /** Sphere radius. Default `1`. */
   radius?: number;
@@ -63,10 +64,10 @@ export type CpuSphereCollision = {
   killOnCollision?: boolean;
 };
 
-/** CPU-only axis-aligned box collision in `ParticleSystem` local space. */
+/** CPU-only axis-aligned box collision in `simulationSpace` (`local` by default). */
 export type CpuBoxCollision = {
   type: "box";
-  /** Box center in local space. Default `[0, 0, 0]`. */
+  /** Box center in simulation space. Default `[0, 0, 0]`. */
   center?: Vec3Tuple;
   /** Full box size on each axis. Default `[1, 1, 1]`. */
   size?: Vec3Tuple;
@@ -83,6 +84,12 @@ export type CpuCollision = CpuPlaneCollision | CpuSphereCollision | CpuBoxCollis
 export type ParticlePreset = {
   name?: string;
   simulation?: SimulationMode;
+  /**
+   * Coordinate space used for particle simulation.
+   * - `"local"` (default): particles are simulated in system local space and follow parent/object transforms.
+   * - `"world"`: particles are simulated in world space after spawn and do not follow later emitter movement.
+   */
+  simulationSpace?: SimulationSpace;
   maxParticles?: number;
   duration?: number;
   loop?: boolean;
@@ -272,6 +279,7 @@ const tempColorB = new THREE.Color();
 const tempVectorA = new THREE.Vector3();
 const tempVectorB = new THREE.Vector3();
 const tempVectorC = new THREE.Vector3();
+const tempVectorD = new THREE.Vector3();
 const tempMatrixA = new THREE.Matrix4();
 
 function randomRange(value: Range = 1): number {
@@ -687,6 +695,7 @@ class CPUParticleBackend implements ParticleBackend {
   private _disposed = false;
   private sortedBursts: Array<{ time: number; count: Range; probability?: number }>;
   private sortMode: SortMode;
+  private simulationSpace: SimulationSpace;
   private sortIndices: number[];
   private sortKeys: Float32Array;
 
@@ -715,6 +724,7 @@ class CPUParticleBackend implements ParticleBackend {
     this.object.add(this.mesh);
 
     this.sortMode = preset.renderer?.sorting ?? "distance";
+    this.simulationSpace = preset.simulationSpace ?? "local";
     this.sortIndices = new Array(this.maxParticles);
     this.sortKeys = new Float32Array(this.maxParticles);
 
@@ -886,6 +896,14 @@ class CPUParticleBackend implements ParticleBackend {
 
     const sheet = getTextureSheetConfig(this.preset);
     particle.startFrame = sheet?.randomFrame ? Math.floor(Math.random() * sheet.totalFrames) : 0;
+
+    if (this.simulationSpace === "world") {
+      this.object.updateWorldMatrix(true, false);
+      particle.position.applyMatrix4(this.object.matrixWorld);
+      tempMatrixA.copy(this.object.matrixWorld).setPosition(0, 0, 0);
+      particle.velocity.applyMatrix4(tempMatrixA);
+    }
+
     this.backendOptions.onParticleBirth?.(particle);
   }
 
@@ -1081,6 +1099,12 @@ class CPUParticleBackend implements ParticleBackend {
     const align = this.preset.renderer?.align ?? "camera";
     const cameraRight = tempVectorA.setFromMatrixColumn(camera.matrixWorld, 0).normalize();
     const cameraUp = tempVectorB.setFromMatrixColumn(camera.matrixWorld, 1).normalize();
+    const cameraForward = tempVectorC.setFromMatrixColumn(camera.matrixWorld, 2).normalize();
+    const worldSpace = this.simulationSpace === "world";
+    if (worldSpace) {
+      this.object.updateWorldMatrix(true, false);
+      tempMatrixA.copy(this.object.matrixWorld).invert();
+    }
 
     const aliveCount = this.collectAliveIndices(camera);
     this.sortAliveIndices(aliveCount);
@@ -1103,14 +1127,14 @@ class CPUParticleBackend implements ParticleBackend {
       let up = cameraUp;
 
       if (align === "velocity" && particle.velocity.lengthSq() > 0.0001) {
-        right = tempVectorC.copy(particle.velocity).normalize();
-        up = tempVectorB.setFromMatrixColumn(camera.matrixWorld, 2).cross(right).normalize();
+        right = particle.velocity.clone().normalize();
+        up = cameraForward.clone().cross(right).normalize();
         if (up.lengthSq() < 0.0001) up = cameraUp;
       }
 
       if (rendererType === "stretchedBillboard" && particle.velocity.lengthSq() > 0.0001) {
-        right = tempVectorC.copy(particle.velocity).normalize();
-        up = tempVectorB.setFromMatrixColumn(camera.matrixWorld, 2).cross(right).normalize();
+        right = particle.velocity.clone().normalize();
+        up = cameraForward.clone().cross(right).normalize();
         if (up.lengthSq() < 0.0001) up = cameraUp;
       }
 
@@ -1132,7 +1156,8 @@ class CPUParticleBackend implements ParticleBackend {
         const y = corners[i][1];
         const rx = x * cos - y * sin;
         const ry = x * sin + y * cos;
-        const corner = particle.position.clone().addScaledVector(r, rx).addScaledVector(u, ry);
+        const corner = tempVectorD.copy(particle.position).addScaledVector(r, rx).addScaledVector(u, ry);
+        if (worldSpace) corner.applyMatrix4(tempMatrixA);
 
         this.positions[vertexOffset++] = corner.x;
         this.positions[vertexOffset++] = corner.y;
@@ -1171,13 +1196,12 @@ class CPUParticleBackend implements ParticleBackend {
       for (let i = 0; i < this.particles.length; i++) {
         const p = this.particles[i];
         if (!p.alive) continue;
-        // Inline matrixWorld * particle.position to avoid Vector3 allocations.
-        const lx = p.position.x;
-        const ly = p.position.y;
-        const lz = p.position.z;
-        const wx = e[0] * lx + e[4] * ly + e[8] * lz + e[12];
-        const wy = e[1] * lx + e[5] * ly + e[9] * lz + e[13];
-        const wz = e[2] * lx + e[6] * ly + e[10] * lz + e[14];
+        const wx =
+          this.simulationSpace === "world" ? p.position.x : e[0] * p.position.x + e[4] * p.position.y + e[8] * p.position.z + e[12];
+        const wy =
+          this.simulationSpace === "world" ? p.position.y : e[1] * p.position.x + e[5] * p.position.y + e[9] * p.position.z + e[13];
+        const wz =
+          this.simulationSpace === "world" ? p.position.z : e[2] * p.position.x + e[6] * p.position.y + e[10] * p.position.z + e[14];
         // In Three.js the camera looks down -Z, so depth-from-camera = -forward · (worldPos - camPos).
         const dx = wx - camX;
         const dy = wy - camY;
@@ -1305,9 +1329,11 @@ class GPUParticleBackend implements ParticleBackend {
   private lifetimeVelocityTexture: THREE.DataTexture;
   private previousRenderTarget: THREE.WebGLRenderTarget | null = null;
   private previousXrEnabled = false;
+  private simulationSpace: SimulationSpace;
 
   constructor(private preset: ParticlePreset, private renderer: THREE.WebGLRenderer) {
     this.maxParticles = preset.maxParticles ?? 1024;
+    this.simulationSpace = preset.simulationSpace ?? "local";
     this.textureSize = preset.gpu?.textureSize ?? Math.ceil(Math.sqrt(this.maxParticles));
     this.capacity = this.textureSize * this.textureSize;
     this.sortedBursts = [...(preset.emission?.bursts ?? [])].sort((a, b) => a.time - b.time);
@@ -1602,6 +1628,10 @@ class GPUParticleBackend implements ParticleBackend {
     u.uLifetimeVelocity.value = this.lifetimeVelocityTexture;
     u.uRandomStartFrame.value = sheet?.randomFrame ? 1 : 0;
     u.uTotalFrames.value = sheet?.totalFrames ?? 1;
+    u.uSimulationSpace.value = this.simulationSpace === "world" ? 1 : 0;
+    this.object.updateWorldMatrix(true, false);
+    const e = this.object.matrixWorld.elements;
+    u.uSystemWorldPosition.value.set(e[12], e[13], e[14]);
   }
 
   private makeSimulationMaterial(): THREE.ShaderMaterial {
@@ -1644,6 +1674,8 @@ class GPUParticleBackend implements ParticleBackend {
         uLifetimeVelocity: { value: this.lifetimeVelocityTexture },
         uRandomStartFrame: { value: 0 },
         uTotalFrames: { value: 1 },
+        uSimulationSpace: { value: this.simulationSpace === "world" ? 1 : 0 },
+        uSystemWorldPosition: { value: new THREE.Vector3() },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -1696,6 +1728,8 @@ class GPUParticleBackend implements ParticleBackend {
         uniform sampler2D uLifetimeVelocity;
         uniform int uRandomStartFrame;
         uniform int uTotalFrames;
+        uniform int uSimulationSpace;
+        uniform vec3 uSystemWorldPosition;
 
         float hash(float n) { return fract(sin(n) * 43758.5453123); }
         float rand(float index, float salt) { return hash(index * 17.131 + salt * 113.71 + uSpawnSeed); }
@@ -1760,6 +1794,7 @@ class GPUParticleBackend implements ParticleBackend {
           if (spawn) {
             vec3 dir;
             vec3 pos = sampleEmitterPosition(rawIndex, dir);
+            if (uSimulationSpace == 1) pos += uSystemWorldPosition;
             float life = mix(uLifeRange.x, uLifeRange.y, rand(rawIndex, 11.0));
             float speed = mix(uSpeedRange.x, uSpeedRange.y, rand(rawIndex, 12.0));
             vec3 inheritedVelocity = mix(uVelocityMin, uVelocityMax, vec3(rand(rawIndex, 13.0), rand(rawIndex, 14.0), rand(rawIndex, 15.0)));
@@ -1884,6 +1919,7 @@ class GPUParticleBackend implements ParticleBackend {
         uSheetRows: { value: sheet?.rows ?? 1 },
         uSheetFrameOverLifetime: { value: sheet?.frameOverLifetime ? 1 : 0 },
         uTotalFrames: { value: sheet?.totalFrames ?? 1 },
+        uSimulationSpace: { value: this.simulationSpace === "world" ? 1 : 0 },
       },
       vertexShader: `
         precision highp float;
@@ -1906,6 +1942,7 @@ class GPUParticleBackend implements ParticleBackend {
         uniform int uSheetRows;
         uniform int uSheetFrameOverLifetime;
         uniform int uTotalFrames;
+        uniform int uSimulationSpace;
 
         varying vec2 vUv;
         varying vec4 vColor;
@@ -1929,12 +1966,12 @@ class GPUParticleBackend implements ParticleBackend {
           float size = startSize * sizeMul;
           float opacity = startOpacity * opacityMul * alive;
 
-          vec3 worldCenter = (modelMatrix * vec4(positionAge.xyz, 1.0)).xyz;
+          vec3 worldCenter = uSimulationSpace == 1 ? positionAge.xyz : (modelMatrix * vec4(positionAge.xyz, 1.0)).xyz;
           vec3 right = normalize(uCameraRight);
           vec3 up = normalize(uCameraUp);
 
           if (uAlignVelocity == 1 && length(velocityLife.xyz) > 0.0001) {
-            right = normalize(mat3(modelMatrix) * normalize(velocityLife.xyz));
+            right = normalize(uSimulationSpace == 1 ? normalize(velocityLife.xyz) : (mat3(modelMatrix) * normalize(velocityLife.xyz)));
             up = normalize(cross(uCameraForward, right));
             if (length(up) < 0.0001) up = normalize(uCameraUp);
           }
@@ -2292,8 +2329,7 @@ export class ParticleWorld {
     if (!this.effects.get(targetName)) return;
     if (meta.subEmitterDepth >= this.maxSubEmitterDepth) return;
 
-    const worldPosition = particle.position.clone();
-    (system as unknown as THREE.Object3D).localToWorld(worldPosition);
+    const worldPosition = this.resolveParticleWorldPosition(particle, system);
 
     this.spawnInternal(
       targetName,
@@ -2314,8 +2350,7 @@ export class ParticleWorld {
     if (!this.effects.get(targetName)) return;
     if (meta.subEmitterDepth >= this.maxSubEmitterDepth) return;
 
-    const worldPosition = particle.position.clone();
-    (system as unknown as THREE.Object3D).localToWorld(worldPosition);
+    const worldPosition = this.resolveParticleWorldPosition(particle, system);
 
     this.spawnInternal(
       targetName,
@@ -2336,8 +2371,7 @@ export class ParticleWorld {
     if (!this.effects.get(targetName)) return;
     if (meta.subEmitterDepth >= this.maxSubEmitterDepth) return;
 
-    const worldPosition = particle.position.clone();
-    (system as unknown as THREE.Object3D).localToWorld(worldPosition);
+    const worldPosition = this.resolveParticleWorldPosition(particle, system);
 
     this.spawnInternal(
       targetName,
@@ -2380,6 +2414,13 @@ export class ParticleWorld {
     this.systems.add(system);
     this.systemSpawnMeta.set(system, { name, poolable, subEmitterDepth });
     return system;
+  }
+
+  private resolveParticleWorldPosition(particle: ParticleSnapshot, system: ParticleSystem): THREE.Vector3 {
+    const worldPosition = particle.position.clone();
+    if ((system.preset.simulationSpace ?? "local") === "world") return worldPosition;
+    (system as unknown as THREE.Object3D).localToWorld(worldPosition);
+    return worldPosition;
   }
 
   register(name: string, preset: ParticlePreset): this {

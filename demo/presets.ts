@@ -19,6 +19,7 @@ export type DemoEffectName =
   | "snowGpu"
   | "magicAuraGpu"
   | "magicAura"
+  | "orbitingEmitterWorldDemo"
   | "shockwave"
   | "gpuMagicStorm"
   | "customEffect"
@@ -221,6 +222,39 @@ export function createDemoPresets(textures: DemoPresetTextures): {
       color: [[0, "#ffffff"], [0.5, "#66d9ff"], [1, "#8e5cff"]],
     },
     renderer: { texture: softDisc, blendMode: "additive", depthWrite: false },
+  };
+
+  const orbitingEmitterWorldDemo: ParticlePreset = {
+    simulation: "cpu",
+    simulationSpace: "world",
+    maxParticles: 700,
+    duration: 10,
+    loop: true,
+    prewarm: false,
+    autoDispose: false,
+    emitter: { type: "sphere", radius: 0.14, emitFrom: "volume" },
+    emission: { rateOverTime: 95 },
+    start: {
+      lifetime: [2.2, 4.2],
+      speed: [0.03, 0.18],
+      size: [0.16, 0.34],
+      color: ["#ffffff", "#ffffff"],
+      opacity: [0.22, 0.52],
+      velocity: [[-0.08, 0, -0.08], [0.08, 0, 0.08]],
+      rotation: [0, Math.PI * 2],
+      angularVelocity: [-0.45, 0.45],
+    },
+    forces: {
+      acceleration: [0, 0.25, 0],
+      drag: 1.15,
+      noise: { strength: 0.15, frequency: 1.6 },
+    },
+    overLifetime: {
+      size: [[0, 0.45], [0.08, 1], [0.72, 1.85], [1, 2.3]],
+      opacity: [[0, 0], [0.08, 1], [0.62, 0.82], [1, 0]],
+      color: [[0, "#2a2d33"], [0.25, "#a99c8c"], [1, "#ffffff"]],
+    },
+    renderer: { texture: softDisc, blendMode: "alpha", depthWrite: false, depthTest: true },
   };
 
   const floorBounceDemo: ParticlePreset = {
@@ -715,6 +749,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
     snowGpu,
     magicAuraGpu,
     magicAura,
+    orbitingEmitterWorldDemo,
     shockwave,
     gpuMagicStorm,
   };
@@ -737,6 +772,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
     snowGpu,
     magicAuraGpu,
     magicAura,
+    orbitingEmitterWorldDemo,
     shockwave,
     gpuMagicStorm,
   };

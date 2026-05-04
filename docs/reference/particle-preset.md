@@ -8,6 +8,7 @@ Invalid values are rejected when a [`ParticleSystem`](api.md) is constructed; se
 type ParticlePreset = {
   name?: string;
   simulation?: SimulationMode;
+  simulationSpace?: "local" | "world";
   maxParticles?: number;
   duration?: number;
   loop?: boolean;
@@ -36,6 +37,7 @@ type ParticlePreset = {
 | --- | --- | --- | --- |
 | `name` | `string` | Set by library registration | Human-readable or registry name. |
 | `simulation` | `"cpu" | "gpu" | "auto"` | CPU unless `auto` or `gpu` selects GPU | Backend preference. |
+| `simulationSpace` | `"local" | "world"` | `"local"` | Coordinate space for spawn/update integration. `"world"` keeps particles in world space after spawn. |
 | `maxParticles` | `number` | CPU: `256`, GPU: `1024` | Maximum live particle capacity. |
 | `duration` | `number` | `1` | Emission duration in seconds. |
 | `loop` | `boolean` | `false` | Whether emission restarts after `duration`. |
@@ -70,6 +72,16 @@ Selection rules:
 - `gpu.forceCpuFallback: true` forces CPU.
 - `collision` set on the preset forces CPU (GPU does not implement collision).
 - `subEmitters` set on the preset forces CPU (GPU does not implement built-in sub-emitters).
+
+## Simulation Space
+
+```ts
+simulationSpace?: "local" | "world";
+```
+
+- `"local"` (default): particles simulate in the `ParticleSystem` local space and follow parent/system transforms after spawn.
+- `"world"`: particles simulate in world space after spawn and do not follow later system movement.
+- `collision` primitives are evaluated in the configured simulation space.
 
 ## Capacity And Duration
 

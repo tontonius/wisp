@@ -30,7 +30,7 @@ Separate bottom-left Tweakpane used for recording-friendly camera motion. These 
 
 | Control | Effect |
 | --- | --- |
-| `click` | Selects the effect spawned by pointer clicks and buttons. |
+| `click` | Selects the effect spawned by pointer clicks and buttons (including the orbiting world-space emitter demo preset). |
 | `Spawn at center` | Spawns the selected effect near the center of the scene. |
 | `Load selected into editor` | Copies a built-in preset into the custom editor controls. |
 | `Preview loop` | Spawns or respawns the custom effect as a loop preview. |
