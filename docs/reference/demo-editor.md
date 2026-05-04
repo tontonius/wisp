@@ -131,14 +131,17 @@ velocityOverLifetime: {
 
 | Control | Preset Field |
 | --- | --- |
-| `enabled` | Whether `overLifetime.color` is included. |
-| `start color` | First color stop. |
-| `mid color` | Middle color stop at `0.45`. |
-| `end color` | Final color stop. |
-| `alpha fade in` | First full-opacity stop in `overLifetime.opacity`. |
-| `alpha fade out` | Last full-opacity stop in `overLifetime.opacity`. |
+| `color gradient enabled` | Whether `overLifetime.color` is included. |
+| `gradient` | Combined color + opacity stop editor. Color stops map to `overLifetime.color`; opacity stops map to `overLifetime.opacity`. |
 
-When color-over-lifetime is enabled, the demo sets `start.color` to white so the gradient controls own the visible color.
+Gradient editor interactions:
+
+- Drag a stop to move it.
+- Double-click on the color row or gradient bar to add a color stop.
+- Double-click on the opacity row to add an opacity stop.
+- Select a stop, then use `Delete`/`Backspace` to remove it (minimum two stops per row).
+
+When color-over-lifetime is enabled, the demo sets `start.color` to white so the gradient stops own the visible color.
 
 ## Size Over Lifetime Folder
 

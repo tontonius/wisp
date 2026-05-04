@@ -2,6 +2,12 @@ import * as THREE from "three";
 import { Pane } from "tweakpane";
 import { ParticleWorld } from "../src";
 import type { Curve, ParticlePreset, ParticleSystem } from "../src";
+import {
+  defaultGradientStops,
+  normalizeGradientStops,
+  tweakpaneGradientPluginBundle,
+  type GradientStopsValue,
+} from "./tweakpane-gradient-plugin/index.js";
 import "./style.css";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
@@ -195,9 +201,7 @@ const customParams = {
   angularVelocityMax: 1.5,
   startColorA: "#ffffff",
   startColorB: "#ffffff",
-  lifetimeColorStart: "#ffffff",
-  lifetimeColorMid: "#70e7ff",
-  lifetimeColorEnd: "#ff7ad9",
+  lifetimeGradient: defaultGradientStops(),
   velocityX: 0.15,
   velocityYMin: 0,
   velocityYMax: 0.9,
@@ -215,8 +219,6 @@ const customParams = {
   noiseStrength: 0.28,
   noiseFrequency: 4.5,
   grow: 1.25,
-  fadeIn: 0.12,
-  fadeOut: 1,
 };
 
 function makeCustomEmitter(): ParticlePreset["emitter"] {
@@ -398,9 +400,9 @@ function makeCustomPreset(): ParticlePreset {
       : undefined,
     overLifetime: {
       size: customParams.sizeOverLifetimeEnabled ? [[0, 0], [0.18, 1], [1, customParams.grow]] : undefined,
-      opacity: [[0, 0], [customParams.fadeIn, 1], [customParams.fadeOut, 1], [1, 0]],
+      opacity: customParams.lifetimeGradient.opacities.map(([t, a]) => [t, a] as [number, number]),
       color: customParams.colorOverLifetimeEnabled
-        ? [[0, customParams.lifetimeColorStart], [0.45, customParams.lifetimeColorMid], [1, customParams.lifetimeColorEnd]]
+        ? customParams.lifetimeGradient.colors.map(([t, c]) => [t, c] as [number, string])
         : undefined,
     },
     renderer: customParams.rendererEnabled
@@ -728,8 +730,46 @@ const shockwave: ParticlePreset = {
   },
   overLifetime: {
     size: [[0, 0], [0.12, 1],  [1, 0]],
-    opacity: [[0, 0], [0.12, 1], [0.9, 1], [1, 0]],
-    color: [[0, "#ffffff"],[0.05, "#fff39b"], [0.20, "#f4a412"],[0.55,"#b37a2f"],[0.75,"#9b4b33"], [1, "#303030"]],
+    "opacity": [
+      [
+        0,
+        1
+      ],
+      [
+        0.74515625,
+        0.6211032653942217
+      ],
+      [
+        1,
+        0
+      ]
+    ],
+    "color": [
+      [
+        0,
+        "#ffffff"
+      ],
+      [
+        0.11036458333333334,
+        "#fff59d"
+      ],
+      [
+        0.2570572916666667,
+        "#f4b53f"
+      ],
+      [
+        0.4859895833333333,
+        "#b47a2e"
+      ],
+      [
+        0.6268489583333333,
+        "#994d34"
+      ],
+      [
+        0.828984375,
+        "#303030"
+      ]
+    ]
   },
   renderer: {
     texture: softDisc,
@@ -931,6 +971,7 @@ scenePane
   });
 
 const pane = new Pane({ title: "Particle effect", container: paneContainer });
+pane.registerPlugin(tweakpaneGradientPluginBundle);
 let loopPreview: ParticleSystem | undefined;
 
 function refreshCustomPreset() {
@@ -988,13 +1029,15 @@ function colorsFromPresetColor(color: NonNullable<ParticlePreset["start"]>["colo
   return [value, value];
 }
 
-function gradientColorAt(gradient: NonNullable<ParticlePreset["overLifetime"]>["color"], targetTime: number, fallback: string): string {
-  if (!gradient || gradient.length === 0) return fallback;
-  let nearest = gradient[0];
-  for (const stop of gradient) {
-    if (Math.abs(stop[0] - targetTime) < Math.abs(nearest[0] - targetTime)) nearest = stop;
-  }
-  return colorHex(nearest[1]);
+function lifetimeGradientFromOverLifetime(
+  overLifetime: NonNullable<ParticlePreset["overLifetime"]> | undefined
+): GradientStopsValue {
+  const colors = overLifetime?.color?.map(([t, c]) => [t, colorHex(c)] as [number, string]);
+  const opacities = overLifetime?.opacity?.map(([t, o]) => [t, o] as [number, number]);
+  return normalizeGradientStops({
+    colors: colors && colors.length >= 2 ? colors : defaultGradientStops().colors,
+    opacities: opacities && opacities.length >= 2 ? opacities : defaultGradientStops().opacities,
+  });
 }
 
 function textureNameForTexture(texture: THREE.Texture | undefined): TextureName {
@@ -1091,12 +1134,7 @@ function loadPresetIntoEditor(name: DemoEffectName): void {
   customParams.sizeOverLifetimeEnabled = !!overLifetime.size;
   customParams.grow = overLifetime.size?.[overLifetime.size.length - 1]?.[1] ?? 1;
   customParams.colorOverLifetimeEnabled = !!overLifetime.color;
-  customParams.lifetimeColorStart = gradientColorAt(overLifetime.color, 0, customParams.startColorA);
-  customParams.lifetimeColorMid = gradientColorAt(overLifetime.color, 0.45, customParams.startColorA);
-  customParams.lifetimeColorEnd = gradientColorAt(overLifetime.color, 1, customParams.startColorB);
-  customParams.fadeIn = overLifetime.opacity?.find((stop) => stop[1] >= 1)?.[0] ?? 0;
-  const fadeOutStop = [...(overLifetime.opacity ?? [])].reverse().find((stop) => stop[1] >= 1);
-  customParams.fadeOut = fadeOutStop?.[0] ?? 1;
+  customParams.lifetimeGradient = lifetimeGradientFromOverLifetime(overLifetime);
 
   const renderer = preset.renderer;
   customParams.rendererEnabled = !!renderer;
@@ -1234,13 +1272,9 @@ bind(forceFolder, "drag", { min: 0, max: 20, step: 0.01 });
 bind(forceFolder, "noiseStrength", { label: "noise strength", min: 0, max: 5, step: 0.01 });
 bind(forceFolder, "noiseFrequency", { label: "noise frequency", min: 0.1, max: 20, step: 0.1 });
 
-const colorFolder = pane.addFolder({ title: "Color over Lifetime", expanded: false }) as PaneLike;
-bind(colorFolder, "colorOverLifetimeEnabled", { label: "enabled" });
-bind(colorFolder, "lifetimeColorStart", { label: "start color" });
-bind(colorFolder, "lifetimeColorMid", { label: "mid color" });
-bind(colorFolder, "lifetimeColorEnd", { label: "end color" });
-bind(colorFolder, "fadeIn", { label: "alpha fade in", min: 0, max: 0.95, step: 0.01 });
-bind(colorFolder, "fadeOut", { label: "alpha fade out", min: 0, max: 1, step: 0.01 });
+const colorFolder = pane.addFolder({ title: "Color / alpha over lifetime", expanded: false }) as PaneLike;
+bind(colorFolder, "colorOverLifetimeEnabled", { label: "color gradient enabled" });
+bind(colorFolder, "lifetimeGradient", { label: "gradient", view: "gradient" });
 
 const sizeFolder = pane.addFolder({ title: "Size over Lifetime", expanded: false }) as PaneLike;
 bind(sizeFolder, "sizeOverLifetimeEnabled", { label: "enabled" });
