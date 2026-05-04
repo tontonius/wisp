@@ -19,7 +19,7 @@ Those PNGs are treated as **white (or light) art on black**: each bitmap is rast
 | `smoke_puff.png` | Single image | `smokePuff` |
 | `1x_4_smoke_puff_sheet.png` | 4 × 1 | `shockwaveCenterExplosion` (`textureSheet.randomFrame`) |
 | `3x4_smoke_puff_dispersal.png` | 4 × 3 (from pixel grid) | `magicAuraGpu` (`textureSheet.randomFrame`) |
-| `leaves_sprite_sheet.png` | 4 × 1 | `tornadoDemo` |
+| `leaves_sprite_sheet.png` | 4 × 1 | `tornadoDemo`, `autumnLeaves` |
 | `snowflake_sprite_sheet.png` | 4 × 1 | `snowGpu` |
 
 To reuse the same resolved URLs elsewhere (e.g. your own loader), import `demoBillboardUrls` from `demo/billboard-textures.ts` (built with `new URL(..., import.meta.url)` so Vite includes the files in the bundle).

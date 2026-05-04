@@ -28,7 +28,8 @@ export type DemoEffectName =
   | "speedVisualDemo"
   | "customEffect"
   | "explosionCombo"
-  | "blueFlameDispersal";
+  | "blueFlameDispersal"
+  | "autumnLeaves";
 
 type DemoPresetTextures = {
   softDisc: THREE.Texture;
@@ -1152,6 +1153,97 @@ export function createDemoPresets(textures: DemoPresetTextures): {
     },
   };
 
+  /** CPU: `leaves_sprite_sheet.png` (4×1), vortex + noise; green → autumn tint over lifetime. */
+  const autumnLeaves: ParticlePreset = {
+    name: "Autumn leaves (billboard)",
+    simulation: "cpu",
+    maxParticles: 880,
+    duration: 5,
+    loop: true,
+    prewarm: true,
+    autoDispose: false,
+    debug: false,
+    gpu: { maxSpawnPerFrame: 384 },
+    emitter: { type: "hemisphere", radius: 1.65, emitFrom: "shell" },
+    emission: { rateOverTime: 1109 },
+    start: {
+      lifetime: [1.3, 2.8],
+      speed: [0, 0],
+      size: [0.285, 0.33],
+      color: "#ffffff",
+      opacity: [1, 1],
+      velocity: [
+        [0, 0, 0],
+        [0, 0, 0],
+      ],
+      rotation: [0, Math.PI * 2],
+      angularVelocity: [-1.2, 1.2],
+    },
+    forces: {
+      acceleration: [0, 0.65, 0],
+      drag: 1.3,
+      vortex: {
+        center: [0, 0, 0],
+        axis: [0, 1, 0],
+        orbitalSpeed: 3.26,
+        inward: 2.17,
+        upward: 0,
+      },
+      noise: {
+        strength: 1.03,
+        frequency: 2,
+        scroll: [0.2, 0.35, 0.17],
+        octaves: 2,
+        lacunarity: 2,
+        persistence: 0.5,
+      },
+    },
+    overLifetime: {
+      size: [
+        [0, 0],
+        [0.18, 1],
+        [1, 0],
+      ],
+      opacity: [
+        [0, 0],
+        [0.04, 1],
+        [0.72, 0.9],
+        [1, 0],
+      ],
+      color: [
+        [0, "#d6f995"],
+        [0.35, "#ffb255"],
+        [0.75, "#ff5a2e"],
+        [1, "#2b0f08"],
+      ],
+    },
+    renderer: {
+      texture: bb?.leavesSpriteSheet ?? softDisc,
+      blendMode: "alpha",
+      align: "camera",
+      sorting: "distance",
+      depthWrite: false,
+      softParticles: false,
+      softness: 1.5,
+      ...(bb
+        ? {
+            textureSheet: {
+              columns: 4,
+              rows: 1,
+              randomFrame: true,
+              frameOverLifetime: false,
+            },
+          }
+        : {}),
+      dispersal: {
+        strength: 1,
+        noiseScale: 6,
+        edgeSoftness: 0.12,
+        scroll: [0, 0],
+      },
+    },
+  };
+
   const worldPresets: Record<string, ParticlePreset> = {
     muzzleFlash,
     bulletImpactSparks,
@@ -1182,6 +1274,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
     speedVisualDemo,
     candyVortex,
     blueFlameDispersal,
+    autumnLeaves,
   };
 
   const editablePresets: Partial<Record<DemoEffectName, ParticlePreset>> = {
@@ -1209,6 +1302,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
     speedVisualDemo,
     candyVortex,
     blueFlameDispersal,
+    autumnLeaves,
   };
 
   return { worldPresets, editablePresets };

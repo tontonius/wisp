@@ -1124,6 +1124,7 @@ bind(controlsFolder, "clickEffect", {
     Shockwave: "shockwave",
     "Magic aura": "magicAura",
     Tornado: "tornadoDemo",
+    "Autumn leaves (CPU billboard)": "autumnLeaves",
     "Orbiting emitter (world space)": "orbitingEmitterWorldDemo",
     "Rain GPU": "rainGpu",
     "Snow GPU": "snowGpu",
