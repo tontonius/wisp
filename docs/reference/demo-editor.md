@@ -25,6 +25,8 @@ Separate bottom-left Tweakpane used for recording-friendly camera motion. These 
 | --- | --- |
 | `Orbit camera` | Toggles continuous camera orbit around the scene target. |
 | `Orbit deg/s` | Constant angular speed in degrees per second (negative reverses direction). |
+| `FPS` | Essentials plugin `fpsgraph` blade showing frame-time/fps trend. |
+| `Runtime stats` | Read-only live summary of active particle systems (`systems`, CPU/GPU counts, total alive/max particles, busiest effect). |
 
 ## Controls Folder
 

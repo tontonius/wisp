@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { Pane } from "tweakpane";
+import * as EssentialsPlugin from "@tweakpane/plugin-essentials";
 import { ParticleWorld } from "../src";
 import type { Curve, ParticlePreset, ParticleSystem } from "../src";
 import {
@@ -532,8 +533,19 @@ const capturePaneParams = {
   orbitCamera: false,
   orbitSpeedDegPerSecond: 18,
 };
+const runtimeStats = {
+  systems: 0,
+  cpuSystems: 0,
+  gpuSystems: 0,
+  aliveTotal: 0,
+  maxTotal: 0,
+  busiest: "none",
+  busiestAlive: 0,
+};
+let runtimeStatsRefreshElapsed = 0;
 
 const pane = new Pane({ title: "Particle effect", container: paneContainer });
+pane.registerPlugin(EssentialsPlugin);
 pane.registerPlugin(tweakpaneGradientPluginBundle);
 const copyStatus = document.createElement("div");
 copyStatus.className = "copy-status";
@@ -560,6 +572,7 @@ const capturePaneContainer = document.createElement("div");
 capturePaneContainer.className = "tweakpane-wrap-capture";
 document.body.appendChild(capturePaneContainer);
 const capturePane = new Pane({ title: "Capture", container: capturePaneContainer });
+capturePane.registerPlugin(EssentialsPlugin);
 capturePane.addBinding(capturePaneParams, "orbitCamera", { label: "Auto orbit" });
 capturePane.addBinding(capturePaneParams, "orbitSpeedDegPerSecond", {
   label: "Speed (deg/s)",
@@ -567,6 +580,19 @@ capturePane.addBinding(capturePaneParams, "orbitSpeedDegPerSecond", {
   max: 120,
   step: 1,
 });
+const fpsGraph = (capturePane as unknown as { addBlade: (params: Record<string, unknown>) => { begin: () => void; end: () => void } }).addBlade({
+  view: "fpsgraph",
+  label: "FPS",
+  rows: 2,
+});
+const runtimeFolder = capturePane.addFolder({ title: "Runtime stats", expanded: true });
+runtimeFolder.addBinding(runtimeStats, "systems", { readonly: true });
+runtimeFolder.addBinding(runtimeStats, "cpuSystems", { readonly: true, label: "cpu systems" });
+runtimeFolder.addBinding(runtimeStats, "gpuSystems", { readonly: true, label: "gpu systems" });
+runtimeFolder.addBinding(runtimeStats, "aliveTotal", { readonly: true, label: "alive total" });
+runtimeFolder.addBinding(runtimeStats, "maxTotal", { readonly: true, label: "max total" });
+runtimeFolder.addBinding(runtimeStats, "busiest", { readonly: true });
+runtimeFolder.addBinding(runtimeStats, "busiestAlive", { readonly: true, label: "busiest alive" });
 let loopPreview: ParticleSystem | undefined;
 let orbitingEmitterDemo:
   | {
@@ -796,6 +822,38 @@ function refreshPaneBindings(): void {
   updatePrimitiveCollisionHelpers();
 }
 
+function refreshRuntimeStats(): void {
+  let systems = 0;
+  let cpuSystems = 0;
+  let gpuSystems = 0;
+  let aliveTotal = 0;
+  let maxTotal = 0;
+  let busiest = "none";
+  let busiestAlive = 0;
+
+  for (const system of particles.systems) {
+    systems++;
+    if (system.backendType === "gpu") gpuSystems++;
+    else cpuSystems++;
+    const alive = system.aliveCount;
+    const max = system.preset.maxParticles ?? (system.backendType === "gpu" ? 1024 : 256);
+    aliveTotal += alive;
+    maxTotal += max;
+    if (alive > busiestAlive) {
+      busiestAlive = alive;
+      busiest = system.preset.name ?? "(unnamed)";
+    }
+  }
+
+  runtimeStats.systems = systems;
+  runtimeStats.cpuSystems = cpuSystems;
+  runtimeStats.gpuSystems = gpuSystems;
+  runtimeStats.aliveTotal = aliveTotal;
+  runtimeStats.maxTotal = maxTotal;
+  runtimeStats.busiest = busiest;
+  runtimeStats.busiestAlive = busiestAlive;
+}
+
 const controlsFolder = particlesPane.addFolder({ title: "Controls", expanded: true }) as PaneLike;
 bind(controlsFolder, "clickEffect", {
   label: "click",
@@ -1021,6 +1079,7 @@ const clock = new THREE.Clock();
 
 function animate() {
   requestAnimationFrame(animate);
+  fpsGraph.begin();
   const dt = Math.min(clock.getDelta(), 1 / 30);
   if (capturePaneParams.orbitCamera) {
     targetOrbit.theta += THREE.MathUtils.degToRad(capturePaneParams.orbitSpeedDegPerSecond) * dt;
@@ -1037,7 +1096,13 @@ function animate() {
   }
   updateCameraOrbit();
   particles.update(dt, camera);
+  runtimeStatsRefreshElapsed += dt;
+  if (runtimeStatsRefreshElapsed >= 0.2) {
+    refreshRuntimeStats();
+    runtimeStatsRefreshElapsed = 0;
+  }
   renderer.render(scene, camera);
+  fpsGraph.end();
 }
 
 animate();
