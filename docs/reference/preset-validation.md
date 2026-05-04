@@ -42,7 +42,7 @@ function presetWouldUseGpu(
 ): boolean;
 ```
 
-Matches the same rules as internal GPU selection (`simulation`, `auto` threshold, `gpu.forceCpuFallback`). Used for warning logic (for example `onParticleDeath` on GPU).
+Matches the same rules as internal GPU selection (`simulation`, `auto` threshold, `gpu.forceCpuFallback`, and `collision` disabling GPU). Used for warning logic (for example `onParticleDeath` on GPU).
 
 ### `ParticlePresetValidationContext`
 
@@ -70,6 +70,7 @@ Pass the same renderer you pass into `ParticleSystemOptions` so validation can w
 | `start.lifetime` | Upper bound of the resolved range must be `> 0`. |
 | `emission.bursts` | Each burst: finite `time >= 0`, valid `count` range, optional `probability` in `[0, 1]`. |
 | `emission.rateOverTime` | If set, must be a finite scalar or finite tuple. |
+| `collision` | If set with `simulation: "gpu"`, invalid (CPU-only). Otherwise must be `{ type: "plane", ... }` with finite optional `y`, and optional `bounce` / `dampening` finite and `>= 0`. |
 
 ## Warnings (no throw)
 
@@ -77,6 +78,7 @@ Pass the same renderer you pass into `ParticleSystemOptions` so validation can w
 | --- | --- |
 | `simulation: "gpu"` and no `renderer` in context | Same situation as before: CPU fallback; you are reminded to pass a renderer. |
 | Resolved GPU path and `callbacks.onParticleDeath` set | Death callbacks are CPU-only; they will not run on GPU. |
+| `simulation: "auto"`, `collision` set, renderer present, and `maxParticles >= 2048` | Auto would pick GPU at that capacity, but collision forces CPU. |
 
 ## See Also
 

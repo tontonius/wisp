@@ -12,11 +12,11 @@ Implications:
 - Alpha smoke can be acceptable.
 - Dense overlapping alpha particles may render in visually incorrect order.
 
-## No Collisions
+## Collisions Are CPU-Only And Planar
 
-Particles do not collide with scene geometry.
+The CPU backend supports an optional infinite **horizontal plane** (`collision.type: "plane"`) in system local space. It is not arbitrary mesh or scene geometry, and the GPU backend does not simulate it.
 
-For future collision work, CPU is the natural first backend.
+For richer collision work (primitives, raycasts), CPU remains the intended path; see [CPU backend](../reference/cpu-backend.md#collision-plane).
 
 ## No Sub-Emitters
 

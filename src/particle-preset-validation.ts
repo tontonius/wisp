@@ -19,6 +19,7 @@ function isFiniteNumber(n: unknown): n is number {
 /** Mirrors `shouldUseGpu` in `particles.ts` for warning classification only. */
 export function presetWouldUseGpu(preset: ParticlePreset, renderer: WebGLRenderer | undefined): boolean {
   if (preset.gpu?.forceCpuFallback) return false;
+  if (preset.collision) return false;
   if (preset.simulation === "cpu") return false;
   if (preset.simulation === "gpu") return !!renderer;
   if (preset.simulation === "auto") return !!renderer && (preset.maxParticles ?? 0) >= 2048;
@@ -116,6 +117,30 @@ export function collectParticlePresetIssues(
     }
   }
 
+  const collision = preset.collision;
+  if (collision !== undefined) {
+    if (preset.simulation === "gpu") {
+      errors.push('collision: CPU-only; use simulation "cpu", "auto", or omit collision for GPU presets.');
+    }
+    if (typeof collision !== "object" || collision === null || collision.type !== "plane") {
+      errors.push('collision: must be an object with type "plane".');
+    } else {
+      if (collision.y !== undefined && !isFiniteNumber(collision.y)) {
+        errors.push("collision.y: must be a finite number when set.");
+      }
+      if (collision.bounce !== undefined) {
+        if (!isFiniteNumber(collision.bounce) || collision.bounce < 0) {
+          errors.push("collision.bounce: must be a finite number >= 0 when set.");
+        }
+      }
+      if (collision.dampening !== undefined) {
+        if (!isFiniteNumber(collision.dampening) || collision.dampening < 0) {
+          errors.push("collision.dampening: must be a finite number >= 0 when set.");
+        }
+      }
+    }
+  }
+
   const sheet = preset.renderer?.textureSheet;
   if (sheet) {
     const { columns, rows } = sheet;
@@ -197,6 +222,10 @@ export function collectParticlePresetIssues(
 
   if (presetWouldUseGpu(preset, renderer) && preset.callbacks?.onParticleDeath) {
     warnings.push("callbacks.onParticleDeath is not invoked on the GPU backend; use CPU simulation for per-particle death callbacks.");
+  }
+
+  if (preset.collision && preset.simulation === "auto" && renderer && (preset.maxParticles ?? 0) >= 2048) {
+    warnings.push('simulation "auto" would otherwise select GPU at this capacity, but collision forces CPU simulation.');
   }
 
   return { errors, warnings };

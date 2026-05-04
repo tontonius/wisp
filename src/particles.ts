@@ -33,6 +33,19 @@ export type ParticleDebugOptions = {
   segments?: number;
 };
 
+/** CPU-only infinite plane with normal +Y (`xz` plane). Positions and `y` are in `ParticleSystem` local space (same as the emitter). */
+export type CpuPlaneCollision = {
+  type: "plane";
+  /** Plane height along local Y. Default `0`. */
+  y?: number;
+  /** Restitution on the plane normal: outgoing `velocity.y` is `-bounce * incoming_velocity_y` when moving into the plane from above. Default `0.4`. */
+  bounce?: number;
+  /** After a bounce, horizontal velocity (`x`, `z`) is multiplied by this factor. Default `1` (no tangential damping). */
+  dampening?: number;
+  /** When true, particles die on penetrating the plane instead of bouncing. */
+  killOnCollision?: boolean;
+};
+
 export type ParticlePreset = {
   name?: string;
   simulation?: SimulationMode;
@@ -73,6 +86,9 @@ export type ParticlePreset = {
     drag?: number;
     noise?: { strength?: number; frequency?: number };
   };
+
+  /** CPU backend only. Ignored on GPU. */
+  collision?: CpuPlaneCollision;
 
   velocityOverLifetime?: VelocityOverLifetime;
 
@@ -845,6 +861,27 @@ class CPUParticleBackend implements ParticleBackend {
         evaluateCurve(lifetimeVelocity?.linear?.z, t, 0)
       );
       particle.position.addScaledVector(tempVectorC.copy(particle.velocity).add(linearVelocity), dt);
+
+      const collision = this.preset.collision;
+      if (collision?.type === "plane") {
+        const planeY = collision.y ?? 0;
+        const eps = 1e-4;
+        if (particle.position.y < planeY - eps) {
+          if (collision.killOnCollision) {
+            particle.alive = false;
+            this._aliveCount = Math.max(0, this._aliveCount - 1);
+            this.backendOptions.onParticleDeath?.(particle);
+            continue;
+          }
+          particle.position.y = planeY + eps;
+          const bounce = collision.bounce ?? 0.4;
+          if (particle.velocity.y < 0) particle.velocity.y = -bounce * particle.velocity.y;
+          const dampening = collision.dampening ?? 1;
+          particle.velocity.x *= dampening;
+          particle.velocity.z *= dampening;
+        }
+      }
+
       particle.rotation += particle.angularVelocity * dt;
     }
   }
@@ -1658,6 +1695,7 @@ class GPUParticleBackend implements ParticleBackend {
 
 function shouldUseGpu(preset: ParticlePreset, options: ParticleSystemOptions): boolean {
   if (preset.gpu?.forceCpuFallback) return false;
+  if (preset.collision) return false;
   if (preset.simulation === "cpu") return false;
   if (preset.simulation === "gpu") return !!options.renderer;
   if (preset.simulation === "auto") return !!options.renderer && (preset.maxParticles ?? 0) >= 2048;

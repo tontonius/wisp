@@ -14,6 +14,7 @@ GPU is not used when:
 - No renderer is available.
 - `simulation: "cpu"`.
 - `gpu.forceCpuFallback` is true.
+- `collision` is set (CPU-only; validation rejects `simulation: "gpu"` with collision).
 
 ## Defaults
 

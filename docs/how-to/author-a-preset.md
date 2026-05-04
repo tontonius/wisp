@@ -78,6 +78,19 @@ forces: {
 }
 ```
 
+Optional **CPU-only** ground bounce (infinite `xz` plane at local `y`):
+
+```ts
+collision: {
+  type: "plane",
+  y: 0,
+  bounce: 0.45,
+  dampening: 0.75,
+}
+```
+
+See [CPU backend: collision plane](../reference/cpu-backend.md#collision-plane).
+
 Use `start.velocity` for random start spread:
 
 ```ts

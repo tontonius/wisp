@@ -69,7 +69,8 @@ CPU is better for:
 - Small precise effects.
 - Gameplay integration.
 - Callbacks.
-- Future collision and sub-emitter features.
+- Optional infinite plane collision and future richer colliders.
+- Future sub-emitter features.
 
 GPU is better for:
 

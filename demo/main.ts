@@ -127,6 +127,7 @@ type DemoEffectName =
   | "smokePuff"
   | "pickupSparkle"
   | "torchFire"
+  | "floorBounceDemo"
   | "rainGpu"
   | "snowGpu"
   | "magicAuraGpu"
@@ -507,7 +508,7 @@ const bulletImpactSparks: ParticlePreset = {
   start: {
     lifetime: [0.18, 0.55],
     speed: [4, 10],
-    size: [0.035, 0.12],
+    size: [0.35, 0.12],
     color: ["#fff8cf", "#ff9f2e"],
     opacity: [0.75, 1],
     velocity: [[-1.6, 0.4, -1.6], [1.6, 1.6, 1.6]],
@@ -623,6 +624,42 @@ const magicAura: ParticlePreset = {
   renderer: { texture: softDisc, blendMode: "additive", depthWrite: false },
 };
 
+/** Looping CPU demo: gravity, soft noise, and an infinite ground plane at local `y = 0` (matches the demo floor when spawned on the ground). */
+const floorBounceDemo: ParticlePreset = {
+  simulation: "cpu",
+  maxParticles: 220,
+  duration: 2.4,
+  loop: true,
+  prewarm: false,
+  autoDispose: false,
+  emitter: { type: "cone", radius: 0.1, angle: 45, length: 1 },
+  emission: { rateOverTime: [52, 78] },
+  collision: {
+    type: "plane",
+    y: 0,
+    bounce: 0.48,
+    dampening: 0.78,
+    killOnCollision: false,
+  },
+  start: {
+    lifetime: [2.2, 3.6],
+    speed: [0.75, 2.1],
+    size: [0.055, 0.13],
+    color: ["#d4f0ff", "#6ec8ff"],
+    opacity: [0.5, 0.92],
+    velocity: [[-0.95, 2.8, -0.95], [0.95, 4.4, 0.95]],
+    rotation: [0, Math.PI * 2],
+    angularVelocity: [-2.8, 2.8],
+  },
+  forces: { acceleration: [0, -6, 0], drag: 0.12, noise: { strength: 0.1, frequency: 4.5 } },
+  overLifetime: {
+    size: [[0, 0.3], [0.22, 1], [1, 0.88]],
+    opacity: [[0, 0], [0.06, 1], [0.85, 1], [1, 0]],
+    color: [[0, "#ffffff"], [0.35, "#9fe0ff"], [1, "#5aa8ff"]],
+  },
+  renderer: { texture: softDisc, blendMode: "additive", depthWrite: false },
+};
+
 const explosion: ParticlePreset = {
   maxParticles: 220,
   duration: 0.25,
@@ -701,6 +738,7 @@ const shockwave: ParticlePreset = {
     depthWrite: false,
   },
 };
+
 
 const rainGpu: ParticlePreset = {
   simulation: "gpu",
@@ -837,6 +875,7 @@ const particles = new ParticleWorld(
     smokePuff,
     pickupSparkle,
     torchFire,
+    floorBounceDemo,
     rainGpu,
     snowGpu,
     magicAuraGpu,
@@ -857,6 +896,7 @@ const editablePresets: Partial<Record<DemoEffectName, ParticlePreset>> = {
   smokePuff,
   pickupSparkle,
   torchFire,
+  floorBounceDemo,
   rainGpu,
   snowGpu,
   magicAuraGpu,
@@ -1103,6 +1143,7 @@ bind(controlsFolder, "clickEffect", {
     "Bullet impact sparks": "bulletImpactSparks",
     "Pickup sparkle": "pickupSparkle",
     "Torch fire": "torchFire",
+    "Floor bounce (CPU collision)": "floorBounceDemo",
     Smoke: "smokePuff",
     Explosion: "explosion",
     Shockwave: "shockwave",
@@ -1312,6 +1353,7 @@ window.addEventListener("keydown", (event) => {
   if (event.key === "4") spawnEffect("smokePuff", [0, 0, 0]);
   if (event.key === "5") spawnEffect("pickupSparkle", [0, 0.5, 0]);
   if (event.key === "6") spawnEffect("torchFire", [0, 0.1, 0]);
+  if (event.key === "b" || event.key === "B") spawnEffect("floorBounceDemo", [0, 0.05, 0]);
   if (event.key === "7") spawnEffect("rainGpu", [0, 6.5, 0]);
   if (event.key === "8") spawnEffect("snowGpu", [0, 6.5, 0]);
   if (event.key === "9") spawnEffect("magicAuraGpu", [0, 0.2, 0]);

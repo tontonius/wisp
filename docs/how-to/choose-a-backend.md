@@ -18,7 +18,7 @@ Choose CPU when you need:
 - Small particle counts.
 - Precise lifecycle callbacks.
 - `onParticleDeath`.
-- Future collision behavior.
+- [`collision`](../reference/cpu-backend.md#collision-plane) (infinite horizontal plane).
 - Future sub-emitters.
 - Gameplay-oriented effects like hit sparks or muzzle flashes.
 

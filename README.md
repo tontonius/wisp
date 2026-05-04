@@ -319,7 +319,7 @@ velocityOverLifetime: {
 
 ### GPU backend does not yet support
 
-- collisions
+- collisions (CPU has an optional infinite horizontal plane; see [`docs/reference/cpu-backend.md`](docs/reference/cpu-backend.md))
 - sub-emitters
 - transparent particle sorting
 - mesh emitters

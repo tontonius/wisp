@@ -11,6 +11,7 @@ CPU is used when:
 - `simulation: "gpu"` is requested without a renderer.
 - `simulation: "auto"` does not meet GPU criteria.
 - `gpu.forceCpuFallback` is true.
+- `collision` is set (CPU-only; GPU selection is skipped even for `simulation: "auto"` with high `maxParticles`).
 
 ## Defaults
 
@@ -63,7 +64,31 @@ Per live particle:
 5. Apply drag.
 6. Evaluate velocity over lifetime.
 7. Integrate position.
-8. Integrate rotation.
+8. If `collision.type` is `"plane"`, resolve penetration against that plane (bounce, tangential dampening, or `killOnCollision`).
+9. Integrate rotation.
+
+## Collision (plane)
+
+```ts
+collision?: {
+  type: "plane";
+  y?: number;
+  bounce?: number;
+  dampening?: number;
+  killOnCollision?: boolean;
+};
+```
+
+| Field | Default | Description |
+| --- | --- | --- |
+| `y` | `0` | Height of the infinite `xz` plane along **local Y** (same space as particle positions and the emitter). |
+| `bounce` | `0.4` | Restitution on Y: after a hit from below the plane with downward `velocity.y`, outgoing `velocity.y` is `-bounce * velocity_y`. |
+| `dampening` | `1` | After resolving a hit, `velocity.x` and `velocity.z` are multiplied by this factor. |
+| `killOnCollision` | `false` | When true, penetrating the plane kills the particle and fires `onParticleDeath` instead of bouncing. |
+
+The plane normal is **+Y**. Particles with `position.y` below the plane after integration are corrected. Spawning with the effect origin on the ground and `y: 0` matches a world floor at the spawn height.
+
+GPU presets must not set `collision`; validation throws if `simulation: "gpu"` and `collision` are both set.
 
 ## Geometry Behavior
 
@@ -95,4 +120,5 @@ Use CPU for:
 - High particle counts become CPU-bound.
 - Geometry buffers update every frame.
 - Large ambience effects are better on GPU.
+- Only the infinite plane collision shape exists; no mesh or primitive colliders yet.
 

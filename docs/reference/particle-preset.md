@@ -20,11 +20,14 @@ type ParticlePreset = {
   emission?: { rateOverTime?: Range; bursts?: Array<{ time: number; count: Range; probability?: number }> };
   start?: { ... };
   forces?: { ... };
+  collision?: CpuPlaneCollision;
   velocityOverLifetime?: VelocityOverLifetime;
   overLifetime?: { ... };
   renderer?: { ... };
 };
 ```
+
+`CpuPlaneCollision` is exported from the package entry and matches the [collision plane](cpu-backend.md#collision-plane) section on the CPU backend page.
 
 ## Top-Level Fields
 
@@ -44,6 +47,7 @@ type ParticlePreset = {
 | `emission` | Object | No emission | Continuous rate and/or scheduled bursts. |
 | `start` | Object | Individual defaults | Values sampled when each particle spawns. |
 | `forces` | Object | No force | Constant acceleration, drag, and procedural noise. |
+| `collision` | `CpuPlaneCollision` | `undefined` | CPU-only infinite plane along local `xz` at `y`; see [CPU backend](cpu-backend.md#collision-plane). |
 | `velocityOverLifetime` | `VelocityOverLifetime` | No lifetime velocity | Per-age linear velocity channel. |
 | `overLifetime` | Object | Multipliers/color default to neutral values | Size, opacity, and color curves. |
 | `renderer` | Object | Default soft particle material | Texture, blend, alignment, depth, and texture sheet settings. |
@@ -62,6 +66,7 @@ Selection rules:
 - `simulation: "auto"` uses GPU when a renderer is available and `maxParticles >= 2048`.
 - Omitted `simulation` currently uses CPU.
 - `gpu.forceCpuFallback: true` forces CPU.
+- `collision` set on the preset forces CPU (GPU does not implement collision).
 
 ## Capacity And Duration
 

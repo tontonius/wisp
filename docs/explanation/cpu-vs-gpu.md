@@ -11,6 +11,7 @@ It can:
 - Know exactly how many particles are alive.
 - Fire `onParticleDeath`.
 - Store particle state in ordinary objects.
+- Use optional [`collision`](../reference/cpu-backend.md#collision-plane) (CPU-only infinite plane).
 - Integrate more gameplay-aware behavior later.
 
 Its cost is that it updates particle state and billboard geometry on the CPU.
@@ -52,6 +53,8 @@ The implementation differs, but the authoring shape should stay familiar.
 renderer exists and maxParticles >= 2048 => GPU
 otherwise => CPU
 ```
+
+If `collision` is set, **CPU** is always chosen (collision is not implemented on GPU).
 
 This avoids surprising GPU choices for small effects where CPU is often more useful.
 
