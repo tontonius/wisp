@@ -20,4 +20,4 @@ export const tweakpaneGradientPluginBundle = {
   id: "gradient-stops",
   css: gradientStopsPluginCss,
   plugins: [gradientStopsInputPlugin],
-} as const;
+};

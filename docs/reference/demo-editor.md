@@ -8,9 +8,9 @@ The demo in `demo/main.ts` includes a Tweakpane editor for creating and copying 
 | --- | --- |
 | `?pool=1` | Enables `ParticleWorld` inactive pooling (`pooling: true`) so repeated one-shot spawns reuse GPU/CPU backends. |
 
-## Scene pane (top left)
+## Scene Tab
 
-Separate from the particle preset editor (top right). Does not affect preset export.
+Inside the main Tweakpane as a `Scene` tab next to `Particles`. Does not affect preset export.
 
 | Control | Effect |
 | --- | --- |

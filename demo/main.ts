@@ -949,15 +949,19 @@ const paneContainer = document.createElement("div");
 paneContainer.className = "tweakpane-wrap";
 document.body.appendChild(paneContainer);
 
-const scenePaneContainer = document.createElement("div");
-scenePaneContainer.className = "tweakpane-wrap-scene";
-document.body.appendChild(scenePaneContainer);
-
 const scenePaneParams = {
   groundVisible: true,
   groundColor: `#${floorMaterial.color.getHexString()}`,
 };
-const scenePane = new Pane({ title: "Scene", container: scenePaneContainer });
+
+const pane = new Pane({ title: "Particle effect", container: paneContainer });
+pane.registerPlugin(tweakpaneGradientPluginBundle);
+const mainTabs = pane.addTab({
+  pages: [{ title: "Particles" }, { title: "Scene" }],
+});
+const particlesPane = mainTabs.pages[0] as PaneLike;
+const scenePane = mainTabs.pages[1];
+
 scenePane
   .addBinding(scenePaneParams, "groundVisible", { label: "Ground plane" })
   .on("change", (ev) => {
@@ -969,9 +973,6 @@ scenePane
   .on("change", (ev) => {
     floorMaterial.color.set(ev.value);
   });
-
-const pane = new Pane({ title: "Particle effect", container: paneContainer });
-pane.registerPlugin(tweakpaneGradientPluginBundle);
 let loopPreview: ParticleSystem | undefined;
 
 function refreshCustomPreset() {
@@ -1171,7 +1172,7 @@ function refreshPaneBindings(): void {
   for (const binding of paneBindings) binding.refresh?.();
 }
 
-const controlsFolder = pane.addFolder({ title: "Controls", expanded: true }) as PaneLike;
+const controlsFolder = particlesPane.addFolder({ title: "Controls", expanded: true }) as PaneLike;
 bind(controlsFolder, "clickEffect", {
   label: "click",
   options: {
@@ -1205,7 +1206,7 @@ controlsFolder.addButton({ title: "Copy preset code" }).on("click", () => {
     .catch(() => showCopyStatus("Could not copy preset code."));
 });
 
-const mainFolder = pane.addFolder({ title: "Particle System", expanded: false }) as PaneLike;
+const mainFolder = particlesPane.addFolder({ title: "Particle System", expanded: false }) as PaneLike;
 bind(mainFolder, "simulation", { options: { CPU: "cpu", GPU: "gpu", Auto: "auto" } });
 bind(mainFolder, "maxParticles", { label: "max particles", min: 16, max: 16000, step: 16 });
 bind(mainFolder, "duration", { min: 0.05, max: 10, step: 0.05 });
@@ -1229,14 +1230,14 @@ bind(mainFolder, "opacityMax", { label: "start alpha max", min: 0, max: 1, step:
 bind(mainFolder, "startColorA", { label: "start color min" });
 bind(mainFolder, "startColorB", { label: "start color max" });
 
-const emissionFolder = pane.addFolder({ title: "Emission", expanded: false }) as PaneLike;
+const emissionFolder = particlesPane.addFolder({ title: "Emission", expanded: false }) as PaneLike;
 bind(emissionFolder, "emissionEnabled", { label: "enabled" });
 bind(emissionFolder, "emission", { options: { Burst: "burst", Rate: "rate" } });
 bind(emissionFolder, "rate", { label: "rate over time", min: 0, max: 2000, step: 1 });
 bind(emissionFolder, "burstMin", { label: "burst min", min: 0, max: 2000, step: 1 });
 bind(emissionFolder, "burstMax", { label: "burst max", min: 0, max: 2000, step: 1 });
 
-const shapeFolder = pane.addFolder({ title: "Shape", expanded: false }) as PaneLike;
+const shapeFolder = particlesPane.addFolder({ title: "Shape", expanded: false }) as PaneLike;
 bind(shapeFolder, "shapeEnabled", { label: "enabled" });
 bind(shapeFolder, "emitter", { label: "shape", options: { Point: "point", Sphere: "sphere", Hemisphere: "hemisphere", Cone: "cone", Box: "box" } });
 bind(shapeFolder, "emitFrom", { label: "emit from", options: { Volume: "volume", Shell: "shell" } });
@@ -1247,14 +1248,14 @@ bind(shapeFolder, "boxX", { label: "box x", min: 0.1, max: 10, step: 0.1 });
 bind(shapeFolder, "boxY", { label: "box y", min: 0.1, max: 10, step: 0.1 });
 bind(shapeFolder, "boxZ", { label: "box z", min: 0.1, max: 10, step: 0.1 });
 
-const velocityFolder = pane.addFolder({ title: "Start Velocity", expanded: false }) as PaneLike;
+const velocityFolder = particlesPane.addFolder({ title: "Start Velocity", expanded: false }) as PaneLike;
 bind(velocityFolder, "velocityEnabled", { label: "enabled" });
 bind(velocityFolder, "velocityX", { label: "x spread", min: 0, max: 4, step: 0.01 });
 bind(velocityFolder, "velocityYMin", { label: "y min", min: -5, max: 5, step: 0.01 });
 bind(velocityFolder, "velocityYMax", { label: "y max", min: -5, max: 5, step: 0.01 });
 bind(velocityFolder, "velocityZ", { label: "z spread", min: 0, max: 4, step: 0.01 });
 
-const lifetimeVelocityFolder = pane.addFolder({ title: "Velocity over Lifetime", expanded: false }) as PaneLike;
+const lifetimeVelocityFolder = particlesPane.addFolder({ title: "Velocity over Lifetime", expanded: false }) as PaneLike;
 bind(lifetimeVelocityFolder, "velocityOverLifetimeEnabled", { label: "enabled" });
 bind(lifetimeVelocityFolder, "lifetimeVelocityXStart", { label: "linear x start", min: -8, max: 8, step: 0.01 });
 bind(lifetimeVelocityFolder, "lifetimeVelocityXEnd", { label: "linear x end", min: -8, max: 8, step: 0.01 });
@@ -1263,7 +1264,7 @@ bind(lifetimeVelocityFolder, "lifetimeVelocityYEnd", { label: "linear y end", mi
 bind(lifetimeVelocityFolder, "lifetimeVelocityZStart", { label: "linear z start", min: -8, max: 8, step: 0.01 });
 bind(lifetimeVelocityFolder, "lifetimeVelocityZEnd", { label: "linear z end", min: -8, max: 8, step: 0.01 });
 
-const forceFolder = pane.addFolder({ title: "Force over Lifetime", expanded: false }) as PaneLike;
+const forceFolder = particlesPane.addFolder({ title: "Force over Lifetime", expanded: false }) as PaneLike;
 bind(forceFolder, "forceEnabled", { label: "enabled" });
 bind(forceFolder, "accelerationX", { label: "acceleration x", min: -10, max: 10, step: 0.01 });
 bind(forceFolder, "accelerationY", { label: "acceleration y", min: -10, max: 10, step: 0.01 });
@@ -1272,22 +1273,22 @@ bind(forceFolder, "drag", { min: 0, max: 20, step: 0.01 });
 bind(forceFolder, "noiseStrength", { label: "noise strength", min: 0, max: 5, step: 0.01 });
 bind(forceFolder, "noiseFrequency", { label: "noise frequency", min: 0.1, max: 20, step: 0.1 });
 
-const colorFolder = pane.addFolder({ title: "Color / alpha over lifetime", expanded: false }) as PaneLike;
+const colorFolder = particlesPane.addFolder({ title: "Color / alpha over lifetime", expanded: false }) as PaneLike;
 bind(colorFolder, "colorOverLifetimeEnabled", { label: "color gradient enabled" });
 bind(colorFolder, "lifetimeGradient", { label: "gradient", view: "gradient" });
 
-const sizeFolder = pane.addFolder({ title: "Size over Lifetime", expanded: false }) as PaneLike;
+const sizeFolder = particlesPane.addFolder({ title: "Size over Lifetime", expanded: false }) as PaneLike;
 bind(sizeFolder, "sizeOverLifetimeEnabled", { label: "enabled" });
 bind(sizeFolder, "grow", { label: "end size", min: 0, max: 5, step: 0.01 });
 
-const rotationFolder = pane.addFolder({ title: "Rotation", expanded: false }) as PaneLike;
+const rotationFolder = particlesPane.addFolder({ title: "Rotation", expanded: false }) as PaneLike;
 bind(rotationFolder, "startRotationMin", { label: "start min deg", min: -360, max: 360, step: 1 });
 bind(rotationFolder, "startRotationMax", { label: "start max deg", min: -360, max: 360, step: 1 });
 bind(rotationFolder, "rotationOverLifetimeEnabled", { label: "enabled" });
 bind(rotationFolder, "angularVelocityMin", { label: "angular min rad/s", min: -20, max: 20, step: 0.01 });
 bind(rotationFolder, "angularVelocityMax", { label: "angular max rad/s", min: -20, max: 20, step: 0.01 });
 
-const rendererFolder = pane.addFolder({ title: "Renderer", expanded: false }) as PaneLike;
+const rendererFolder = particlesPane.addFolder({ title: "Renderer", expanded: false }) as PaneLike;
 bind(rendererFolder, "rendererEnabled", { label: "enabled" });
 bind(rendererFolder, "texture", { options: { "Soft disc": "softDisc", "Hard disc": "hardDisc", Spark: "spark", "Demo spritesheet": "demoSpriteSheet", "Custom image": "customImage" } });
 const imageAlphaBinding = bind(rendererFolder, "imageAlphaFromLuminance", { label: "image alpha" });
