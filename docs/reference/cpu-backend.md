@@ -58,7 +58,7 @@ Per live particle:
 
 1. Increase age.
 2. Kill particle if age exceeds lifetime.
-3. Apply gravity.
+3. Apply constant acceleration.
 4. Apply procedural noise.
 5. Apply drag.
 6. Evaluate velocity over lifetime.

@@ -33,7 +33,7 @@ const snowGpu: ParticlePreset = {
     angularVelocity: [-0.8, 0.8],
   },
   forces: {
-    gravity: [0, -0.08, 0],
+    acceleration: [0, -0.08, 0],
     drag: 0.08,
     noise: { strength: 0.38, frequency: 1.7 },
   },
@@ -64,7 +64,7 @@ particles.update(dt, camera);
 
 ## Notes
 
-- `speed: 0` lets `start.velocity`, gravity, and noise define motion.
+- `speed: 0` lets `start.velocity`, `forces.acceleration`, and noise define motion.
 - `prewarm: true` avoids waiting for the volume to fill.
 - `autoDispose: false` keeps the loop under your control.
 - GPU `aliveCount` is approximate; do not use it as gameplay state.

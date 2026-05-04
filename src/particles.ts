@@ -68,7 +68,7 @@ export type ParticlePreset = {
   };
 
   forces?: {
-    gravity?: Vec3Tuple;
+    acceleration?: Vec3Tuple;
     drag?: number;
     noise?: { strength?: number; frequency?: number };
   };
@@ -808,7 +808,7 @@ class CPUParticleBackend implements ParticleBackend {
 
   private updateParticles(dt: number): void {
     const forces = this.preset.forces ?? {};
-    const gravity = tempVectorA.set(...(forces.gravity ?? [0, 0, 0]));
+    const acceleration = tempVectorA.set(...(forces.acceleration ?? [0, 0, 0]));
     const drag = forces.drag ?? 0;
     const noiseStrength = forces.noise?.strength ?? 0;
     const noiseFrequency = forces.noise?.frequency ?? 1;
@@ -824,7 +824,7 @@ class CPUParticleBackend implements ParticleBackend {
         continue;
       }
 
-      particle.velocity.addScaledVector(gravity, dt);
+      particle.velocity.addScaledVector(acceleration, dt);
 
       if (noiseStrength > 0) {
         const f = noiseFrequency;
@@ -1261,7 +1261,7 @@ class GPUParticleBackend implements ParticleBackend {
     u.uVelocityMax.value.set(...velocityMax);
     u.uColorMin.value.copy(colorMin);
     u.uColorMax.value.copy(colorMax);
-    u.uGravity.value.set(...(forces.gravity ?? [0, 0, 0]));
+    u.uAcceleration.value.set(...(forces.acceleration ?? [0, 0, 0]));
     u.uDrag.value = forces.drag ?? 0;
     u.uNoiseStrength.value = forces.noise?.strength ?? 0;
     u.uNoiseFrequency.value = forces.noise?.frequency ?? 1;
@@ -1303,7 +1303,7 @@ class GPUParticleBackend implements ParticleBackend {
         uVelocityMax: { value: new THREE.Vector3() },
         uColorMin: { value: new THREE.Color("#ffffff") },
         uColorMax: { value: new THREE.Color("#ffffff") },
-        uGravity: { value: new THREE.Vector3() },
+        uAcceleration: { value: new THREE.Vector3() },
         uDrag: { value: 0 },
         uNoiseStrength: { value: 0 },
         uNoiseFrequency: { value: 1 },
@@ -1355,7 +1355,7 @@ class GPUParticleBackend implements ParticleBackend {
         uniform vec3 uColorMin;
         uniform vec3 uColorMax;
 
-        uniform vec3 uGravity;
+        uniform vec3 uAcceleration;
         uniform float uDrag;
         uniform float uNoiseStrength;
         uniform float uNoiseFrequency;
@@ -1461,7 +1461,7 @@ class GPUParticleBackend implements ParticleBackend {
             return;
           }
 
-          velocity += uGravity * uDeltaTime;
+          velocity += uAcceleration * uDeltaTime;
 
           if (uNoiseStrength > 0.0) {
             float f = uNoiseFrequency;

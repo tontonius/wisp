@@ -34,7 +34,7 @@ On each update:
 
 1. Age advances.
 2. Dead particles are removed or cleared.
-3. Gravity changes stored velocity.
+3. Constant acceleration changes stored velocity.
 4. Noise changes stored velocity.
 5. Drag damps stored velocity.
 6. Velocity-over-lifetime is evaluated.

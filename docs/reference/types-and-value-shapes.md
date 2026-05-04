@@ -37,7 +37,7 @@ A 3D vector encoded as `[x, y, z]`.
 Examples:
 
 ```ts
-gravity: [0, -9.8, 0]
+acceleration: [0, -9.8, 0]
 size: [12, 0.2, 12]
 ```
 

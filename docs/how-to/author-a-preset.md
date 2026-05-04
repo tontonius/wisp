@@ -70,7 +70,7 @@ start: {
 
 ```ts
 forces: {
-  gravity: [0, -2, 0],
+  acceleration: [0, -2, 0],
   drag: 1.5,
   noise: { strength: 0.2, frequency: 5 },
 }

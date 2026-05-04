@@ -4,7 +4,7 @@
 
 ```ts
 forces?: {
-  gravity?: Vec3Tuple;
+  acceleration?: Vec3Tuple;
   drag?: number;
   noise?: {
     strength?: number;
@@ -15,19 +15,19 @@ forces?: {
 
 If `forces` is omitted, particles keep their current velocity except for `velocityOverLifetime`, which is applied as an additional movement channel.
 
-## Gravity
+## Constant acceleration
 
 ```ts
-gravity: [0, -9.8, 0]
+acceleration: [0, -9.8, 0]
 ```
 
-Gravity is a constant acceleration added to velocity every update:
+`acceleration` is a constant world-space acceleration vector (units per second squared) added to velocity every update:
 
 ```ts
-velocity += gravity * dt
+velocity += acceleration * dt
 ```
 
-Despite the field name, it can point in any direction.
+Use it for gravity along any axis, wind bias, or other uniform pushes.
 
 ## Drag
 
@@ -81,11 +81,10 @@ Avoid it for:
 Per update, the CPU backend applies:
 
 1. Age increment and death check.
-2. Gravity.
+2. Constant acceleration.
 3. Noise.
 4. Drag.
 5. Position integration using stored velocity plus lifetime velocity.
 6. Angular velocity.
 
 The GPU backend follows the same conceptual order inside the simulation shader.
-

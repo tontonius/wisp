@@ -12,7 +12,7 @@ It is designed for game effects where the developer ergonomics matter more than 
 - Point, sphere, hemisphere, cone, and box emitters
 - Continuous emission and burst emission
 - Size, opacity, and colour over lifetime
-- Gravity, drag, and simple noise force
+- Constant acceleration vector, drag, and simple noise force
 - Billboard quad renderer
 - Camera-aligned and velocity-aligned particles
 - Alpha, additive, and multiply blending
@@ -88,7 +88,7 @@ const explosion: ParticlePreset = {
   },
 
   forces: {
-    gravity: [0, -2, 0],
+    acceleration: [0, -2, 0],
     drag: 2,
   },
 
@@ -309,7 +309,7 @@ velocityOverLifetime: {
 - lifetime / speed / size / opacity / colour ranges
 - start velocity ranges
 - linear velocity over lifetime
-- gravity
+- constant acceleration (`forces.acceleration`)
 - drag
 - simple procedural noise
 - size / opacity / colour over lifetime

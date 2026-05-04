@@ -7,7 +7,7 @@ import "./style.css";
 const app = document.querySelector<HTMLDivElement>("#app")!;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color("#0b1020");
+scene.background = new THREE.Color("#222222");
 
 const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
 camera.position.set(0, 4.2, 8);
@@ -205,7 +205,9 @@ const customParams = {
   lifetimeVelocityYEnd: -0.35,
   lifetimeVelocityZStart: 0,
   lifetimeVelocityZEnd: 0,
-  gravityY: -0.25,
+  accelerationX: 0,
+  accelerationY: -0.25,
+  accelerationZ: 0,
   drag: 0.45,
   noiseStrength: 0.28,
   noiseFrequency: 4.5,
@@ -377,7 +379,7 @@ function makeCustomPreset(): ParticlePreset {
     },
     forces: customParams.forceEnabled
       ? {
-          gravity: [0, customParams.gravityY, 0],
+          acceleration: [customParams.accelerationX, customParams.accelerationY, customParams.accelerationZ],
           drag: customParams.drag,
           noise: { strength: customParams.noiseStrength, frequency: customParams.noiseFrequency },
         }
@@ -510,7 +512,7 @@ const bulletImpactSparks: ParticlePreset = {
     rotation: [0, Math.PI * 2],
     angularVelocity: [-24, 24],
   },
-  forces: { gravity: [0, -8, 0], drag: 5.4 },
+  forces: { acceleration: [0, -8, 0], drag: 5.4 },
   overLifetime: {
     size: [[0, 1], [1, 0.25]],
     opacity: [[0, 1], [0.72, 1], [1, 0]],
@@ -534,7 +536,7 @@ const smokePuff: ParticlePreset = {
     rotation: [0, Math.PI * 2],
     angularVelocity: [-1.5, 1.5],
   },
-  forces: { gravity: [0, 0.25, 0], drag: 1.35, noise: { strength: 0.5, frequency: 4 } },
+  forces: { acceleration: [0, 0.25, 0], drag: 1.35, noise: { strength: 0.5, frequency: 4 } },
   overLifetime: {
     size: [[0, 0.15], [0.25, 1], [1, 1.9]],
     opacity: [[0, 0], [0.14, 1], [1, 0]],
@@ -558,7 +560,7 @@ const pickupSparkle: ParticlePreset = {
     rotation: [0, Math.PI * 2],
     angularVelocity: [-9, 9],
   },
-  forces: { gravity: [0, 1.8, 0], drag: 2.1, noise: { strength: 0.25, frequency: 8 } },
+  forces: { acceleration: [0, 1.8, 0], drag: 2.1, noise: { strength: 0.25, frequency: 8 } },
   overLifetime: {
     size: [[0, 0], [0.18, 1.25], [1, 0]],
     opacity: [[0, 0], [0.12, 1], [0.78, 1], [1, 0]],
@@ -585,7 +587,7 @@ const torchFire: ParticlePreset = {
     rotation: [0, Math.PI * 2],
     angularVelocity: [-2.4, 2.4],
   },
-  forces: { gravity: [0, 1.15, 0], drag: 1.4, noise: { strength: 0.42, frequency: 7.5 } },
+  forces: { acceleration: [0, 1.15, 0], drag: 1.4, noise: { strength: 0.42, frequency: 7.5 } },
   overLifetime: {
     size: [[0, 0.35], [0.3, 1], [1, 0.12]],
     opacity: [[0, 0], [0.08, 1], [0.7, 0.65], [1, 0]],
@@ -633,7 +635,7 @@ const explosion: ParticlePreset = {
     rotation: [0, Math.PI * 2],
     angularVelocity: [-10, 10],
   },
-  forces: { gravity: [0, -1.8, 0], drag: 2.2, noise: { strength: 0.25, frequency: 7 } },
+  forces: { acceleration: [0, -1.8, 0], drag: 2.2, noise: { strength: 0.25, frequency: 7 } },
   overLifetime: {
     size: [[0, 1], [0.4, 0.7], [1, 0]],
     opacity: [[0, 1], [1, 0]],
@@ -678,7 +680,7 @@ const shockwave: ParticlePreset = {
     angularVelocity: [-1.3, 1.3],
   },
   forces: {
-    gravity: [0, -0.25, 0],
+    acceleration: [0, -0.25, 0],
     drag: 6.52,
     noise: {
       strength: 0.28,
@@ -717,7 +719,7 @@ const rainGpu: ParticlePreset = {
     velocity: [[-0.35, -8.5, -0.2], [0.35, -13, 0.2]],
     rotation: [Math.PI * 0.5, Math.PI * 0.5],
   },
-  forces: { gravity: [0, -2.5, 0], drag: 0.05 },
+  forces: { acceleration: [0, -2.5, 0], drag: 0.05 },
   overLifetime: {
     opacity: [[0, 0], [0.04, 1], [0.9, 1], [1, 0]],
     color: [[0, "#ffffff"], [1, "#74bfff"]],
@@ -745,7 +747,7 @@ const snowGpu: ParticlePreset = {
     rotation: [0, Math.PI * 2],
     angularVelocity: [-0.8, 0.8],
   },
-  forces: { gravity: [0, -0.08, 0], drag: 0.08, noise: { strength: 0.38, frequency: 1.7 } },
+  forces: { acceleration: [0, -0.08, 0], drag: 0.08, noise: { strength: 0.38, frequency: 1.7 } },
   overLifetime: {
     size: [[0, 0.7], [0.5, 1], [1, 0.9]],
     opacity: [[0, 0], [0.08, 1], [0.86, 1], [1, 0]],
@@ -1005,7 +1007,10 @@ function loadPresetIntoEditor(name: DemoEffectName): void {
 
   const forces = preset.forces;
   customParams.forceEnabled = !!forces;
-  customParams.gravityY = forces?.gravity?.[1] ?? 0;
+  const acc = forces?.acceleration ?? [0, 0, 0];
+  customParams.accelerationX = acc[0] ?? 0;
+  customParams.accelerationY = acc[1] ?? 0;
+  customParams.accelerationZ = acc[2] ?? 0;
   customParams.drag = forces?.drag ?? 0;
   customParams.noiseStrength = forces?.noise?.strength ?? 0;
   customParams.noiseFrequency = forces?.noise?.frequency ?? 1;
@@ -1158,7 +1163,9 @@ bind(lifetimeVelocityFolder, "lifetimeVelocityZEnd", { label: "linear z end", mi
 
 const forceFolder = pane.addFolder({ title: "Force over Lifetime", expanded: false }) as PaneLike;
 bind(forceFolder, "forceEnabled", { label: "enabled" });
-bind(forceFolder, "gravityY", { label: "gravity y", min: -10, max: 10, step: 0.01 });
+bind(forceFolder, "accelerationX", { label: "acceleration x", min: -10, max: 10, step: 0.01 });
+bind(forceFolder, "accelerationY", { label: "acceleration y", min: -10, max: 10, step: 0.01 });
+bind(forceFolder, "accelerationZ", { label: "acceleration z", min: -10, max: 10, step: 0.01 });
 bind(forceFolder, "drag", { min: 0, max: 20, step: 0.01 });
 bind(forceFolder, "noiseStrength", { label: "noise strength", min: 0, max: 5, step: 0.01 });
 bind(forceFolder, "noiseFrequency", { label: "noise frequency", min: 0.1, max: 20, step: 0.1 });

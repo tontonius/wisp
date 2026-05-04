@@ -41,7 +41,7 @@ type ParticlePreset = {
 | `emitter` | `EmitterShape` | `{ type: "point" }` | Spawn shape and direction. |
 | `emission` | Object | No emission | Continuous rate and/or scheduled bursts. |
 | `start` | Object | Individual defaults | Values sampled when each particle spawns. |
-| `forces` | Object | No force | Gravity, drag, and procedural noise. |
+| `forces` | Object | No force | Constant acceleration, drag, and procedural noise. |
 | `velocityOverLifetime` | `VelocityOverLifetime` | No lifetime velocity | Per-age linear velocity channel. |
 | `overLifetime` | Object | Multipliers/color default to neutral values | Size, opacity, and color curves. |
 | `renderer` | Object | Default soft particle material | Texture, blend, alignment, depth, and texture sheet settings. |
@@ -134,7 +134,7 @@ const fire: ParticlePreset = {
     angularVelocity: [-2.4, 2.4],
   },
   forces: {
-    gravity: [0, 1.15, 0],
+    acceleration: [0, 1.15, 0],
     drag: 1.4,
     noise: { strength: 0.42, frequency: 7.5 },
   },

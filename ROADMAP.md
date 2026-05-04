@@ -118,7 +118,7 @@ Currently supports:
 - Random size
 - Random colour
 - Random rotation
-- Gravity
+- Constant acceleration (`forces.acceleration`)
 - Drag
 - Noise
 - Size over lifetime
@@ -158,7 +158,7 @@ Currently supports:
 - Hemisphere emitter
 - Cone emitter
 - Box emitter
-- Gravity
+- Constant acceleration (`forces.acceleration`)
 - Drag
 - Noise
 - Randomised start values

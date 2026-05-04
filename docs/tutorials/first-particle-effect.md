@@ -47,7 +47,7 @@ const sparkleBurst: ParticlePreset = {
   },
 
   forces: {
-    gravity: [0, 0.6, 0],
+    acceleration: [0, 0.6, 0],
     drag: 1.8,
     noise: { strength: 0.2, frequency: 6 },
   },

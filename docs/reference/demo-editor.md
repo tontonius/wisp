@@ -111,7 +111,9 @@ velocityOverLifetime: {
 | Control | Preset Field |
 | --- | --- |
 | `enabled` | Whether `forces` is included. |
-| `gravity y` | `forces.gravity[1]` |
+| `acceleration x` | `forces.acceleration[0]` |
+| `acceleration y` | `forces.acceleration[1]` |
+| `acceleration z` | `forces.acceleration[2]` |
 | `drag` | `forces.drag` |
 | `noise strength` | `forces.noise.strength` |
 | `noise frequency` | `forces.noise.frequency` |
