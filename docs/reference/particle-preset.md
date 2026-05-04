@@ -2,6 +2,8 @@
 
 `ParticlePreset` is the central authoring object. It describes emission, spawn ranges, simulation backend, forces, lifetime curves, rendering, debug gizmos, and callbacks.
 
+Invalid values are rejected when a [`ParticleSystem`](api.md) is constructed; see [Preset validation](preset-validation.md) for rules, warnings, and helper functions (`collectParticlePresetIssues`, `assertValidParticlePreset`).
+
 ```ts
 type ParticlePreset = {
   name?: string;

@@ -2,6 +2,8 @@
 
 Use this checklist to build an effect from scratch.
 
+Presets are validated when you construct a [`ParticleSystem`](../reference/api.md); see [Preset validation](../reference/preset-validation.md) for rules and for `collectParticlePresetIssues` when authoring in an editor.
+
 ## 1. Pick The Backend
 
 ```ts

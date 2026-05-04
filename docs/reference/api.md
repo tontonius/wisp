@@ -22,6 +22,8 @@ Constructor:
 new ParticleSystem(preset?: ParticlePreset, options?: ParticleSystemOptions)
 ```
 
+Before backends are created, the preset is validated with [`assertValidParticlePreset`](preset-validation.md) (see [Preset validation](preset-validation.md)). Invalid presets throw; recoverable situations (for example `simulation: "gpu"` without a renderer) emit a warning and still fall back to CPU as documented.
+
 Readonly fields:
 
 | Field | Type | Description |
@@ -170,6 +172,16 @@ Auto-disposal:
 - During `update`, systems with `system.preset.autoDispose ?? true` and `system.isComplete` are removed from `systems`. When pooling applies, they are reset and parked in the inactive pool; otherwise they are disposed.
 - Set `autoDispose: false` for loops, persistent ambient effects, or systems you want to stop/dispose manually.
 
+## Preset validation
+
+Exported functions (see [Preset validation](preset-validation.md)):
+
+| Export | Role |
+| --- | --- |
+| `collectParticlePresetIssues(preset, context?)` | Returns `{ errors, warnings }` without throwing. |
+| `assertValidParticlePreset(preset, context?)` | Logs warnings, throws if any errors. |
+| `presetWouldUseGpu(preset, renderer?)` | Whether the preset would select the GPU path for the given renderer. |
+
 ## Exported Types
 
 | Type | Shape |
@@ -192,6 +204,8 @@ Auto-disposal:
 | `ParticleSpawnOptions` | Transform, parent, `autoPlay`, and `debug` fields shared by `ParticleEffectLibrary.spawn` / `ParticleWorld.spawn` (world merge also applies default `parent` and `debug`). |
 | `ParticleSnapshot` | CPU particle-death snapshot. |
 | `ParticleLifecycleCallbacks` | Lifecycle callback object. |
+| `ParticlePresetValidationContext` | `{ renderer?: THREE.WebGLRenderer }` — optional context for validation. |
+| `ParticlePresetValidationResult` | `{ errors: string[]; warnings: string[] }` — output of `collectParticlePresetIssues`. |
 
 See the dedicated reference pages for exact option semantics.
 

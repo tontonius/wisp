@@ -33,6 +33,7 @@ The library is a Unity/Shuriken-inspired particle system for Three.js. It uses J
 
 - [Public API](reference/api.md)
 - [ParticlePreset](reference/particle-preset.md)
+- [Preset Validation](reference/preset-validation.md)
 - [Types And Value Shapes](reference/types-and-value-shapes.md)
 - [Emitters](reference/emitters.md)
 - [Emission](reference/emission.md)

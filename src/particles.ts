@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { assertValidParticlePreset } from "./particle-preset-validation";
 
 export type Range = number | [number, number];
 export type Vec3Tuple = [number, number, number];
@@ -1674,9 +1675,7 @@ export class ParticleSystem extends THREE.Object3D {
     super();
     this.preset = preset;
 
-    if (preset.simulation === "gpu" && !options.renderer) {
-      console.warn("Particle preset requested GPU simulation, but no WebGLRenderer was provided. Falling back to CPU.");
-    }
+    assertValidParticlePreset(preset, { renderer: options.renderer });
 
     const useGpu = shouldUseGpu(preset, options);
     this.backendType = useGpu ? "gpu" : "cpu";
@@ -1969,3 +1968,6 @@ export class ParticleWorld {
     this.inactivePool.clear();
   }
 }
+
+export { assertValidParticlePreset, collectParticlePresetIssues, presetWouldUseGpu } from "./particle-preset-validation";
+export type { ParticlePresetValidationContext, ParticlePresetValidationResult } from "./particle-preset-validation";

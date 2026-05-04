@@ -228,11 +228,11 @@ Goal: make the library pleasant and robust in real game scenes.
 - Diataxis docs in `docs/` and a demo preset editor / debug gizmos (see `docs/reference/demo-editor.md`)
 - Demo ships the example presets below (selectable in the playground)
 - Opt-in inactive-system pooling on `ParticleWorld` (`pooling` in `ParticleWorldOptions`)
+- Preset validation at `ParticleSystem` construction (`collectParticlePresetIssues`, `assertValidParticlePreset`; see `docs/reference/preset-validation.md`)
 
 **Still open**
 
 - `preload(name, count)` (or equivalent warm-cache API)
-- Preset validation (warn or throw on invalid curves, sheets, counts, unsupported GPU fields, and so on)
 - Broader “safer cleanup” hardening if gaps show up in real scenes
 
 ### Features
@@ -242,7 +242,7 @@ Goal: make the library pleasant and robust in real game scenes.
 - [x] `elapsed`
 - [x] Better lifecycle state (flags + callbacks as above)
 - [~] Safer cleanup (`autoDispose` + `clear()` + optional pooling; further hardening TBD)
-- [ ] Preset validation
+- [x] Preset validation (`assertValidParticlePreset` on `ParticleSystem` construction)
 - [~] Better TypeScript types (stronger shapes and reference docs; can tighten further)
 - [x] Better documentation (`docs/`)
 - [x] More example effects (see list below — all in `demo/main.ts`)
@@ -805,7 +805,7 @@ Implement in this order:
 ```txt
 1. (done) Real ParticleWorld pooling
 2. (done) Better lifecycle API and aliveCount
-3. Preset validation
+3. (done) Preset validation
 4. CPU plane collision
 5. CPU sub-emitters onDeath
 6. Stretched billboard renderer

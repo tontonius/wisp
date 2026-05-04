@@ -87,7 +87,7 @@ Evaluation:
 - Between stops, values are linearly interpolated.
 - After the last stop, the last value is used.
 
-The system does not sort curve stops. Author them in increasing time order.
+Keyframe times must be **non-decreasing** (sorted or flat). The runtime does not sort stops for you; [`assertValidParticlePreset`](preset-validation.md) throws if times go backwards.
 
 ## `Gradient`
 
@@ -104,6 +104,8 @@ color: [[0, "#ffffff"], [0.45, "#7df9ff"], [1, "#1b1040"]]
 ```
 
 Colors are converted through `THREE.Color`, so any `THREE.ColorRepresentation` accepted by Three.js can be used.
+
+Stop times must be **non-decreasing**, same as curves; see [Preset validation](preset-validation.md).
 
 ## Backend Lookup Textures
 
