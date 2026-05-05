@@ -41,7 +41,13 @@ General:
 
 ## Install
 
-This demo package is intentionally simple.
+Use the published package in your app:
+
+```bash
+npm install @tontonius/wisp three
+```
+
+For local development of this repository:
 
 ```bash
 npm install
@@ -78,7 +84,7 @@ Module entry points:
 
 ```ts
 import * as THREE from "three";
-import { Wisp, ParticlePreset } from "./src";
+import { Wisp, type ParticlePreset } from "@tontonius/wisp";
 
 const scene = new THREE.Scene();
 const renderer = new THREE.WebGLRenderer();
@@ -155,6 +161,22 @@ function animate() {
 
   renderer.render(scene, camera);
 }
+```
+
+## Publishing (maintainers)
+
+```bash
+# 1) Log in once
+npm login
+
+# 2) Build library bundle + type declarations
+npm run build:lib
+
+# 3) Verify what will be published
+npm pack --dry-run
+
+# 4) First publish (or regular publish after version bump)
+npm publish --access public
 ```
 
 ## CPU vs GPU backend

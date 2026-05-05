@@ -6,7 +6,7 @@ This tutorial creates a small burst effect, registers it in `wisp.particles`, sp
 
 ```ts
 import * as THREE from "three";
-import { Wisp, type ParticlePreset } from "../../src";
+import { Wisp, type ParticlePreset } from "@tontonius/wisp";
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);

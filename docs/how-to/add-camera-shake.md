@@ -5,7 +5,7 @@ Use the `Wisp` camera module to add event-driven shake with linear trauma decay 
 ## 1) Create one Wisp instance for modules
 
 ```ts
-import { Wisp } from "@wisp/three";
+import { Wisp } from "@tontonius/wisp";
 
 const wisp = new Wisp({
   scene,

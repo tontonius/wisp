@@ -219,7 +219,11 @@ export class CPUParticleBackend implements ParticleBackend {
 
   private updateSoftParticleCameraUniforms(camera: THREE.Camera): void {
     const u = this.material.uniforms;
-    u.uCameraNearFar.value.set(camera.near, camera.far);
+    if (camera instanceof THREE.PerspectiveCamera || camera instanceof THREE.OrthographicCamera) {
+      u.uCameraNearFar.value.set(camera.near, camera.far);
+    } else {
+      u.uCameraNearFar.value.set(0.1, 1000);
+    }
     u.uCameraIsPerspective.value = camera instanceof THREE.PerspectiveCamera ? 1 : 0;
     if (u.uDispersalTime) u.uDispersalTime.value = this._elapsed;
   }

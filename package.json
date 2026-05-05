@@ -1,19 +1,45 @@
 {
-  "name": "@wisp/three",
+  "name": "@tontonius/wisp",
   "version": "0.2.0",
   "description": "Game-feel effects for Three.js, starting with a high-performance particle system.",
   "type": "module",
-  "private": true,
+  "private": false,
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "docs"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "vite build",
-    "build:pages": "GITHUB_PAGES=true vite build"
+    "build": "npm run build:lib",
+    "build:lib": "vite build --config vite.lib.config.ts && npm run build:types",
+    "build:types": "tsc -p tsconfig.build.json",
+    "build:demo": "vite build",
+    "build:pages": "GITHUB_PAGES=true vite build",
+    "prepublishOnly": "npm run build:lib && npm pack --dry-run"
   },
-  "dependencies": {
+  "peerDependencies": {
+    "three": ">=0.150.0"
+  },
+  "devDependencies": {
     "@tweakpane/core": "^2.0.5",
     "@tweakpane/plugin-essentials": "^0.2.1",
+    "@types/three": "^0.184.0",
     "@vitejs/plugin-basic-ssl": "latest",
-    "three": "latest",
     "tweakpane": "^4.0.5",
     "typescript": "latest",
     "vite": "latest"

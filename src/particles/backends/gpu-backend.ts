@@ -983,7 +983,11 @@ export class GPUParticleBackend implements ParticleBackend {
     this.material.uniforms.uCameraRight.value.copy(cameraRight);
     this.material.uniforms.uCameraUp.value.copy(cameraUp);
     this.material.uniforms.uCameraForward.value.copy(cameraForward);
-    this.material.uniforms.uCameraNearFar.value.set(camera.near, camera.far);
+    if (camera instanceof THREE.PerspectiveCamera || camera instanceof THREE.OrthographicCamera) {
+      this.material.uniforms.uCameraNearFar.value.set(camera.near, camera.far);
+    } else {
+      this.material.uniforms.uCameraNearFar.value.set(0.1, 1000);
+    }
     this.material.uniforms.uCameraIsPerspective.value = camera instanceof THREE.PerspectiveCamera ? 1 : 0;
     const udt = this.material.uniforms.uDispersalTime;
     if (udt) udt.value = this._elapsed;

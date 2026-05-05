@@ -1,6 +1,6 @@
 # Public API Reference
 
-All public exports come from `src/index.ts`.
+All public exports come from the package root (`@tontonius/wisp`), backed by `src/index.ts` at build time.
 
 ```ts
 export * from "./particles";
