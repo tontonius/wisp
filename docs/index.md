@@ -26,12 +26,14 @@ Wisp is a game-feel effects engine for Three.js. The current core module is a Un
 - [Author A Preset](how-to/author-a-preset.md)
 - [Create A GPU Ambient Effect](how-to/create-a-gpu-ambient-effect.md)
 - [Use Texture Sheets](how-to/use-texture-sheets.md)
+- [Add Trauma-Based Camera Shake](how-to/add-camera-shake.md)
 - [Debug Emitters](how-to/debug-emitters.md)
 - [Publish The Demo To GitHub Pages](how-to/publish-github-pages.md)
 
 ## Reference
 
 - [Public API](reference/api.md)
+- [Camera Effects](reference/camera-effects.md)
 - [ParticlePreset](reference/particle-preset.md)
 - [Preset Validation](reference/preset-validation.md)
 - [Types And Value Shapes](reference/types-and-value-shapes.md)

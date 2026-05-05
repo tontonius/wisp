@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { Pane } from "tweakpane";
 import * as EssentialsPlugin from "@tweakpane/plugin-essentials";
-import { ParticleWorld } from "../src";
+import { ParticleWorld, Wisp } from "../src";
 import type { Curve, Gradient, ParticlePreset, ParticleSystem } from "../src";
 import {
   defaultGradientStops,
@@ -635,6 +635,19 @@ const { worldPresets, editablePresets } = createDemoPresets({
   billboards: demoBillboards,
 });
 
+const cameraShakeParams = {
+  enabled: true,
+  onSpawn: false,
+  keybindEnabled: true,
+  triggerTrauma: 0.35,
+  decayRate: 1.4,
+  traumaExponent: 2,
+  noiseFrequency: 22,
+  maxPitchDeg: 1.8,
+  maxYawDeg: 1.8,
+  maxRollDeg: 2.4,
+};
+
 const particleWorldOptions = {
   renderer,
   ...(typeof window !== "undefined" && new URLSearchParams(window.location.search).get("pool") === "1"
@@ -650,6 +663,31 @@ const particles = new ParticleWorld(
   },
   particleWorldOptions
 );
+const wisp = new Wisp(camera, {
+  shake: {
+    decayRate: cameraShakeParams.decayRate,
+    traumaExponent: cameraShakeParams.traumaExponent,
+    noiseFrequency: cameraShakeParams.noiseFrequency,
+    maxRotation: [
+      THREE.MathUtils.degToRad(cameraShakeParams.maxPitchDeg),
+      THREE.MathUtils.degToRad(cameraShakeParams.maxYawDeg),
+      THREE.MathUtils.degToRad(cameraShakeParams.maxRollDeg),
+    ],
+  },
+});
+
+function applyCameraShakeConfig(): void {
+  wisp.camera.configureShake({
+    decayRate: cameraShakeParams.decayRate,
+    traumaExponent: cameraShakeParams.traumaExponent,
+    noiseFrequency: cameraShakeParams.noiseFrequency,
+    maxRotation: [
+      THREE.MathUtils.degToRad(cameraShakeParams.maxPitchDeg),
+      THREE.MathUtils.degToRad(cameraShakeParams.maxYawDeg),
+      THREE.MathUtils.degToRad(cameraShakeParams.maxRollDeg),
+    ],
+  });
+}
 // particles.spawn("magicAura", { position: [-2.2, 0.2, 0] });
 // particles.spawn("gpuMagicStorm", { position: [1.2, 0.3, 0] });
 
@@ -693,6 +731,9 @@ const runtimeStats = {
   busiest: "none",
   busiestAlive: 0,
 };
+const cameraRuntime = {
+  trauma: 0,
+};
 let runtimeStatsRefreshElapsed = 0;
 
 const pane = new Pane({ title: "Particle effect", container: paneContainer });
@@ -702,10 +743,11 @@ const copyStatus = document.createElement("div");
 copyStatus.className = "copy-status";
 paneContainer.appendChild(copyStatus);
 const mainTabs = pane.addTab({
-  pages: [{ title: "Particles" }, { title: "Scene" }],
+  pages: [{ title: "Particles" }, { title: "Scene" }, { title: "Camera" }],
 });
 const particlesPane = mainTabs.pages[0] as PaneLike;
 const scenePane = mainTabs.pages[1];
+const cameraPane = mainTabs.pages[2] as PaneLike;
 
 scenePane
   .addBinding(scenePaneParams, "groundVisible", { label: "Ground plane" })
@@ -744,6 +786,13 @@ runtimeFolder.addBinding(runtimeStats, "aliveTotal", { readonly: true, label: "a
 runtimeFolder.addBinding(runtimeStats, "maxTotal", { readonly: true, label: "max total" });
 runtimeFolder.addBinding(runtimeStats, "busiest", { readonly: true });
 runtimeFolder.addBinding(runtimeStats, "busiestAlive", { readonly: true, label: "busiest alive" });
+runtimeFolder.addBinding(cameraRuntime, "trauma", {
+  readonly: true,
+  label: "camera trauma",
+  view: "graph",
+  min: 0,
+  max: 1,
+});
 const playbackFolder = capturePane.addFolder({ title: "Playback", expanded: true });
 playbackFolder.addButton({ title: "Play" }).on("click", () => {
   for (const system of particles.systems) system.play();
@@ -803,6 +852,9 @@ function previewCustomLoop() {
 }
 
 function spawnEffect(name: DemoEffectName, position: THREE.Vector3 | [number, number, number]) {
+  if (cameraShakeParams.enabled && cameraShakeParams.onSpawn) {
+    wisp.camera.shake(cameraShakeParams.triggerTrauma);
+  }
   if (name === "explosionCombo") {
     particles.spawn("explosion", { position });
     const smokePosition = Array.isArray(position) ? new THREE.Vector3(...position) : position.clone();
@@ -1405,6 +1457,23 @@ const pointer = new THREE.Vector2();
 const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const hit = new THREE.Vector3();
 
+const cameraEffectsFolder = cameraPane.addFolder({ title: "Camera shake", expanded: true });
+cameraEffectsFolder.addButton({ title: "Shake camera" }).on("click", () => {
+  if (!cameraShakeParams.enabled) return;
+  wisp.camera.shake(cameraShakeParams.triggerTrauma);
+});
+cameraEffectsFolder.addBinding(cameraShakeParams, "enabled", { label: "enabled" });
+cameraEffectsFolder.addBinding(cameraShakeParams, "onSpawn", { label: "shake on spawn" });
+cameraEffectsFolder.addBinding(cameraShakeParams, "keybindEnabled", { label: "space key" });
+cameraEffectsFolder.addBinding(cameraShakeParams, "triggerTrauma", { label: "trigger trauma", min: 0, max: 1, step: 0.01 });
+cameraEffectsFolder.addBinding(cameraShakeParams, "decayRate", { label: "decay", min: 0.1, max: 5, step: 0.01 }).on("change", applyCameraShakeConfig);
+cameraEffectsFolder.addBinding(cameraShakeParams, "traumaExponent", { label: "power", min: 1, max: 4, step: 0.1 }).on("change", applyCameraShakeConfig);
+cameraEffectsFolder.addBinding(cameraShakeParams, "noiseFrequency", { label: "noise hz", min: 1, max: 60, step: 0.1 }).on("change", applyCameraShakeConfig);
+cameraEffectsFolder.addBinding(cameraShakeParams, "maxPitchDeg", { label: "max pitch", min: 0, max: 10, step: 0.1 }).on("change", applyCameraShakeConfig);
+cameraEffectsFolder.addBinding(cameraShakeParams, "maxYawDeg", { label: "max yaw", min: 0, max: 10, step: 0.1 }).on("change", applyCameraShakeConfig);
+cameraEffectsFolder.addBinding(cameraShakeParams, "maxRollDeg", { label: "max roll", min: 0, max: 12, step: 0.1 }).on("change", applyCameraShakeConfig);
+cameraEffectsFolder.addButton({ title: "Reset shake" }).on("click", () => wisp.camera.reset());
+
 function shouldIgnoreUiTarget(event: Event): boolean {
   return event.target instanceof Element && !!event.target.closest(".ui, .tweakpane-wrap, .tweakpane-wrap-scene, .tweakpane-wrap-capture");
 }
@@ -1425,6 +1494,12 @@ function spawnAtPointer(event: PointerEvent, kind: DemoEffectName = customParams
 }
 
 window.addEventListener("pointerdown", (event) => spawnAtPointer(event));
+window.addEventListener("keydown", (event) => {
+  if (!cameraShakeParams.enabled || !cameraShakeParams.keybindEnabled) return;
+  if (event.code !== "Space") return;
+  if (shouldIgnoreUiTarget(event)) return;
+  wisp.camera.shake(cameraShakeParams.triggerTrauma);
+});
 window.addEventListener(
   "wheel",
   (event) => {
@@ -1494,6 +1569,8 @@ function animate() {
     }
   }
   updateCameraOrbit();
+  wisp.update(dt);
+  cameraRuntime.trauma = wisp.camera.trauma;
   particles.update(dt, camera);
   renderSceneDepthWithoutParticles();
   syncSoftParticleDepthTexture();

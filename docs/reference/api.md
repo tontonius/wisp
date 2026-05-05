@@ -8,6 +8,109 @@ export * from "./particles";
 
 ## Exported Classes
 
+### `Wisp`
+
+```ts
+class Wisp
+```
+
+High-level facade for modular effects systems. In v0.2 this exposes camera effects:
+
+Constructor:
+
+```ts
+new Wisp(camera: THREE.Camera, options?: CameraEffectsOptions)
+```
+
+Fields:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `camera` | `WispCamera` | Camera effects namespace (`shake`, `update`, `reset`, tuning). |
+
+Methods:
+
+| Method | Returns | Description |
+| --- | --- | --- |
+| `update(dt)` | `void` | Updates camera effects each frame. |
+| `dispose()` | `void` | Resets camera effects state and releases internal references. |
+
+### `WispCamera`
+
+```ts
+class WispCamera
+```
+
+Methods:
+
+| Method | Returns | Description |
+| --- | --- | --- |
+| `shake(impulse)` | `this` | Adds trauma impulse (`number` or `{ trauma }`). |
+| `configureShake(options?)` | `this` | Replaces camera shake tuning at runtime. |
+| `update(dt)` | `void` | Advances shake simulation and applies offsets. |
+| `reset()` | `this` | Clears trauma and restores unshaken camera transform. |
+
+Getters:
+
+| Getter | Type | Description |
+| --- | --- | --- |
+| `trauma` | `number` | Current trauma value in `[0, 1]`. |
+
+### `CameraShakeController`
+
+```ts
+class CameraShakeController
+```
+
+Low-level shake controller for direct camera integration.
+
+Constructor:
+
+```ts
+new CameraShakeController(camera: THREE.Camera, options?: CameraShakeOptions)
+```
+
+Methods:
+
+| Method | Returns | Description |
+| --- | --- | --- |
+| `shake(impulse)` | `void` | Adds trauma impulse (`number` or `{ trauma }`). |
+| `addTrauma(amount)` | `void` | Adds trauma directly; value is clamped to `[0, 1]`. |
+| `configure(options?)` | `void` | Replaces shake tuning. |
+| `update(dt)` | `void` | Applies coherent noise-based shake with linear trauma decay. |
+| `reset()` | `void` | Restores baseline camera transform and clears trauma. |
+| `dispose()` | `void` | Alias for cleanup/reset behavior. |
+
+### `CameraEffectsSystem`
+
+```ts
+class CameraEffectsSystem
+```
+
+Camera module wrapper used by the `Wisp` facade.
+
+Constructor:
+
+```ts
+new CameraEffectsSystem(camera: THREE.Camera, options?: CameraShakeOptions)
+```
+
+Methods:
+
+| Method | Returns | Description |
+| --- | --- | --- |
+| `shake(impulse)` | `this` | Adds a trauma impulse. |
+| `configureShake(options?)` | `this` | Replaces shake tuning. |
+| `update(dt)` | `void` | Updates camera shake. |
+| `reset()` | `this` | Restores baseline transform and clears trauma. |
+| `dispose()` | `void` | Resets camera shake state. |
+
+Getters:
+
+| Getter | Type | Description |
+| --- | --- | --- |
+| `trauma` | `number` | Current trauma value in `[0, 1]`. |
+
 ### `ParticleSystem`
 
 ```ts
@@ -223,6 +326,10 @@ Exported functions (see [Preset validation](preset-validation.md)):
 | `ParticleLifecycleCallbacks` | Lifecycle callback object. |
 | `ParticlePresetValidationContext` | `{ renderer?: THREE.WebGLRenderer }` — optional context for validation. |
 | `ParticlePresetValidationResult` | `{ errors: string[]; warnings: string[] }` — output of `collectParticlePresetIssues`. |
+| `CameraShakeImpulse` | `number | { trauma: number }` |
+| `CameraShakeMode` | `"rotationOnly" | "rotationAndTranslation"` |
+| `CameraShakeOptions` | Camera shake tuning object (decay, power curve, coherent noise, max offsets). |
+| `CameraEffectsOptions` | `{ shake?: CameraShakeOptions }` |
 
 See the dedicated reference pages for exact option semantics.
 

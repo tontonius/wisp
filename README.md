@@ -23,6 +23,7 @@ Today, the particle system is the core implemented module: a Unity-Shuriken-insp
 - Texture-sheet / flipbook UV support
 - JSON-style presets
 - `ParticleWorld` manager with auto-cleanup
+- Trauma-based camera shake module (`Wisp` / `wisp.camera.shake`)
 - TypeScript-first API
 
 ## Install
@@ -52,6 +53,11 @@ The full Diataxis-style documentation set lives in [`docs/`](docs/index.md):
 - How-to guides for focused tasks.
 - Reference pages for every public API and preset module.
 - Explanations for architecture and backend tradeoffs.
+
+Camera documentation entry points:
+
+- [How To Add Trauma-Based Camera Shake](docs/how-to/add-camera-shake.md)
+- [Reference: Camera Effects](docs/reference/camera-effects.md)
 
 ## Basic usage
 
