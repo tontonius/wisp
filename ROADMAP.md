@@ -533,14 +533,18 @@ Goal: reduce visual artefacts and make effects feel integrated into the scene.
 
 ### Features
 
-- Soft particles
-- Premultiplied alpha option
-- HDR-friendly additive intensity
-- Colour intensity multiplier
-- Distortion texture support
-- Optional depth fade
-- Render layers
-- Composer integration helpers
+- [x] Soft particles
+- [ ] Premultiplied alpha option
+- [ ] HDR-friendly additive intensity
+- [ ] Colour intensity multiplier
+- [ ] Distortion texture support
+- [ ] Optional depth fade
+- [ ] Render layers
+- [ ] Composer integration helpers
+
+Notes:
+
+- Soft particles shipped earlier (see Milestone 3 checklist), and remain part of the M4 rendering-polish goals.
 
 ### Soft Particles
 
@@ -556,6 +560,90 @@ renderer: {
 ```
 
 Requires access to a scene depth texture. This should be opt-in because it touches renderer/composer setup.
+
+### Premultiplied Alpha Option
+
+What it is:
+
+- Add a renderer-level option to treat particle textures/material output as premultiplied alpha, with consistent blend state setup for both CPU and GPU paths.
+
+Why it is important:
+
+- Many authored assets and pipelines already use premultiplied alpha.
+- Correct premult handling reduces dark fringes/halos around soft sprites.
+- It improves visual consistency when particles are composited over HDR/post-processed scenes.
+
+### HDR-Friendly Additive Intensity
+
+What it is:
+
+- Add explicit additive energy controls so authored additive effects remain predictable across tone mapping and exposure settings.
+
+Why it is important:
+
+- Additive particles can look weak or blown out depending on the scene's exposure.
+- A stable intensity model makes effects portable across projects and lighting setups.
+- It reduces per-preset retuning when camera/post settings change.
+
+### Colour Intensity Multiplier
+
+What it is:
+
+- Provide a simple scalar multiplier (and optional over-lifetime support later) that scales particle RGB contribution without rewriting gradients.
+
+Why it is important:
+
+- Artists/designers can quickly tune brightness while preserving color relationships.
+- It separates "look color" authoring from "energy level" balancing.
+- It speeds iteration for gameplay readability and VFX polish.
+
+### Distortion Texture Support
+
+What it is:
+
+- Support a distortion map path where particles refract/offset the background (heat haze, shockwaves, magical air wobble) instead of only emitting color.
+
+Why it is important:
+
+- Distortion is a core visual language for heat, pressure, magic, and impact.
+- It enables high perceived quality with relatively low particle counts.
+- It complements additive/alpha particles for layered VFX.
+
+### Optional Depth Fade
+
+What it is:
+
+- Expose a lightweight depth-based alpha attenuation mode that can be enabled independently for effects needing intersection softening.
+
+Why it is important:
+
+- Some effects need only subtle intersection fade without full soft-particle setup complexity.
+- It helps avoid hard clipping seams against geometry.
+- It gives teams a performance/quality tradeoff knob per effect.
+
+### Render Layers
+
+What it is:
+
+- Allow particle systems/materials to target configurable Three.js render layers so effects can be included/excluded per camera/pass.
+
+Why it is important:
+
+- Gameplay/UI cameras often need different VFX visibility rules.
+- Layer routing is essential for selective post-processing and compositing.
+- It prevents hacks like duplicating systems just to control visibility.
+
+### Composer Integration Helpers
+
+What it is:
+
+- Provide helper utilities/docs for common EffectComposer setups (depth texture wiring, pass ordering, soft-particle integration, and safe defaults).
+
+Why it is important:
+
+- Correct post stack integration is a common source of setup bugs.
+- Helpers reduce onboarding friction and repetitive boilerplate.
+- It makes advanced rendering features usable without deep renderer internals knowledge.
 
 ### Sorting Strategy
 
