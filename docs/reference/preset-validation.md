@@ -9,6 +9,8 @@ The library validates `ParticlePreset` values when a [`ParticleSystem`](api.md) 
 
 Use [`collectParticlePresetIssues`](#collectparticlepresetissues) in editors or tooling to surface issues without constructing a system.
 
+IntelliSense note: these exported validation helpers and result/context types also include hover docs in the package declarations, so consumers can inspect usage expectations without opening this page.
+
 ## API
 
 ### `collectParticlePresetIssues`

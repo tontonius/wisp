@@ -47,6 +47,11 @@ function quaternionDifference(a: THREE.Quaternion, b: THREE.Quaternion): number 
   return 1 - Math.abs(THREE.MathUtils.clamp(a.dot(b), -1, 1));
 }
 
+/**
+ * Low-level trauma shake controller for direct camera integration.
+ *
+ * Use this when you want shake without the `Wisp` facade.
+ */
 export class CameraShakeController {
   private readonly camera: THREE.Camera;
 
@@ -69,23 +74,32 @@ export class CameraShakeController {
     this.options = this.resolveOptions(options);
   }
 
+  /** Returns current trauma in `[0, 1]`. */
   getTrauma(): number {
     return this.trauma;
   }
 
+  /** Replaces controller options. Omitted fields fall back to defaults. */
   configure(options?: CameraShakeOptions): void {
     this.options = this.resolveOptions(options);
   }
 
+  /** Adds trauma and clamps the total to `[0, 1]`. */
   addTrauma(amount: number): void {
     if (!Number.isFinite(amount)) return;
     this.trauma = THREE.MathUtils.clamp(this.trauma + amount, 0, 1);
   }
 
+  /** Adds a shake impulse (`number` or `{ trauma }`). */
   shake(impulse: CameraShakeImpulse): void {
     this.addTrauma(parseImpulse(impulse));
   }
 
+  /**
+   * Advances coherent shake noise and applies offsets to the camera.
+   *
+   * `dt` is in seconds and values <= 0 are ignored.
+   */
   update(dt: number): void {
     const safeDt = Number.isFinite(dt) ? Math.max(0, dt) : 0;
     if (safeDt <= 0) return;
@@ -138,11 +152,13 @@ export class CameraShakeController {
     this.outputQuaternion.copy(this.camera.quaternion);
   }
 
+  /** Clears trauma and forgets previous output state. */
   reset(): void {
     this.trauma = 0;
     this.hasOutputState = false;
   }
 
+  /** Alias for `reset()` to support lifecycle cleanup patterns. */
   dispose(): void {
     this.reset();
   }

@@ -12,6 +12,8 @@ Core exports:
 - `CameraShakeImpulse`
 - `CameraEffectsOptions`
 
+IntelliSense note: exported camera types and methods include detailed in-editor docs for defaults and units (for example, radians for `maxRotation` and seconds-based rates like `decayRate`).
+
 ## `CameraShakeController`
 
 Low-level controller that applies shake directly to a `THREE.Camera`.

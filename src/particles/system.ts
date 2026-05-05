@@ -16,6 +16,11 @@ function shouldUseGpu(preset: ParticlePreset, options: ParticleSystemOptions): b
   return false;
 }
 
+/**
+ * Live particle effect instance backed by either CPU or GPU simulation.
+ *
+ * The selected backend is exposed via `backendType`.
+ */
 export class ParticleSystem extends THREE.Object3D {
   readonly preset: ParticlePreset;
   readonly backendType: "cpu" | "gpu";
@@ -42,30 +47,41 @@ export class ParticleSystem extends THREE.Object3D {
     this.setDebug(preset.debug);
   }
 
+  /** Seconds elapsed since system start/restart. */
   get elapsed(): number {
     return this.backend.elapsed;
   }
 
+  /** Approximate number of currently alive particles. */
   get aliveCount(): number {
     return this.backend.aliveCount;
   }
 
+  /** True while particles can still be alive in the system. */
   get isAlive(): boolean {
     return this.backend.isAlive;
   }
 
+  /** True while emission time is advancing. */
   get isPlaying(): boolean {
     return this.backend.isPlaying;
   }
 
+  /** True when emission has finished and no particles remain alive. */
   get isComplete(): boolean {
     return this.backend.isComplete;
   }
 
+  /** True once backend resources have been disposed. */
   get isDisposed(): boolean {
     return this.backend.isDisposed;
   }
 
+  /**
+   * Starts or resumes emission.
+   *
+   * Triggers `callbacks.onStart` when transitioning from not playing to playing.
+   */
   play(): this {
     const wasPlaying = this.backend.isPlaying;
     this.backend.play();
@@ -74,11 +90,17 @@ export class ParticleSystem extends THREE.Object3D {
     return this;
   }
 
+  /** Pauses emission progression without disposing resources. */
   pause(): this {
     this.backend.pause();
     return this;
   }
 
+  /**
+   * Stops emission.
+   *
+   * By default existing particles are cleared immediately (`clear: true`).
+   */
   stop(options?: { clear?: boolean }): this {
     const wasActive = this.backend.isPlaying || this.backend.isAlive;
     this.backend.stop(options);
@@ -87,6 +109,7 @@ export class ParticleSystem extends THREE.Object3D {
     return this;
   }
 
+  /** Clears and starts the system from the beginning. */
   restart(): this {
     this.backend.restart();
     this.completionNotified = false;
@@ -94,16 +117,23 @@ export class ParticleSystem extends THREE.Object3D {
     return this;
   }
 
+  /** Emits `count` particles immediately. */
   emit(count: number): this {
     this.backend.emit(count);
     return this;
   }
 
+  /**
+   * Enables or disables soft-particle depth fading.
+   *
+   * Pass `null` to disable depth-based fading.
+   */
   setSoftParticleDepthTexture(depthTexture: THREE.Texture | null, options?: SoftParticleDepthTextureOptions): this {
     this.backend.setSoftParticleDepthTexture(depthTexture, options);
     return this;
   }
 
+  /** Enables or updates debug gizmo visualization. */
   setDebug(debug: boolean | ParticleDebugOptions | undefined): this {
     const options = resolveDebugOptions(debug);
 
@@ -123,6 +153,7 @@ export class ParticleSystem extends THREE.Object3D {
     return this;
   }
 
+  /** Advances simulation and renderer data by `dt` seconds. */
   update(dt: number, camera: THREE.Camera): void {
     this.backend.update(dt, camera);
     if (this.backend.isComplete && !this.completionNotified) {
@@ -131,6 +162,11 @@ export class ParticleSystem extends THREE.Object3D {
     }
   }
 
+  /**
+   * Disposes particle resources and removes the object from its parent.
+   *
+   * Set `disposeTexture: true` only if this system owns the texture.
+   */
   dispose(options?: { disposeTexture?: boolean }): void {
     if (this.gizmo) {
       this.gizmo.geometry.dispose();
@@ -178,6 +214,11 @@ export class ParticleSystem extends THREE.Object3D {
   }
 }
 
+/**
+ * Applies spawn transform/debug/autoplay options to a system.
+ *
+ * Resets transform to identity first so pooled systems do not keep stale values.
+ */
 export function configureSpawnedSystem(system: ParticleSystem, options: ParticleSpawnOptions): void {
   const systemObject = system as unknown as THREE.Object3D;
   systemObject.position.set(0, 0, 0);

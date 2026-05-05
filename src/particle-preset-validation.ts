@@ -1,12 +1,17 @@
 import type { WebGLRenderer } from "three";
 import type { Curve, Gradient, ParticlePreset, Range } from "./particles";
 
+/** Optional runtime context used to classify preset warnings/fallback behavior. */
 export type ParticlePresetValidationContext = {
+  /** Renderer presence is used to classify GPU eligibility warnings. */
   renderer?: WebGLRenderer;
 };
 
+/** Structured validation output used by non-throwing validation paths. */
 export type ParticlePresetValidationResult = {
+  /** Blocking issues that make the preset invalid. */
   errors: string[];
+  /** Non-blocking caveats and backend capability notes. */
   warnings: string[];
 };
 
@@ -117,6 +122,11 @@ function validateFiniteVec2(path: string, value: unknown): string[] {
   return errors;
 }
 
+/**
+ * Validates a preset and returns all detected errors/warnings.
+ *
+ * This function never throws.
+ */
 export function collectParticlePresetIssues(
   preset: ParticlePreset,
   context: ParticlePresetValidationContext = {}
@@ -551,6 +561,11 @@ export function collectParticlePresetIssues(
   return { errors, warnings };
 }
 
+/**
+ * Validates a preset, logs warnings, and throws on errors.
+ *
+ * Use this when invalid presets should fail fast.
+ */
 export function assertValidParticlePreset(preset: ParticlePreset, context: ParticlePresetValidationContext = {}): void {
   const { errors, warnings } = collectParticlePresetIssues(preset, context);
   const seenWarn = new Set<string>();

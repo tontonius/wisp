@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import type { ParticleSystem } from "./system";
 
+/** Scalar or `[min, max]` random range. Tuple values are sampled uniformly per particle/event. */
 export type Range = number | [number, number];
 export type Vec2Tuple = [number, number];
 export type Vec3Tuple = [number, number, number];
@@ -142,7 +143,9 @@ export type ParticleRendererDispersal = {
 };
 
 export type ParticlePreset = {
+  /** Optional human-readable name for tooling/debug output. */
   name?: string;
+  /** Simulation backend preference (`auto` chooses based on renderer + capacity heuristics). */
   simulation?: SimulationMode;
   /**
    * Coordinate space used for particle simulation.
@@ -152,40 +155,67 @@ export type ParticlePreset = {
   simulationSpace?: SimulationSpace;
   /** Optional explicit bounds. Primarily useful for GPU systems to enable stable frustum culling. */
   bounds?: ParticleBounds;
+  /** Hard cap for concurrently alive particles. Default `1024`. */
   maxParticles?: number;
+  /** Emission duration in seconds before completion checks. Default `1`. */
   duration?: number;
+  /** Repeats emission after each duration window. Default `false`. */
   loop?: boolean;
+  /** Simulates one full duration at startup so first frame is already populated. */
   prewarm?: boolean;
+  /** When true (default), complete one-shot systems are disposed or pooled by `ParticleWorld`. */
   autoDispose?: boolean;
+  /** Lifecycle callbacks for system and particle events. */
   callbacks?: ParticleLifecycleCallbacks;
+  /** Per-system debug gizmo settings. */
   debug?: boolean | ParticleDebugOptions;
 
+  /** GPU backend tuning and fallback controls. */
   gpu?: {
+    /** Side length of simulation texture grid. Must satisfy `textureSize^2 >= maxParticles`. */
     textureSize?: number;
+    /** Safety cap on how many particles can be spawned in a single frame. */
     maxSpawnPerFrame?: number;
+    /** Forces CPU backend even if other GPU conditions are satisfied. */
     forceCpuFallback?: boolean;
   };
 
+  /** Emitter shape and local spawn volume configuration. */
   emitter?: EmitterShape;
 
+  /** Continuous rate and burst-based emission settings. */
   emission?: {
+    /** Particles per second. Number or min/max range. */
     rateOverTime?: Range;
+    /** Optional scheduled burst list. */
     bursts?: Array<{ time: number; count: Range; probability?: number }>;
   };
 
+  /** Initial particle values sampled at spawn time. */
   start?: {
+    /** Lifetime in seconds. Default `1`. */
     lifetime?: Range;
+    /** Initial speed magnitude in units/second. Default `1`. */
     speed?: Range;
+    /** Initial uniform billboard size in world units. Default `1`. */
     size?: Range;
+    /** Initial billboard rotation in radians. */
     rotation?: Range;
+    /** Initial spin velocity in radians/second. */
     angularVelocity?: Range;
+    /** Constant color or random color sampled between two endpoints. */
     color?: THREE.ColorRepresentation | [THREE.ColorRepresentation, THREE.ColorRepresentation];
+    /** Initial alpha/opacity multiplier in `[0, 1]`. */
     opacity?: Range;
+    /** Initial 3D velocity vector or random vector range `[minVec3, maxVec3]`. */
     velocity?: Vec3Range;
   };
 
+  /** Continuous accelerations and secondary motion forces. */
   forces?: {
+    /** Constant acceleration in simulation space, e.g. gravity `[0, -9.81, 0]`. */
     acceleration?: Vec3Tuple;
+    /** Velocity damping coefficient. Higher values remove speed faster. */
     drag?: number;
     vortex?: {
       /** Center of rotation in simulation space. */
@@ -200,7 +230,9 @@ export type ParticlePreset = {
       upward?: number;
     };
     noise?: {
+      /** Base acceleration amplitude from procedural noise. */
       strength?: number;
+      /** Spatial frequency of noise sampling. */
       frequency?: number;
       /** World-space advection speed for the noise field. */
       scroll?: Vec3Tuple;
@@ -261,15 +293,23 @@ export type ParticlePreset = {
   lifetimeByEmitterSpeed?: LifetimeByEmitterSpeed;
 
   overLifetime?: {
+    /** Multiplier curve for size by normalized age `0..1`. */
     size?: Curve;
+    /** Multiplier curve for opacity by normalized age `0..1`. */
     opacity?: Curve;
+    /** Color gradient by normalized age `0..1`. */
     color?: Gradient;
   };
 
+  /** Billboard rendering configuration. */
   renderer?: {
+    /** Particle renderer primitive style. */
     type?: RendererType;
+    /** Optional billboard texture. Omit for a default soft circular sprite. */
     texture?: THREE.Texture;
+    /** Material blending mode. */
     blendMode?: BlendMode;
+    /** Billboard alignment to camera-facing or velocity-facing. */
     align?: AlignMode;
     /** Only used by `renderer.type: "stretchedBillboard"`. Multiplies elongation by particle speed. Default `0.35`. */
     stretchFactor?: number;
@@ -284,15 +324,20 @@ export type ParticlePreset = {
      * Ignored on the GPU backend.
      */
     sorting?: SortMode;
+    /** Writes depth buffer. Keep `false` for most translucent effects. */
     depthWrite?: boolean;
+    /** Tests against depth buffer. Disable for always-on-top effects. */
     depthTest?: boolean;
     /** Enables depth-based edge fading when a scene depth texture is provided via `ParticleSystem.setSoftParticleDepthTexture(...)`. */
     softParticles?: boolean;
     /** Soft-particle fade strength multiplier. Higher values fade out faster near geometry intersections. Default `1.5`. */
     softness?: number;
     textureSheet?: {
+      /** Frame columns in atlas. */
       columns: number;
+      /** Frame rows in atlas. */
       rows: number;
+      /** Animation selection mode over particle lifetime. */
       animationMode?: TextureSheetAnimationMode;
     };
     /** Optional noise- or texture-driven dissolve of billboard alpha over lifetime. */
@@ -300,7 +345,9 @@ export type ParticlePreset = {
   };
 };
 
+/** Options used when constructing an individual `ParticleSystem`. */
 export type ParticleSystemOptions = {
+  /** Renderer required for GPU simulation and shared soft-particle data setup. */
   renderer?: THREE.WebGLRenderer;
 };
 
@@ -319,12 +366,19 @@ export type ParticleWorldOptions = {
 };
 
 export type ParticleSpawnOptions = {
+  /** Spawn position in parent local space. Defaults to `[0, 0, 0]`. */
   position?: THREE.Vector3 | Vec3Tuple;
+  /** Spawn Euler rotation in parent local space. */
   rotation?: THREE.Euler;
+  /** Spawn quaternion in parent local space. Applied after rotation when both are provided. */
   quaternion?: THREE.Quaternion;
+  /** Uniform scale factor. Defaults to `1`. */
   scale?: number;
+  /** Parent object receiving the spawned system. */
   parent?: THREE.Object3D;
+  /** Starts playback immediately after spawn. Default `true`. */
   autoPlay?: boolean;
+  /** Per-spawn debug override. */
   debug?: boolean | ParticleDebugOptions;
 };
 
@@ -343,11 +397,17 @@ export type ParticleSnapshot = {
 };
 
 export type ParticleLifecycleCallbacks = {
+  /** Fired when system starts playing. */
   onStart?: (system: ParticleSystem) => void;
+  /** Fired when `stop()` transitions a playing/alive system to stopped. */
   onStop?: (system: ParticleSystem) => void;
+  /** Fired once when a one-shot system first reaches completion. */
   onComplete?: (system: ParticleSystem) => void;
+  /** CPU backend only: fired when a particle is spawned. */
   onParticleBirth?: (particle: ParticleSnapshot, system: ParticleSystem) => void;
+  /** CPU backend only: fired when a particle dies. */
   onParticleDeath?: (particle: ParticleSnapshot, system: ParticleSystem) => void;
+  /** CPU backend only: fired when a particle collision event occurs. */
   onParticleCollision?: (particle: ParticleSnapshot, system: ParticleSystem) => void;
 };
 

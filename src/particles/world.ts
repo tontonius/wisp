@@ -2,6 +2,7 @@ import * as THREE from "three";
 import type { ParticleDebugOptions, ParticlePreset, ParticleSnapshot, ParticleSpawnOptions, ParticleWorldOptions } from "./types";
 import { ParticleSystem, configureSpawnedSystem } from "./system";
 
+/** Registry of named presets that can spawn `ParticleSystem` instances. */
 export class ParticleEffectLibrary {
   private presets = new Map<string, ParticlePreset>();
   private defaultParent?: THREE.Object3D;
@@ -13,15 +14,22 @@ export class ParticleEffectLibrary {
     Object.entries(presets).forEach(([name, preset]) => this.register(name, preset));
   }
 
+  /** Registers or replaces a preset by name. */
   register(name: string, preset: ParticlePreset): this {
     this.presets.set(name, { ...preset, name });
     return this;
   }
 
+  /** Returns a registered preset, if present. */
   get(name: string): ParticlePreset | undefined {
     return this.presets.get(name);
   }
 
+  /**
+   * Spawns a new system from a registered preset.
+   *
+   * Throws if `name` is unknown.
+   */
   spawn(
     name: string,
     options: ParticleSpawnOptions & { renderer?: THREE.WebGLRenderer } = {}
@@ -39,6 +47,11 @@ export class ParticleEffectLibrary {
   }
 }
 
+/**
+ * High-level particle manager with optional system pooling and sub-emitter orchestration.
+ *
+ * `spawn`/`update` are the main runtime methods for game loops.
+ */
 export class ParticleWorld {
   readonly effects: ParticleEffectLibrary;
   readonly systems = new Set<ParticleSystem>();
@@ -214,12 +227,18 @@ export class ParticleWorld {
     return worldPosition;
   }
 
+  /** Registers or replaces a world preset and clears inactive pool for that name. */
   register(name: string, preset: ParticlePreset): this {
     this.effects.register(name, preset);
     this.disposePoolForEffect(name);
     return this;
   }
 
+  /**
+   * Pre-allocates pooled systems for an effect.
+   *
+   * Requires pooling to be enabled and `count` to be an integer >= 1.
+   */
   preload(name: string, count: number): this {
     if (!Number.isInteger(count) || count < 1) {
       throw new Error(`ParticleWorld.preload("${name}", count): count must be an integer >= 1.`);
@@ -246,16 +265,23 @@ export class ParticleWorld {
     return this;
   }
 
+  /** Spawns an effect by name, optionally overriding transform/debug/renderer settings. */
   spawn(name: string, options: Parameters<ParticleEffectLibrary["spawn"]>[1] = {}): ParticleSystem {
     return this.spawnInternal(name, options, 0);
   }
 
+  /** Sets default debug behavior for active and future spawned systems. */
   setDebug(debug: boolean | ParticleDebugOptions): this {
     this.debug = debug;
     for (const system of this.systems) system.setDebug(debug);
     return this;
   }
 
+  /**
+   * Advances all tracked systems by `dt` seconds.
+   *
+   * Completed one-shot systems are auto-disposed or returned to the pool.
+   */
   update(dt: number, camera: THREE.Camera): void {
     for (const system of [...this.systems]) {
       if (system.isDisposed) {
@@ -278,6 +304,7 @@ export class ParticleWorld {
     }
   }
 
+  /** Disposes all active and pooled systems and empties world state. */
   clear(): void {
     for (const system of this.systems) system.dispose();
     this.systems.clear();

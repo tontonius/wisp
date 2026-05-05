@@ -13,6 +13,14 @@ Wisp currently exposes two core modules:
 - camera effects (`Wisp`, `WispCamera`, `CameraEffectsSystem`, `CameraShakeController`)
 - particles (`ParticleWorld`, `ParticleEffectLibrary`, `ParticleSystem`, and particle types/utilities)
 
+## IntelliSense Contract
+
+Public symbols are documented in source with JSDoc/TSDoc so generated declaration files carry parameter help into consumer projects.
+
+- Hover/signature help in editors should surface defaults, units, and behavior caveats for exported APIs.
+- Runtime behavior remains source-of-truth; docs here and in type hovers are kept aligned.
+- Internal/private members are intentionally not documented as part of this contract.
+
 ## Exported Classes
 
 ### `Wisp`
