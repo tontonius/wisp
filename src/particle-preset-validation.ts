@@ -457,6 +457,29 @@ export function collectParticlePresetIssues(
     }
   }
 
+  const iv = preset.inheritVelocity;
+  if (iv !== undefined) {
+    if (typeof iv !== "object" || iv === null) {
+      errors.push("inheritVelocity: must be an object when set.");
+    } else {
+      errors.push(...validateFiniteRange("inheritVelocity.factor", iv.factor));
+    }
+  }
+
+  const lbs = preset.lifetimeByEmitterSpeed;
+  if (lbs !== undefined) {
+    if (typeof lbs !== "object" || lbs === null) {
+      errors.push("lifetimeByEmitterSpeed: must be an object when set.");
+    } else {
+      errors.push(...validateSpeedRange("lifetimeByEmitterSpeed.speedRange", lbs.speedRange));
+      errors.push(...validateFiniteRange("lifetimeByEmitterSpeed.lifetimeRange", lbs.lifetimeRange));
+      const [, lifeMax] = rangeBounds(lbs.lifetimeRange, 1);
+      if (isFiniteNumber(lifeMax) && lifeMax <= 0) {
+        errors.push("lifetimeByEmitterSpeed.lifetimeRange: upper bound must be > 0.");
+      }
+    }
+  }
+
   const bursts = preset.emission?.bursts;
   if (bursts) {
     bursts.forEach((b, i) => {
@@ -511,6 +534,12 @@ export function collectParticlePresetIssues(
   }
   if (presetWouldUseGpu(preset, renderer) && preset.limitVelocityOverLifetime?.speed) {
     warnings.push('limitVelocityOverLifetime is CPU-only for now; the GPU backend ignores it. Use simulation "cpu" or "auto" with a CPU configuration.');
+  }
+  if (presetWouldUseGpu(preset, renderer) && preset.inheritVelocity?.factor !== undefined) {
+    warnings.push('inheritVelocity is CPU-only for now; the GPU backend ignores it. Use simulation "cpu" or "auto" with a CPU configuration.');
+  }
+  if (presetWouldUseGpu(preset, renderer) && preset.lifetimeByEmitterSpeed) {
+    warnings.push('lifetimeByEmitterSpeed is CPU-only for now; the GPU backend ignores it. Use simulation "cpu" or "auto" with a CPU configuration.');
   }
 
   return { errors, warnings };

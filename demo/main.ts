@@ -756,6 +756,19 @@ let orbitingEmitterDemo:
       height: number;
     }
   | undefined;
+let dashTrailEmitterDemo:
+  | {
+      system: ParticleSystem;
+      center: THREE.Vector3;
+      y: number;
+      z: number;
+      leftX: number;
+      rightX: number;
+      elapsed: number;
+      dashDuration: number;
+      pauseDuration: number;
+    }
+  | undefined;
 
 function refreshCustomPreset() {
   particles.register("customEffect", makeCustomPreset());
@@ -809,6 +822,28 @@ function spawnEffect(name: DemoEffectName, position: THREE.Vector3 | [number, nu
       speed: 0.65,
       height: Math.max(0.35, spawnPosition.y + 0.7),
     };
+    return;
+  }
+  if (name === "dashTrailEmitterDemo") {
+    if (dashTrailEmitterDemo) {
+      dashTrailEmitterDemo.system.dispose();
+      particles.systems.delete(dashTrailEmitterDemo.system);
+      dashTrailEmitterDemo = undefined;
+    }
+    const system = particles.spawn(name, { position: spawnPosition });
+    const y = Math.max(0.42, spawnPosition.y + 0.65);
+    dashTrailEmitterDemo = {
+      system,
+      center: spawnPosition.clone(),
+      y,
+      z: spawnPosition.z,
+      leftX: spawnPosition.x - 3.9,
+      rightX: spawnPosition.x + 3.9,
+      elapsed: 0,
+      dashDuration: 0.5,
+      pauseDuration: 0.5,
+    };
+    (system as unknown as THREE.Object3D).position.set(dashTrailEmitterDemo.leftX, y, dashTrailEmitterDemo.z);
     return;
   }
 
@@ -1133,6 +1168,7 @@ bind(controlsFolder, "clickEffect", {
     Tornado: "tornadoDemo",
     "Autumn leaves (CPU billboard)": "autumnLeaves",
     "Orbiting emitter (world space)": "orbitingEmitterWorldDemo",
+    "Dash trail emitter (CPU world)": "dashTrailEmitterDemo",
     "Rain GPU": "rainGpu",
     "Snow GPU": "snowGpu",
     "Magic aura GPU": "magicAuraGpu",
@@ -1150,6 +1186,7 @@ controlsFolder.addButton({ title: "Clear systems" }).on("click", () => {
   particles.clear();
   loopPreview = undefined;
   orbitingEmitterDemo = undefined;
+  dashTrailEmitterDemo = undefined;
 });
 controlsFolder.addButton({ title: "Copy preset code" }).on("click", () => {
   copyText(makePresetCode())
@@ -1392,6 +1429,11 @@ window.addEventListener(
 );
 const clock = new THREE.Clock();
 
+function easeOutCubic01(t: number): number {
+  const u = 1 - THREE.MathUtils.clamp(t, 0, 1);
+  return 1 - u * u * u;
+}
+
 function animate() {
   requestAnimationFrame(animate);
   fpsGraph.begin();
@@ -1407,6 +1449,30 @@ function animate() {
       const x = orbitingEmitterDemo.center.x + Math.cos(orbitingEmitterDemo.angle) * orbitingEmitterDemo.radius;
       const z = orbitingEmitterDemo.center.z + Math.sin(orbitingEmitterDemo.angle) * orbitingEmitterDemo.radius;
       (orbitingEmitterDemo.system as unknown as THREE.Object3D).position.set(x, orbitingEmitterDemo.height, z);
+    }
+  }
+  if (dashTrailEmitterDemo) {
+    if (dashTrailEmitterDemo.system.isDisposed) {
+      dashTrailEmitterDemo = undefined;
+    } else {
+      const demo = dashTrailEmitterDemo;
+      const leg = demo.dashDuration + demo.pauseDuration;
+      const cycle = leg * 2;
+      demo.elapsed = (demo.elapsed + dt) % cycle;
+      const phase = demo.elapsed;
+      let x = demo.leftX;
+      if (phase < demo.dashDuration) {
+        const t = easeOutCubic01(phase / demo.dashDuration);
+        x = THREE.MathUtils.lerp(demo.leftX, demo.rightX, t);
+      } else if (phase < leg) {
+        x = demo.rightX;
+      } else if (phase < leg + demo.dashDuration) {
+        const t = easeOutCubic01((phase - leg) / demo.dashDuration);
+        x = THREE.MathUtils.lerp(demo.rightX, demo.leftX, t);
+      } else {
+        x = demo.leftX;
+      }
+      (demo.system as unknown as THREE.Object3D).position.set(x, demo.y, demo.z);
     }
   }
   updateCameraOrbit();

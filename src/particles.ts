@@ -48,6 +48,17 @@ export type RotationBySpeed = {
   angularVelocity: Curve;
 };
 
+/** Add a fraction of emitter motion to spawned particle velocity. CPU-only for now. */
+export type InheritVelocity = {
+  factor: Range;
+};
+
+/** Remap emitter speed at spawn into a particle lifetime range. CPU-only for now. */
+export type LifetimeByEmitterSpeed = {
+  speedRange: SpeedRemapRange;
+  lifetimeRange: Range;
+};
+
 export type EmitterShape =
   | { type: "point" }
   | { type: "sphere"; radius?: number; emitFrom?: "volume" | "shell" }
@@ -238,6 +249,15 @@ export type ParticlePreset = {
    * Drive spin rate from current speed (rad/s). When set, replaces the spawned `start.angularVelocity` each frame. CPU and GPU.
    */
   rotationBySpeed?: RotationBySpeed;
+
+  /** CPU backend only for now. Adds `emitterVelocity * factor` to spawned velocity. */
+  inheritVelocity?: InheritVelocity;
+
+  /**
+   * CPU backend only for now. Overrides spawn lifetime by remapping emitter speed into `lifetimeRange`.
+   * Sampled once at spawn.
+   */
+  lifetimeByEmitterSpeed?: LifetimeByEmitterSpeed;
 
   overLifetime?: {
     size?: Curve;
@@ -1056,6 +1076,9 @@ class CPUParticleBackend implements ParticleBackend {
   private simulationSpace: SimulationSpace;
   private sortIndices: number[];
   private sortKeys: Float32Array;
+  private emitterVelocity = new THREE.Vector3();
+  private lastEmitterWorldPosition = new THREE.Vector3();
+  private hasLastEmitterWorldPosition = false;
 
   constructor(private preset: ParticlePreset, private backendOptions: ParticleBackendOptions = {}) {
     this.maxParticles = preset.maxParticles ?? 256;
@@ -1174,6 +1197,7 @@ class CPUParticleBackend implements ParticleBackend {
 
     if (this.playing) {
       this._elapsed += dt;
+      this.updateEmitterVelocity(dt);
 
       if (loop && this._elapsed > duration) {
         this._elapsed %= duration;
@@ -1273,8 +1297,12 @@ class CPUParticleBackend implements ParticleBackend {
     this._aliveCount++;
     particle.position.copy(sample.position);
     particle.age = 0;
-    particle.lifetime = Math.max(0.01, randomRange(start.lifetime ?? 1));
+    particle.lifetime = Math.max(0.01, this.resolveSpawnLifetime(start));
     particle.velocity.copy(sample.direction).multiplyScalar(randomRange(start.speed ?? 1)).add(randomVec3(start.velocity ?? [0, 0, 0]));
+    const inheritVelocity = this.preset.inheritVelocity;
+    if (inheritVelocity?.factor !== undefined) {
+      particle.velocity.addScaledVector(this.emitterVelocity, randomRange(inheritVelocity.factor));
+    }
     particle.startSize = randomRange(start.size ?? 0.2);
     particle.startOpacity = randomRange(start.opacity ?? 1);
     particle.startColor.copy(randomColor(start.color ?? "#ffffff"));
@@ -1293,6 +1321,34 @@ class CPUParticleBackend implements ParticleBackend {
     }
 
     this.backendOptions.onParticleBirth?.(particle);
+  }
+
+  private resolveSpawnLifetime(start: NonNullable<ParticlePreset["start"]>): number {
+    const baseLifetime = randomRange(start.lifetime ?? 1);
+    const lbs = this.preset.lifetimeByEmitterSpeed;
+    if (!lbs) return baseLifetime;
+    const emitterSpeed = this.emitterVelocity.length();
+    const t = speedToParam(emitterSpeed, lbs.speedRange);
+    const [lifeMin, lifeMax] = rangeMinMax(lbs.lifetimeRange, baseLifetime);
+    return THREE.MathUtils.lerp(lifeMin, lifeMax, t);
+  }
+
+  private updateEmitterVelocity(dt: number): void {
+    if (dt <= 0) return;
+    this.object.updateWorldMatrix(true, false);
+    tempVectorA.setFromMatrixPosition(this.object.matrixWorld);
+    if (!this.hasLastEmitterWorldPosition) {
+      this.lastEmitterWorldPosition.copy(tempVectorA);
+      this.emitterVelocity.set(0, 0, 0);
+      this.hasLastEmitterWorldPosition = true;
+      return;
+    }
+    this.emitterVelocity.copy(tempVectorA).sub(this.lastEmitterWorldPosition).multiplyScalar(1 / dt);
+    if (this.simulationSpace === "local") {
+      tempMatrixA.copy(this.object.matrixWorld).setPosition(0, 0, 0).invert();
+      this.emitterVelocity.applyMatrix4(tempMatrixA);
+    }
+    this.lastEmitterWorldPosition.copy(tempVectorA);
   }
 
   private updateParticles(dt: number): void {

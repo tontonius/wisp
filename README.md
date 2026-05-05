@@ -12,6 +12,7 @@ It is designed for game effects where the developer ergonomics matter more than 
 - Point, sphere, hemisphere, cone, and box emitters
 - Local-space or world-space simulation (`simulationSpace`)
 - Continuous emission and burst emission
+- Optional emitter-motion modules (`inheritVelocity`, `lifetimeByEmitterSpeed`)
 - Size, opacity, and colour over lifetime
 - Optional speed-driven colour, size multiplier, and spin (`colorBySpeed`, `sizeBySpeed`, `rotationBySpeed`)
 - Constant acceleration vector, drag, vortex, and coherent noise force

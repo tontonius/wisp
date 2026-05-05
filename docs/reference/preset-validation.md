@@ -82,6 +82,8 @@ Pass the same renderer you pass into `ParticleSystemOptions` so validation can w
 | `colorBySpeed` | When set: object with finite `speedRange` `[min, max]` where `max >= min`, and non-empty `gradient` passing gradient rules. |
 | `sizeBySpeed` | When set: object with valid `speedRange`, and non-empty `curve` passing curve rules. |
 | `rotationBySpeed` | When set: object with valid `speedRange`, and non-empty `angularVelocity` curve passing curve rules. |
+| `inheritVelocity` | When set: object with finite `factor` range/scalar. |
+| `lifetimeByEmitterSpeed` | When set: object with valid `speedRange`, finite `lifetimeRange`, and resolved lifetime upper bound `> 0`. |
 | `emission.bursts` | Each burst: finite `time >= 0`, valid `count` range, optional `probability` in `[0, 1]`. |
 | `emission.rateOverTime` | If set, must be a finite scalar or finite tuple. |
 | `collision` | If set with `simulation: "gpu"`, invalid (CPU-only). Otherwise `collision.type` must be `"plane"`, `"sphere"`, or `"box"` with primitive-specific finite fields (`plane.y`, `sphere.center`/`radius`, `box.center`/`size`) and optional `bounce` / `dampening` finite and `>= 0`. |
@@ -101,6 +103,8 @@ Pass the same renderer you pass into `ParticleSystemOptions` so validation can w
 | `simulation: "auto"`, `collision` set, renderer present, and `maxParticles >= 2048` | Auto would pick GPU at that capacity, but collision forces CPU. |
 | Resolved GPU path and `renderer.sorting` set to anything other than `"none"` | Sorting is CPU-only; the GPU backend ignores it. |
 | Resolved GPU path and `limitVelocityOverLifetime.speed` set | Limit-velocity-over-lifetime is CPU-only for now; the GPU backend ignores it. |
+| Resolved GPU path and `inheritVelocity` set | Inherit-velocity is CPU-only for now; the GPU backend ignores it. |
+| Resolved GPU path and `lifetimeByEmitterSpeed` set | Lifetime-by-emitter-speed is CPU-only for now; the GPU backend ignores it. |
 
 ## See Also
 

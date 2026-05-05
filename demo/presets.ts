@@ -26,6 +26,7 @@ export type DemoEffectName =
   | "gpuMagicStorm"
   | "candyVortex"
   | "speedVisualDemo"
+  | "dashTrailEmitterDemo"
   | "customEffect"
   | "explosionCombo"
   | "blueFlameDispersal"
@@ -336,6 +337,72 @@ export function createDemoPresets(textures: DemoPresetTextures): {
       color: [[0, "#2a2d33"], [0.25, "#a99c8c"], [1, "#ffffff"]],
     },
     renderer: { texture: softDisc, blendMode: "alpha", depthWrite: false, depthTest: true },
+  };
+
+  const dashTrailEmitterDemo: ParticlePreset = {
+    simulation: "cpu",
+    simulationSpace: "world",
+    maxParticles: 840,
+    duration: 4,
+    loop: true,
+    prewarm: false,
+    autoDispose: false,
+    emitter: { type: "point" },
+    emission: { rateOverTime: 100 },
+    start: {
+      lifetime: [0.16, 0.52],
+      speed: [0.05, 0.35],
+      size: [0.8, 1],
+      color: "#ffffff",
+      opacity: [1, 1],
+      velocity: [[-0.09, -0.03, -0.09], [0.09, 0.16, 0.09]],
+      rotation: [0, Math.PI * 2],
+      angularVelocity: [-1.2, 1.2],
+    },
+    forces: {
+      acceleration: [0, 0.2, 0],
+      drag: 2.4,
+      noise: { strength: 0.12, frequency: 2.8 },
+    },
+    overLifetime: {
+      size: [[0, 0], [0.08, 1], [1, 0.5]],
+    },
+    
+    inheritVelocity: { factor: [0.2, 0.3] },
+    lifetimeByEmitterSpeed: {
+      speedRange: [0, 11],
+      lifetimeRange: [0.0, 0.9],
+    },
+
+    colorBySpeed: {
+      speedRange: [0, 11],
+      gradient: [
+        [0, "#9de8ff"],
+        [0.7, "#f4fbff"],
+        [1, "#ffffff"],
+      ],
+    },
+
+    renderer: {
+      texture: bb?.smokePuffsSheet2x1 ?? softDisc,
+      dispersal: {
+        strength: 1,
+        noiseScale: 5,
+        edgeSoftness: 0.01,
+        scroll: [0.03, 0.02],
+        amount: [
+          [0, 0],
+          [0.55, 0],
+          [1, 1],
+        ],
+      },
+      blendMode: "alpha",
+      align: "camera",
+      depthWrite: false,
+      softParticles: true,
+      softness: 1.35,
+      ...(bb ? { textureSheet: { columns: 2, rows: 1, randomFrame: true } } : {}),
+    },
   };
 
   const floorBounceDemo: ParticlePreset = {
@@ -1415,6 +1482,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
     magicAura,
     tornadoDemo,
     orbitingEmitterWorldDemo,
+    dashTrailEmitterDemo,
     shockwave,
     shockwaveCenterExplosion,
     shockwaveSunburst,
@@ -1447,6 +1515,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
     magicAura,
     tornadoDemo,
     orbitingEmitterWorldDemo,
+    dashTrailEmitterDemo,
     shockwave,
     gpuMagicStorm,
     speedVisualDemo,

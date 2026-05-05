@@ -51,6 +51,19 @@ On spawn:
 velocity = emitterDirection * start.speed + start.velocity
 ```
 
+If `inheritVelocity` is set, spawn velocity additionally includes emitter motion:
+
+```ts
+velocity += emitterVelocity * inheritVelocity.factor
+```
+
+If `lifetimeByEmitterSpeed` is set, spawn lifetime is remapped from emitter speed and overrides `start.lifetime`:
+
+```ts
+t = remap(|emitterVelocity|, speedRange)
+lifetime = lerp(lifetimeRange[0], lifetimeRange[1], t)
+```
+
 If no dead slot exists, the spawn is skipped.
 
 Simulation-space notes:

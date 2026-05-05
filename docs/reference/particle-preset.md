@@ -29,6 +29,8 @@ type ParticlePreset = {
   colorBySpeed?: ColorBySpeed;
   sizeBySpeed?: SizeBySpeed;
   rotationBySpeed?: RotationBySpeed;
+  inheritVelocity?: InheritVelocity;
+  lifetimeByEmitterSpeed?: LifetimeByEmitterSpeed;
   overLifetime?: { ... };
   renderer?: { ... };
 };
@@ -63,6 +65,8 @@ type ParticlePreset = {
 | `colorBySpeed` | `ColorBySpeed` | `undefined` | RGB tint from simulation speed magnitude; see [Speed-driven modules](speed-driven.md). |
 | `sizeBySpeed` | `SizeBySpeed` | `undefined` | Size multiplier from simulation speed magnitude; see [Speed-driven modules](speed-driven.md). |
 | `rotationBySpeed` | `RotationBySpeed` | `undefined` | Angular velocity from simulation speed magnitude; see [Speed-driven modules](speed-driven.md). |
+| `inheritVelocity` | `InheritVelocity` | `undefined` | CPU-only spawn velocity inheritance from emitter motion. |
+| `lifetimeByEmitterSpeed` | `LifetimeByEmitterSpeed` | `undefined` | CPU-only spawn lifetime remap from emitter speed. |
 | `overLifetime` | Object | Multipliers/color default to neutral values | Size, opacity, and color curves. |
 | `renderer` | Object | Default soft particle material | Type, texture, blend, alignment, depth, stretch settings, and texture sheet settings. |
 
@@ -159,6 +163,24 @@ limitVelocityOverLifetime?: {
 - `speed` is a max-speed curve sampled by normalized age (`0..1`).
 - `dampen` is blend strength toward the capped velocity (`0..1`, default `1`).
 - For a constant cap, use a flat curve such as `[[0, 4], [1, 4]]`.
+
+## Emitter Motion Modules
+
+```ts
+inheritVelocity?: {
+  factor: number | [number, number];
+};
+
+lifetimeByEmitterSpeed?: {
+  speedRange: [number, number];
+  lifetimeRange: number | [number, number];
+};
+```
+
+- CPU-only in the current release.
+- `inheritVelocity.factor` adds `emitterVelocity * factor` to each spawned particle.
+- `lifetimeByEmitterSpeed` samples emitter speed at spawn time, maps it through `speedRange`, then linearly remaps into `lifetimeRange`.
+- `lifetimeByEmitterSpeed` overrides `start.lifetime` when set.
 
 ## Renderer Options
 
