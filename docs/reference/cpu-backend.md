@@ -83,11 +83,11 @@ Per live particle:
 6. Evaluate velocity over lifetime.
 7. Integrate position.
 8. If `collision` is set, resolve penetration against the configured primitive (`plane`, `sphere`, or `box`) with bounce/dampening or `killOnCollision`.
-9. If `subEmitters.onCollision` is set and the system is managed by `ParticleWorld`, spawn that named effect at collision positions.
-10. If `subEmitters.onDeath` is set and the system is managed by `ParticleWorld`, spawn that named effect at particle death positions.
+9. If `subEmitters.onCollision` is set and the system is managed by a `ParticleManager`, spawn that named effect at collision positions.
+10. If `subEmitters.onDeath` is set and the system is managed by a `ParticleManager`, spawn that named effect at particle death positions.
 11. Integrate rotation (if `rotationBySpeed` is set, angular velocity comes from that curve each frame instead of the spawned `start.angularVelocity`).
 
-During spawn, if `subEmitters.onBirth` is set and the system is managed by `ParticleWorld`, that named child effect is spawned at each CPU particle birth position.
+During spawn, if `subEmitters.onBirth` is set and the system is managed by a `ParticleManager`, that named child effect is spawned at each CPU particle birth position.
 
 Speed-driven tint and size (`colorBySpeed`, `sizeBySpeed`) are applied when building billboard vertices from current simulation velocity. See [Speed-driven modules](speed-driven.md).
 
@@ -143,7 +143,7 @@ subEmitters?: {
 ```
 
 - CPU-only.
-- `onBirth`, `onDeath`, and `onCollision` are named effects looked up in `ParticleWorld.effects`.
+- `onBirth`, `onDeath`, and `onCollision` are named effects looked up in `ParticleManager.effects`.
 - Trigger source:
   - `onBirth`: when a CPU particle is spawned.
   - `onDeath`: every CPU particle death (lifetime expiry or `killOnCollision`).
@@ -152,7 +152,7 @@ subEmitters?: {
   - `onBirth`: spawned particle position in world space.
   - `onDeath`: particle death position in world space.
   - `onCollision`: collision-resolved position in world space.
-- Triggering requires systems spawned through `ParticleWorld` (standalone `ParticleSystem` does not resolve named child effects).
+- Triggering requires systems spawned through `ParticleManager` (standalone `ParticleSystem` does not resolve named child effects).
 - GPU presets must not set `subEmitters`; validation rejects `simulation: "gpu"` with `subEmitters`.
 
 ## Geometry Behavior

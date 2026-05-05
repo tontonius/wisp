@@ -33,7 +33,7 @@ Particle module:
 - Texture support
 - Texture-sheet / flipbook UV support
 - JSON-style presets
-- `ParticleWorld` manager with auto-cleanup
+- `Wisp` particle manager with auto-cleanup
 
 General:
 
@@ -413,19 +413,22 @@ const preset: ParticlePreset = {
 };
 ```
 
-### `ParticleWorld`
+### `Wisp` particles module
 
-The easiest way to use the system in a game.
+Recommended way to use particles in a game.
 
 ```ts
-const particles = new ParticleWorld(scene, {
-  muzzleFlash,
-  smokePuff,
-  explosion,
-}, { renderer });
+const wisp = new Wisp({
+  scene,
+  camera,
+  particles: {
+    presets: { muzzleFlash, smokePuff, explosion },
+    renderer,
+  },
+});
 
-particles.spawn("muzzleFlash", { position: gunTip });
-particles.update(dt, camera);
+wisp.particles?.spawn("muzzleFlash", { position: gunTip });
+wisp.update(dt);
 ```
 
 One-shot systems auto-dispose by default when complete.

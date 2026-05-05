@@ -8,7 +8,7 @@ Wisp
   │    └─ CameraEffectsSystem
   │         └─ CameraShakeController
   └─ particles module
-       └─ ParticleWorld
+       └─ ParticleManager
             └─ ParticleEffectLibrary
                  └─ ParticleSystem
                       ├─ CPU backend
@@ -26,7 +26,7 @@ Wisp
 ### Particles module
 
 - Preset-driven particle authoring for gameplay and visual effects.
-- Exposes `ParticleWorld`, `ParticleEffectLibrary`, and `ParticleSystem`.
+- Exposes `ParticleManager`, `ParticleEffectLibrary`, and `ParticleSystem`.
 - Supports CPU/GPU backend selection under a shared authoring shape.
 
 ## Preset-Driven Authoring (Particles)
@@ -45,19 +45,19 @@ The preset is the authoring contract. Both CPU and GPU backends read the same sh
 
 ## Runtime Objects (Particles)
 
-`ParticleWorld` is the game-facing manager:
+`ParticleManager` is the game-facing manager:
 
 - Owns a named effect registry.
 - Spawns effects by name.
 - Tracks live systems.
 - Updates all systems.
-- Auto-disposes completed one-shots, or optionally resets them into an inactive pool when `ParticleWorldOptions.pooling` is enabled.
+- Auto-disposes completed one-shots, or optionally resets them into an inactive pool when `ParticleManagerOptions.pooling` is enabled.
 
 `ParticleEffectLibrary` is the lower-level registry:
 
 - Registers presets.
 - Retrieves presets.
-- Spawns a `ParticleSystem` from a name (always allocates; does not use `ParticleWorld` pooling).
+- Spawns a `ParticleSystem` from a name (always allocates; does not use manager pooling).
 
 `ParticleSystem` is a live effect:
 

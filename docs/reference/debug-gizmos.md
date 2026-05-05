@@ -71,7 +71,7 @@ particles.setDebug({
 });
 ```
 
-`ParticleWorld.setDebug` applies settings to currently tracked systems and stores the setting as the default for later spawns.
+`wisp.particles.setDebug` applies settings to currently tracked systems and stores the setting as the default for later spawns.
 
 ## Shape Coverage
 

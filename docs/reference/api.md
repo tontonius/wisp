@@ -11,7 +11,7 @@ export * from "./wisp";
 Wisp currently exposes three core areas:
 
 - camera effects (`Wisp`, `WispCamera`, `CameraEffectsSystem`, `CameraShakeController`)
-- particles (`ParticleWorld`, `ParticleEffectLibrary`, `ParticleSystem`, and particle types/utilities)
+- particles (`ParticleManager`, `ParticleEffectLibrary`, `ParticleSystem`, and particle types/utilities)
 - starter content (`createStarterTextures`, `createStarterPresets`, `createStarterKit`, `starterBillboardUrls`)
 
 ## IntelliSense Contract
@@ -59,7 +59,7 @@ Methods:
 class WispParticles
 ```
 
-Facade wrapper around `ParticleWorld` under `wisp.particles`.
+Facade wrapper around the internal particle manager under `wisp.particles`.
 
 Fields:
 
@@ -244,7 +244,7 @@ Constructor:
 new ParticleEffectLibrary(
   presets?: Record<string, ParticlePreset>,
   defaultParent?: THREE.Object3D,
-  options?: ParticleWorldOptions
+  options?: ParticleManagerOptions
 )
 ```
 
@@ -276,17 +276,17 @@ Behavior:
 - `debug` overrides preset debug settings for this spawn.
 - Before applying options, spawn resets the system’s local `position`, `rotation`, `quaternion`, and `scale` to identity defaults so reused instances do not keep the previous transform for omitted fields.
 
-### `ParticleWorld`
+### `ParticleManager`
 
 A higher-level manager for named effects and live systems.
 
 Constructor:
 
 ```ts
-new ParticleWorld(
+new ParticleManager(
   parent: THREE.Object3D,
   presets?: Record<string, ParticlePreset>,
-  options?: ParticleWorldOptions
+  options?: ParticleManagerOptions
 )
 ```
 
@@ -295,7 +295,7 @@ Fields:
 | Field | Type | Description |
 | --- | --- | --- |
 | `effects` | `ParticleEffectLibrary` | The named effect registry. |
-| `systems` | `Set<ParticleSystem>` | Live systems spawned through `ParticleWorld.spawn` (active only; inactive pooled instances are not in this set). |
+| `systems` | `Set<ParticleSystem>` | Live systems spawned through `ParticleManager.spawn` (active only; inactive pooled instances are not in this set). |
 | `debug` | `boolean | ParticleDebugOptions` | Default debug setting applied by `spawn`. |
 
 Methods:
@@ -309,7 +309,7 @@ Methods:
 | `update(dt, camera)` | `void` | Updates all tracked systems, auto-disposes completed one-shots or returns them to the inactive pool when pooling is enabled. |
 | `clear()` | `void` | Disposes every tracked system, disposes all inactive pooled systems, and empties internal pool storage. |
 
-`ParticleWorldOptions`:
+`ParticleManagerOptions`:
 
 ```ts
 {
@@ -324,7 +324,7 @@ Methods:
 
 Pooling rules:
 
-- Pooling is used by `ParticleWorld.spawn` (consume/recycle) and `ParticleWorld.preload` (proactive fill). Calling `world.effects.spawn` always allocates a new system and does not use the world pool.
+- Pooling is used by `ParticleManager.spawn` (consume/recycle) and `ParticleManager.preload` (proactive fill). Calling `world.effects.spawn` always allocates a new system and does not use the manager pool.
 - A completed system is poolable only if it was spawned with the same effective WebGL renderer as `options.renderer` on the world constructor: `(spawnOptions.renderer ?? worldOptions.renderer) === worldOptions.renderer`. If a spawn passes a different `renderer` override, that instance is always fully disposed on completion (GPU render targets are tied to a specific renderer).
 - On completion with `autoDispose` true and pooling enabled for a poolable instance, the world calls `stop({ clear: true })`, removes the object from the scene graph, and pushes it onto an inactive stack for that effect name instead of calling `dispose()`.
 - Systems that were manually `dispose()`d are dropped from `systems` on the next `update` without being pooled.
@@ -362,9 +362,9 @@ Exported functions (see [Preset validation](preset-validation.md)):
 | `ParticleDebugOptions` | Emitter gizmo options. |
 | `ParticlePreset` | Full effect description. |
 | `ParticleSystemOptions` | `{ renderer?: THREE.WebGLRenderer }` |
-| `ParticleWorldOptions` | `{ renderer?: THREE.WebGLRenderer; pooling?: boolean \| { maxPerEffect?: number } }` |
-| `ParticleWorldPoolingOptions` | `{ maxPerEffect?: number }` — cap inactive instances per effect when `pooling` is an object. |
-| `ParticleSpawnOptions` | Transform, parent, `autoPlay`, and `debug` fields shared by `ParticleEffectLibrary.spawn` / `ParticleWorld.spawn` (world merge also applies default `parent` and `debug`). |
+| `ParticleManagerOptions` | `{ renderer?: THREE.WebGLRenderer; pooling?: boolean \| { maxPerEffect?: number } }` |
+| `ParticlePoolingOptions` | `{ maxPerEffect?: number }` — cap inactive instances per effect when `pooling` is an object. |
+| `ParticleSpawnOptions` | Transform, parent, `autoPlay`, and `debug` fields shared by `ParticleEffectLibrary.spawn` / `ParticleManager.spawn` (manager merge also applies default `parent` and `debug`). |
 | `SoftParticleDepthTextureOptions` | `{ width?: number; height?: number }` — optional depth texture dimensions for soft-particle sampling. |
 | `ParticleSnapshot` | CPU particle-death snapshot. |
 | `ParticleLifecycleCallbacks` | Lifecycle callback object. |
@@ -374,7 +374,7 @@ Exported functions (see [Preset validation](preset-validation.md)):
 | `CameraShakeMode` | `"rotationOnly" | "rotationAndTranslation"` |
 | `CameraShakeOptions` | Camera shake tuning object (decay, power curve, coherent noise, max offsets). |
 | `CameraEffectsOptions` | `{ shake?: CameraShakeOptions }` |
-| `WispParticleOptions` | `ParticleWorldOptions & { presets?: Record<string, ParticlePreset> }` |
+| `WispParticleOptions` | `ParticleManagerOptions & { presets?: Record<string, ParticlePreset> }` |
 | `WispOptions` | `{ scene?: THREE.Object3D; camera: THREE.Camera; cameraEffects?: CameraEffectsOptions; particles?: WispParticleOptions }` |
 | `StarterTexturePack` | `{ softDisc; hardDisc; spark; smokePuffsSheet4x4 }` as `THREE.Texture` values. |
 | `StarterEffectName` | `"explosion" | "muzzleFlash" | "smokePuff" | "hitSparks" | "magicBurst" | "runSmoke" | "jumpSmokeRing"` |
@@ -406,13 +406,5 @@ wisp.particles?.spawn("explosion");
 
 See [Starter Kit](starter-kit.md) for details.
 
-## Migration (ParticleWorld -> wisp.particles)
-
-| Before | After |
-| --- | --- |
-| `const world = new ParticleWorld(scene, presets, options)` | `const wisp = new Wisp({ scene, camera, particles: { presets, ...options } })` |
-| `world.register(name, preset)` | `wisp.particles?.register(name, preset)` |
-| `world.spawn(name, options)` | `wisp.particles?.spawn(name, options)` |
-| `world.update(dt, camera)` | `wisp.update(dt)` |
-| `world.clear()` | `wisp.particles?.clear()` |
+Use `Wisp`/`wisp.particles` as the primary public runtime surface for effect management.
 

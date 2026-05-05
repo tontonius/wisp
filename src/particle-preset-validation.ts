@@ -516,7 +516,7 @@ export function collectParticlePresetIssues(
 
   if (preset.simulation === "gpu" && !renderer) {
     warnings.push(
-      "simulation is \"gpu\" but no WebGLRenderer was provided; falling back to CPU. Pass renderer in ParticleSystemOptions or ParticleWorldOptions."
+      "simulation is \"gpu\" but no WebGLRenderer was provided; falling back to CPU. Pass renderer in ParticleSystemOptions or WispParticleOptions."
     );
   }
 

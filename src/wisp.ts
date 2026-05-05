@@ -2,8 +2,8 @@ import * as THREE from "three";
 import { CameraEffectsSystem } from "./camera/system";
 import type { CameraEffectsOptions, CameraShakeImpulse, CameraShakeOptions } from "./camera/types";
 import type { ParticleSystem } from "./particles/system";
-import { ParticleWorld } from "./particles/world";
-import type { ParticleDebugOptions, ParticlePreset, ParticleSpawnOptions, ParticleWorldOptions } from "./particles/types";
+import { ParticleManager } from "./particles/world";
+import type { ParticleDebugOptions, ParticleManagerOptions, ParticlePreset, ParticleSpawnOptions } from "./particles/types";
 
 /** High-level camera module exposed on `wisp.camera`. */
 export class WispCamera {
@@ -52,9 +52,9 @@ export class WispCamera {
 
 /** High-level particle module exposed on `wisp.particles`. */
 export class WispParticles {
-  private readonly world: ParticleWorld;
+  private readonly world: ParticleManager;
 
-  constructor(world: ParticleWorld) {
+  constructor(world: ParticleManager) {
     this.world = world;
   }
 
@@ -109,7 +109,7 @@ export class WispParticles {
 }
 
 /** Options for configuring `wisp.particles`. */
-export interface WispParticleOptions extends ParticleWorldOptions {
+export interface WispParticleOptions extends ParticleManagerOptions {
   /** Initial presets registered at construction time. */
   presets?: Record<string, ParticlePreset>;
 }
@@ -150,7 +150,7 @@ export class Wisp {
     this.cameraSystem = new CameraEffectsSystem(resolved.camera, resolved.cameraEffects?.shake);
     this.camera = new WispCamera(this.cameraSystem);
     if (resolved.scene && resolved.particles) {
-      const world = new ParticleWorld(
+      const world = new ParticleManager(
         resolved.scene,
         resolved.particles.presets ?? {},
         {

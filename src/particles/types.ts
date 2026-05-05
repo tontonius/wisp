@@ -163,7 +163,7 @@ export type ParticlePreset = {
   loop?: boolean;
   /** Simulates one full duration at startup so first frame is already populated. */
   prewarm?: boolean;
-  /** When true (default), complete one-shot systems are disposed or pooled by `ParticleWorld`. */
+  /** When true (default), complete one-shot systems are disposed or pooled by the particle manager. */
   autoDispose?: boolean;
   /** Lifecycle callbacks for system and particle events. */
   callbacks?: ParticleLifecycleCallbacks;
@@ -361,18 +361,18 @@ export type ParticleSystemOptions = {
   renderer?: THREE.WebGLRenderer;
 };
 
-export type ParticleWorldPoolingOptions = {
+export type ParticlePoolingOptions = {
   /** When set, excess inactive instances for an effect are disposed instead of pooled. Omit for no cap. */
   maxPerEffect?: number;
 };
 
-export type ParticleWorldOptions = {
+export type ParticleManagerOptions = {
   renderer?: THREE.WebGLRenderer;
   /**
-   * When enabled, `ParticleWorld` returns completed systems to an inactive pool instead of disposing them.
+   * When enabled, the particle manager returns completed systems to an inactive pool instead of disposing them.
    * Reuses GPU/CPU resources for the same registered effect name. See docs for renderer override rules.
    */
-  pooling?: boolean | ParticleWorldPoolingOptions;
+  pooling?: boolean | ParticlePoolingOptions;
 };
 
 export type ParticleSpawnOptions = {

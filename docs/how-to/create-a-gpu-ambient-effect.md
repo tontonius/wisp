@@ -56,8 +56,12 @@ const snowGpu: ParticlePreset = {
 ## Spawn It Above The Scene
 
 ```ts
-const particles = new ParticleWorld(scene, { snowGpu }, { renderer });
-particles.spawn("snowGpu", { position: [0, 6.5, 0] });
+const wisp = new Wisp({
+  scene,
+  camera,
+  particles: { presets: { snowGpu }, renderer },
+});
+wisp.particles?.spawn("snowGpu", { position: [0, 6.5, 0] });
 ```
 
 ## Update It

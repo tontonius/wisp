@@ -6,7 +6,7 @@ The Wisp demo in `demo/main.ts` includes a Tweakpane editor for creating and cop
 
 | Query | Effect |
 | --- | --- |
-| `?pool=1` | Enables `ParticleWorld` inactive pooling (`pooling: true`) so repeated one-shot spawns reuse GPU/CPU backends. |
+| `?pool=1` | Enables inactive pooling (`pooling: true`) so repeated one-shot spawns reuse GPU/CPU backends. |
 
 ## Billboard art (`demo/billboards/`)
 
@@ -62,7 +62,7 @@ Separate bottom-left Tweakpane used for recording-friendly camera motion. These 
 | `Orbit deg/s` | Constant angular speed in degrees per second (negative reverses direction). |
 | `FPS` | Essentials plugin `fpsgraph` blade showing frame-time/fps trend. |
 | `Runtime stats` | Read-only live summary of active particle systems (`systems`, CPU/GPU counts, total alive/max particles, busiest effect) plus a `camera trauma` graph over time. |
-| `Playback` buttons (`Play`, `Pause`, `Restart`, `Stop`) | Applies the selected lifecycle action to all currently active systems in the demo `ParticleWorld`. Useful for validating lifecycle behavior across CPU and GPU effects. |
+| `Playback` buttons (`Play`, `Pause`, `Restart`, `Stop`) | Applies the selected lifecycle action to all currently active systems in the demo particle manager. Useful for validating lifecycle behavior across CPU and GPU effects. |
 
 ## Controls Folder
 
@@ -72,7 +72,7 @@ Separate bottom-left Tweakpane used for recording-friendly camera motion. These 
 | `Spawn at center` | Spawns the selected effect near the center of the scene. |
 | `Load selected into editor` | Copies a built-in preset into the custom editor controls. |
 | `Preview loop` | Spawns or respawns the custom effect as a loop preview. |
-| `Clear systems` | Disposes all systems tracked by the demo `ParticleWorld`. |
+| `Clear systems` | Disposes all systems tracked by the demo particle manager. |
 | `Copy preset code` | Copies exportable TypeScript preset code. |
 
 ## Particle System Folder
@@ -88,7 +88,7 @@ Maps to top-level preset fields:
 | `prewarm` | `prewarm` |
 | `gpu spawn/frame` | `gpu.maxSpawnPerFrame` |
 | `debug gizmos` | `debug` |
-| `debug all` | Runtime `ParticleWorld.setDebug` |
+| `debug all` | Runtime `wisp.particles.setDebug` |
 | `spawn direction` | `debug.spawnDirection` |
 | `gizmo color` | `debug.color` |
 | `start life min/max` | `start.lifetime` |

@@ -47,7 +47,11 @@ Choose GPU when you need:
 Pass a renderer:
 
 ```ts
-const particles = new ParticleWorld(scene, { rain }, { renderer });
+const wisp = new Wisp({
+  scene,
+  camera,
+  particles: { presets: { rain }, renderer },
+});
 ```
 
 ## Use Auto For Scalable Defaults

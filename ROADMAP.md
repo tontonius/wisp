@@ -36,7 +36,7 @@ The guiding principle:
 The library currently has a hybrid architecture:
 
 ```txt
-ParticleWorld
+ParticleManager
   └─ ParticleSystem
       ├─ CPU backend
       └─ GPU backend
@@ -77,7 +77,7 @@ Do not try to make one backend solve every problem. The hybrid model is intentio
 
 ### Core Library
 
-- `ParticleWorld`
+- `ParticleManager`
 - `ParticleSystem`
 - JSON-style `ParticlePreset`
 - Named effect registry
@@ -97,7 +97,7 @@ Do not try to make one backend solve every problem. The hybrid model is intentio
 - CPU particle death callback (`onParticleDeath`)
 - Emitter debug gizmos for point, sphere, hemisphere, cone, and box shapes
 - One-shot lifecycle support
-- Auto-cleanup through `ParticleWorld`
+- Auto-cleanup through `ParticleManager`
 - Shared authoring model for CPU and GPU presets
 
 ### CPU Backend
@@ -181,7 +181,7 @@ Best used for:
 
 ### CPU Backend Limitations
 
-- No CPU-side particle object pooling (distinct from opt-in `ParticleWorld` system pooling)
+- No CPU-side particle object pooling (distinct from opt-in `ParticleManager` system pooling)
 - Primitive collision only (`plane` / `sphere` / `box`; no raycast/mesh yet)
 - Sub-emitters are CPU-only (`onBirth`, `onDeath`, `onCollision`)
 - No trail/ribbon renderer yet
@@ -223,12 +223,12 @@ Goal: make the library pleasant and robust in real game scenes.
 
 - `aliveCount`, `elapsed`, and lifecycle flags (`isPlaying`, `isAlive`, `isComplete`)
 - Lifecycle callbacks (`onStart`, `onStop`, `onComplete`) and CPU `onParticleDeath`
-- Auto-cleanup via `ParticleWorld` when `autoDispose` completes a system
+- Auto-cleanup via `ParticleManager` when `autoDispose` completes a system
 - Diataxis docs in `docs/` and a demo preset editor / debug gizmos (see `docs/reference/demo-editor.md`)
 - Demo ships the example presets below (selectable in the playground)
-- Opt-in inactive-system pooling on `ParticleWorld` (`pooling` in `ParticleWorldOptions`)
+- Opt-in inactive-system pooling on `ParticleManager` (`pooling` in `ParticleManagerOptions`)
 - Preset validation at `ParticleSystem` construction (`collectParticlePresetIssues`, `assertValidParticlePreset`; see `docs/reference/preset-validation.md`)
-- `ParticleWorld.preload(name, count)` warm-cache API for inactive pooled instances
+- `ParticleManager.preload(name, count)` warm-cache API for inactive pooled instances
 
 **Watchlist**
 
@@ -236,13 +236,13 @@ Goal: make the library pleasant and robust in real game scenes.
 
 ### Features
 
-- [x] Real system pooling (`ParticleWorldOptions.pooling`)
+- [x] Real system pooling (`ParticleManagerOptions.pooling`)
 - [x] `aliveCount`
 - [x] `elapsed`
 - [x] Better lifecycle state (flags + callbacks as above)
 - [~] Safer cleanup (`autoDispose` + `clear()` + optional pooling; further hardening TBD)
 - [x] Preset validation (`assertValidParticlePreset` on `ParticleSystem` construction)
-- [x] `preload(name, count)` warm-cache API on `ParticleWorld`
+- [x] `preload(name, count)` warm-cache API on `ParticleManager`
 - [~] Better TypeScript types (stronger shapes and reference docs; can tighten further)
 - [x] Better documentation (`docs/`)
 - [x] More example effects (see list below — all in `demo/main.ts`)
@@ -976,7 +976,7 @@ Use GPU if:
 Implement in this order:
 
 ```txt
-1. (done) Real ParticleWorld pooling
+1. (done) Real ParticleManager pooling
 2. (done) Better lifecycle API and aliveCount
 3. (done) Preset validation
 4. (done) CPU plane collision

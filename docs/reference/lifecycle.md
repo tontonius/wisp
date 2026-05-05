@@ -154,13 +154,13 @@ CPU-only.
 
 Called when a particle penetrates a CPU collision primitive (`plane`, `sphere`, or `box`) and is resolved. The snapshot clones position and velocity, like `onParticleDeath`.
 
-## ParticleWorld Auto-Cleanup
+## Particle Manager Auto-Cleanup
 
 ```ts
 particles.update(dt, camera);
 ```
 
-During update, `ParticleWorld` disposes and removes a system when:
+During update, the particle manager disposes and removes a system when:
 
 ```ts
 (system.preset.autoDispose ?? true) && system.isComplete

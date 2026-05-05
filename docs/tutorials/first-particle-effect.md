@@ -148,5 +148,5 @@ simulation: "gpu",
 maxParticles: 4096,
 ```
 
-GPU systems require a `THREE.WebGLRenderer` in `Wisp` particle options (`particles.renderer`) or low-level `ParticleSystemOptions`/`ParticleWorldOptions`.
+GPU systems require a `THREE.WebGLRenderer` in `Wisp` particle options (`particles.renderer`) or low-level `ParticleSystemOptions`/`ParticleManagerOptions`.
 

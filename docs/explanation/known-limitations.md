@@ -33,7 +33,7 @@ Built-in sub-emitters currently support only:
 - `subEmitters.onBirth` on CPU presets.
 - `subEmitters.onDeath` on CPU presets.
 - `subEmitters.onCollision` on CPU presets.
-- Named child effects resolved through `ParticleWorld`.
+- Named child effects resolved through `ParticleManager`.
 
 Not yet implemented:
 
@@ -87,9 +87,9 @@ If you mutate `preset.overLifetime` or `preset.velocityOverLifetime` after spawn
 
 Dispose and respawn to apply changed curves.
 
-## Object Pooling Is Opt-In On `ParticleWorld`
+## Object Pooling Is Opt-In
 
-By default, completed `autoDispose` systems are fully disposed. You can enable inactive pooling with `ParticleWorldOptions.pooling` so completed systems are reset and reused for the same registered effect name.
+By default, completed `autoDispose` systems are fully disposed. You can enable inactive pooling with `ParticleManagerOptions.pooling` so completed systems are reset and reused for the same registered effect name.
 
-`ParticleEffectLibrary` spawns are never pooled. Replacing a preset via `ParticleWorld.register` disposes inactive pooled instances for that name only; already-active systems still use the preset object they were constructed with until they finish.
+`ParticleEffectLibrary` spawns are never pooled. Replacing a preset via `ParticleManager.register` disposes inactive pooled instances for that name only; already-active systems still use the preset object they were constructed with until they finish.
 

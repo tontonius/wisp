@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { ParticleDebugOptions, ParticlePreset, ParticleSnapshot, ParticleSpawnOptions, ParticleWorldOptions } from "./types";
+import type { ParticleDebugOptions, ParticleManagerOptions, ParticlePreset, ParticleSnapshot, ParticleSpawnOptions } from "./types";
 import { ParticleSystem, configureSpawnedSystem } from "./system";
 
 /** Registry of named presets that can spawn `ParticleSystem` instances. */
@@ -8,7 +8,7 @@ export class ParticleEffectLibrary {
   private defaultParent?: THREE.Object3D;
   private renderer?: THREE.WebGLRenderer;
 
-  constructor(presets: Record<string, ParticlePreset> = {}, defaultParent?: THREE.Object3D, options: ParticleWorldOptions = {}) {
+  constructor(presets: Record<string, ParticlePreset> = {}, defaultParent?: THREE.Object3D, options: ParticleManagerOptions = {}) {
     this.defaultParent = defaultParent;
     this.renderer = options.renderer;
     Object.entries(presets).forEach(([name, preset]) => this.register(name, preset));
@@ -52,7 +52,7 @@ export class ParticleEffectLibrary {
  *
  * `spawn`/`update` are the main runtime methods for game loops.
  */
-export class ParticleWorld {
+export class ParticleManager {
   readonly effects: ParticleEffectLibrary;
   readonly systems = new Set<ParticleSystem>();
   private readonly inactivePool = new Map<string, ParticleSystem[]>();
@@ -61,7 +61,7 @@ export class ParticleWorld {
   debug: boolean | ParticleDebugOptions = false;
   private readonly maxSubEmitterDepth = 3;
 
-  constructor(private parent: THREE.Object3D, presets: Record<string, ParticlePreset> = {}, private options: ParticleWorldOptions = {}) {
+  constructor(private parent: THREE.Object3D, presets: Record<string, ParticlePreset> = {}, private options: ParticleManagerOptions = {}) {
     this.effects = new ParticleEffectLibrary(presets, parent, options);
   }
 
@@ -133,7 +133,7 @@ export class ParticleWorld {
     if (!this.effects.get(targetName)) return;
     if (meta.subEmitterDepth >= this.maxSubEmitterDepth) return;
 
-    const worldPosition = this.resolveParticleWorldPosition(particle, system);
+    const worldPosition = this.resolveParticlePositionInWorld(particle, system);
 
     this.spawnInternal(
       targetName,
@@ -154,7 +154,7 @@ export class ParticleWorld {
     if (!this.effects.get(targetName)) return;
     if (meta.subEmitterDepth >= this.maxSubEmitterDepth) return;
 
-    const worldPosition = this.resolveParticleWorldPosition(particle, system);
+    const worldPosition = this.resolveParticlePositionInWorld(particle, system);
 
     this.spawnInternal(
       targetName,
@@ -175,7 +175,7 @@ export class ParticleWorld {
     if (!this.effects.get(targetName)) return;
     if (meta.subEmitterDepth >= this.maxSubEmitterDepth) return;
 
-    const worldPosition = this.resolveParticleWorldPosition(particle, system);
+    const worldPosition = this.resolveParticlePositionInWorld(particle, system);
 
     this.spawnInternal(
       targetName,
@@ -220,7 +220,7 @@ export class ParticleWorld {
     return system;
   }
 
-  private resolveParticleWorldPosition(particle: ParticleSnapshot, system: ParticleSystem): THREE.Vector3 {
+  private resolveParticlePositionInWorld(particle: ParticleSnapshot, system: ParticleSystem): THREE.Vector3 {
     const worldPosition = particle.position.clone();
     if ((system.preset.simulationSpace ?? "local") === "world") return worldPosition;
     (system as unknown as THREE.Object3D).localToWorld(worldPosition);
@@ -241,10 +241,10 @@ export class ParticleWorld {
    */
   preload(name: string, count: number): this {
     if (!Number.isInteger(count) || count < 1) {
-      throw new Error(`ParticleWorld.preload("${name}", count): count must be an integer >= 1.`);
+      throw new Error(`ParticleManager.preload("${name}", count): count must be an integer >= 1.`);
     }
     if (!this.isPoolingEnabled()) {
-      throw new Error('ParticleWorld.preload requires pooling to be enabled via ParticleWorldOptions.pooling.');
+      throw new Error("ParticleManager.preload requires pooling to be enabled via ParticleManagerOptions.pooling.");
     }
 
     const preset = this.effects.get(name);

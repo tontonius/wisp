@@ -50,7 +50,7 @@ type ParticlePreset = {
 | `duration` | `number` | `1` | Emission duration in seconds. |
 | `loop` | `boolean` | `false` | Whether emission restarts after `duration`. |
 | `prewarm` | `boolean` | `false` | Whether to simulate one duration before first render. |
-| `autoDispose` | `boolean` | `true` through `ParticleWorld` | Whether `ParticleWorld.update` disposes complete systems. |
+| `autoDispose` | `boolean` | `true` through `ParticleManager` | Whether `ParticleManager.update` disposes complete systems. |
 | `callbacks` | `ParticleLifecycleCallbacks` | `undefined` | Lifecycle hooks. |
 | `debug` | `boolean | ParticleDebugOptions` | `false` | Emitter gizmo settings. |
 | `gpu` | Object | `undefined` | GPU backend options. |
@@ -60,7 +60,7 @@ type ParticlePreset = {
 | `forces` | Object | No force | Constant acceleration, drag, optional vortex column, and procedural noise; see [Forces](forces.md). |
 | `limitVelocityOverLifetime` | Object | `undefined` | CPU-only speed cap module by normalized age. |
 | `collision` | `CpuCollision` | `undefined` | CPU-only primitive collision (`plane`, `sphere`, or `box`) in local space; see [CPU backend](cpu-backend.md#collision-plane--sphere--box). |
-| `subEmitters` | `{ onBirth?: string; onDeath?: string; onCollision?: string }` | `undefined` | CPU-only child effect hooks. `onBirth` spawns on CPU particle spawn, `onDeath` on particle death, and `onCollision` on primitive collision (when spawned through `ParticleWorld`). |
+| `subEmitters` | `{ onBirth?: string; onDeath?: string; onCollision?: string }` | `undefined` | CPU-only child effect hooks. `onBirth` spawns on CPU particle spawn, `onDeath` on particle death, and `onCollision` on primitive collision (when spawned through a `ParticleManager`). |
 | `velocityOverLifetime` | `VelocityOverLifetime` | No lifetime velocity | Per-age linear velocity channel. |
 | `colorBySpeed` | `ColorBySpeed` | `undefined` | RGB tint from simulation speed magnitude; see [Speed-driven modules](speed-driven.md). |
 | `sizeBySpeed` | `SizeBySpeed` | `undefined` | Size multiplier from simulation speed magnitude; see [Speed-driven modules](speed-driven.md). |
@@ -115,7 +115,7 @@ autoDispose?: boolean;
 
 `prewarm` simulates one duration before the visible start. This is useful for looping ambience such as fire, rain, snow, or aura effects.
 
-`autoDispose` is used by `ParticleWorld`, not by standalone `ParticleSystem`. One-shots default to auto-disposal when managed by a world.
+`autoDispose` is used by `ParticleManager`, not by standalone `ParticleSystem`. One-shots default to auto-disposal when managed by a manager.
 
 ## Bounds
 
@@ -207,7 +207,7 @@ renderer?: {
 
 ## Preset Registration
 
-When registered through `ParticleEffectLibrary.register` or `ParticleWorld.register`, the stored preset gets a copied `name` field:
+When registered through `ParticleEffectLibrary.register` or `ParticleManager.register`, the stored preset gets a copied `name` field:
 
 ```ts
 library.register("smokePuff", preset);
