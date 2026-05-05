@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import type { ParticleBackend, ParticlePreset, Range, SimulationSpace, SoftParticleDepthTextureOptions, SpawnRequest } from "../types";
-import { DEFAULT_EMITTER, PARTICLE_DISPERSAL_GLSL, applyBlendMode, colorMinMax, getDispersalAmountCurvePlaceholder, getDispersalWhitePlaceholderTexture, getTextureSheetConfig, isRendererDispersalEnabled, makeCurveFloatTexture, makeCurveTexture, makeDefaultParticleTexture, makeDispersalAmountCurveTexture, makeGradientTexture, makeVectorCurveTexture, randomRange, rangeMinMax, tempMatrixA, tempVectorA, tempVectorB, tempVectorC, vec3MinMax } from "../shared";
+import { DEFAULT_EMITTER, PARTICLE_DISPERSAL_GLSL, applyBlendMode, colorMinMax, getDispersalAmountCurvePlaceholder, getDispersalWhitePlaceholderTexture, getTextureSheetConfig, isRendererDispersalEnabled, makeCurveFloatTexture, makeCurveTexture, makeDispersalAmountCurveTexture, makeGradientTexture, makeVectorCurveTexture, randomRange, rangeMinMax, resolveRendererTexture, tempMatrixA, tempVectorA, tempVectorB, tempVectorC, vec3MinMax } from "../shared";
 
 export class GPUParticleBackend implements ParticleBackend {
   readonly object = new THREE.Object3D();
@@ -777,6 +777,7 @@ export class GPUParticleBackend implements ParticleBackend {
     const dispersal = this.preset.renderer?.dispersal;
     const dispersalEnabled = isRendererDispersalEnabled(this.preset.renderer);
     const dispersalMap = dispersal?.texture ?? null;
+    const resolvedTexture = resolveRendererTexture(this.preset.renderer ?? {});
     const material = new THREE.ShaderMaterial({
       transparent: true,
       depthWrite: this.preset.renderer?.depthWrite ?? false,
@@ -786,7 +787,7 @@ export class GPUParticleBackend implements ParticleBackend {
         uVelocityLife: { value: this.readTargets[1].texture },
         uColorSeed: { value: this.readTargets[2].texture },
         uExtra: { value: this.readTargets[3].texture },
-        uTexture: { value: this.preset.renderer?.texture ?? makeDefaultParticleTexture() },
+        uTexture: { value: resolvedTexture },
         uSceneDepth: { value: null },
         uSceneDepthSize: { value: new THREE.Vector2(1, 1) },
         uSoftParticles: { value: softParticlesEnabled ? 1 : 0 },

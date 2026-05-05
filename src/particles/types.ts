@@ -307,6 +307,16 @@ export type ParticlePreset = {
     type?: RendererType;
     /** Optional billboard texture. Omit for a default soft circular sprite. */
     texture?: THREE.Texture;
+    /**
+     * Optional alpha keying pass for textures authored as light sprites on black backgrounds.
+     * Converts near-black pixels to transparent alpha at runtime.
+     */
+    alphaFromLuminance?: {
+      /** Enables luminance-to-alpha conversion. */
+      enabled?: boolean;
+      /** Luminance threshold in `0..255`. Pixels at or below become fully transparent. Default `32`. */
+      blackCutoff?: number;
+    };
     /** Material blending mode. */
     blendMode?: BlendMode;
     /** Billboard alignment to camera-facing or velocity-facing. */

@@ -6,6 +6,10 @@ The `renderer` preset section controls particle billboard rendering.
 renderer?: {
   type?: "billboard" | "stretchedBillboard";
   texture?: THREE.Texture;
+  alphaFromLuminance?: {
+    enabled?: boolean;
+    blackCutoff?: number;
+  };
   blendMode?: BlendMode;
   align?: AlignMode;
   sorting?: "none" | "distance" | "youngestFirst" | "oldestFirst";
@@ -38,6 +42,7 @@ renderer?: {
 | --- | --- | --- |
 | `type` | `"billboard"` | Quad geometry mode. |
 | `texture` | Generated soft radial disc | Billboard sprite texture. |
+| `alphaFromLuminance` | `undefined` | Optional runtime keying for black-background sprite art. |
 | `blendMode` | `"alpha"` | Material blend mode. |
 | `align` | `"camera"` | Billboard orientation. |
 | `sorting` | `"distance"` | CPU-only draw order for alive particles (see [Sorting](#sorting)). |
@@ -60,6 +65,27 @@ renderer: {
 ```
 
 If no texture is supplied, the library creates a small soft white radial disc.
+
+### Optional Black-Background Keying
+
+For sprite sheets authored as bright smoke/fire on black backgrounds, you can convert near-black pixels to transparent alpha at runtime:
+
+```ts
+renderer: {
+  texture,
+  alphaFromLuminance: {
+    enabled: true,
+    blackCutoff: 32, // 0..255, higher removes more dark pixels
+  },
+  blendMode: "alpha",
+}
+```
+
+Notes:
+
+- Pixels with luminance `<= blackCutoff` are forced to alpha `0`.
+- Higher `blackCutoff` removes more dark halo; lower preserves more edge detail.
+- This is applied once when the particle material is created (CPU and GPU backends).
 
 Texture ownership:
 

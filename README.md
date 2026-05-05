@@ -522,12 +522,13 @@ const smoke: ParticlePreset = {
 };
 ```
 
-For white-on-black sprite images, additive blending can be useful. For alpha blending, use a transparent PNG or preprocess the image so the dark background becomes alpha.
+For white-on-black sprite images, additive blending can be useful. For alpha blending, use a transparent PNG or enable runtime luminance keying:
 
 ```ts
 renderer: {
   texture,
-  blendMode: "additive", // "alpha" | "multiply"
+  alphaFromLuminance: { enabled: true, blackCutoff: 32 },
+  blendMode: "alpha",    // "additive" | "multiply"
   align: "camera",       // "velocity"
   depthWrite: false,
 }

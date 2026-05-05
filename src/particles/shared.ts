@@ -221,6 +221,72 @@ function makeDefaultParticleTexture(): THREE.Texture {
   return texture;
 }
 
+function textureImageToCanvasImageSource(image: unknown): CanvasImageSource | null {
+  if (
+    image instanceof HTMLImageElement ||
+    image instanceof HTMLCanvasElement ||
+    image instanceof OffscreenCanvas ||
+    image instanceof ImageBitmap ||
+    image instanceof SVGImageElement ||
+    image instanceof HTMLVideoElement ||
+    image instanceof VideoFrame
+  ) {
+    return image;
+  }
+  return null;
+}
+
+function createLuminanceKeyedTexture(source: CanvasImageSource, blackCutoff = 32): THREE.CanvasTexture {
+  const width =
+    source instanceof HTMLImageElement
+      ? source.naturalWidth
+      : source instanceof SVGImageElement
+        ? source.width.baseVal.value
+        : source instanceof VideoFrame
+          ? source.codedWidth
+          : source.width;
+  const height =
+    source instanceof HTMLImageElement
+      ? source.naturalHeight
+      : source instanceof SVGImageElement
+        ? source.height.baseVal.value
+        : source instanceof VideoFrame
+          ? source.codedHeight
+          : source.height;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Could not create particle texture canvas context.");
+
+  ctx.drawImage(source, 0, 0);
+  const imageData = ctx.getImageData(0, 0, width, height);
+  const data = imageData.data;
+  const cutoff = THREE.MathUtils.clamp(Math.round(blackCutoff), 0, 255);
+  for (let i = 0; i < data.length; i += 4) {
+    const luminance = data[i] * 0.2126 + data[i + 1] * 0.7152 + data[i + 2] * 0.0722;
+    if (luminance <= cutoff) data[i + 3] = 0;
+  }
+  ctx.putImageData(imageData, 0, 0);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+function resolveRendererTexture(options: NonNullable<ParticlePreset["renderer"]> = {}): THREE.Texture {
+  const baseTexture = options.texture ?? makeDefaultParticleTexture();
+  const alphaFromLuma = options.alphaFromLuminance;
+  const enabled = alphaFromLuma?.enabled ?? false;
+  if (!enabled) return baseTexture;
+
+  const source = textureImageToCanvasImageSource(baseTexture.image);
+  if (!source) return baseTexture;
+  return createLuminanceKeyedTexture(source, alphaFromLuma?.blackCutoff ?? 32);
+}
+
 function applyBlendMode(material: THREE.Material, blendMode: BlendMode = "alpha"): void {
   if (blendMode === "additive") material.blending = THREE.AdditiveBlending;
   else if (blendMode === "multiply") material.blending = THREE.MultiplyBlending;
@@ -416,12 +482,13 @@ function makeParticleMaterial(options: NonNullable<ParticlePreset["renderer"]> =
   const dispersalEnabled = isRendererDispersalEnabled(options);
   const dispersal = options.dispersal;
   const dispersalMap = dispersal?.texture ?? null;
+  const resolvedTexture = resolveRendererTexture(options);
   const material = new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: options.depthWrite ?? false,
     depthTest: options.depthTest ?? true,
     uniforms: {
-      uTexture: { value: options.texture ?? makeDefaultParticleTexture() },
+      uTexture: { value: resolvedTexture },
       uSceneDepth: { value: null },
       uSceneDepthSize: { value: new THREE.Vector2(1, 1) },
       uSoftParticles: { value: softParticlesEnabled ? 1 : 0 },
@@ -669,6 +736,7 @@ export {
   randomRange,
   randomVec3,
   rangeMinMax,
+  resolveRendererTexture,
   resolveDebugOptions,
   sampleEmitter,
   speedToParam,
