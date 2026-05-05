@@ -98,6 +98,12 @@ The spawn cursor cycles through particle slots. New particles overwrite old slot
 
 `gpu.maxSpawnPerFrame` clamps how many requested particles are queued by one `emit(count)`.
 
+For `simulationSpace: "world"`, GPU spawn now uses the current system world transform for emitter samples:
+
+- Spawn positions are transformed by the system world matrix.
+- Spawn directions and `start.velocity` ranges are transformed by the system world orientation basis.
+- This keeps moving/rotating world-space emitters aligned with their current transform at the spawn moment.
+
 ## Simulation Shader
 
 The shader:
@@ -156,6 +162,13 @@ elapsed <= duration + maxStartLifetime
 `aliveCount` returns `maxParticles` while the system may be alive.
 
 This is approximate by design.
+
+## Playback Semantics
+
+- `pause()` freezes GPU simulation time (particles stop aging and forces stop integrating).
+- `play()` resumes from the paused state.
+- `restart()` clears GPU state and starts from time zero.
+- `stop({ clear: true })` clears GPU state immediately.
 
 ## Strengths
 

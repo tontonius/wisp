@@ -62,6 +62,7 @@ Pass the same renderer you pass into `ParticleSystemOptions` so validation can w
 | `duration` | If set, must be finite and `>= 0`. |
 | `emitter.type` | If `emitter` is set, `type` must be `point`, `sphere`, `hemisphere`, `cone`, or `box`. |
 | `renderer.textureSheet` | If set, `columns` and `rows` must be integers `>= 1` (invalid values are no longer silently clamped for authoring). |
+| `renderer.textureSheet.animationMode` | If set, must be `"static"`, `"randomStart"`, `"overLifetime"`, or `"randomStartOverLifetime"`. |
 | `gpu.textureSize` | If set, integer `>= 1` and `textureSize² >= maxParticles` (using `maxParticles ?? 1024`). |
 | `gpu.maxSpawnPerFrame` | If set, integer `>= 1`. |
 | `renderer.type` | If set, must be `"billboard"` or `"stretchedBillboard"`. `simulation: "gpu"` + `"stretchedBillboard"` is invalid (CPU-only). |

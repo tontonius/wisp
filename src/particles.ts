@@ -11,6 +11,7 @@ export type RendererType = "billboard" | "stretchedBillboard";
 export type SortMode = "none" | "distance" | "youngestFirst" | "oldestFirst";
 export type SimulationMode = "cpu" | "gpu" | "auto";
 export type SimulationSpace = "local" | "world";
+export type TextureSheetAnimationMode = "static" | "randomStart" | "overLifetime" | "randomStartOverLifetime";
 export type ParticleBounds = {
   /** Bounding sphere center used for culling. */
   center?: Vec3Tuple;
@@ -292,9 +293,7 @@ export type ParticlePreset = {
     textureSheet?: {
       columns: number;
       rows: number;
-      randomFrame?: boolean;
-      frameOverLifetime?: boolean;
-      randomStartFrame?: boolean;
+      animationMode?: TextureSheetAnimationMode;
     };
     /** Optional noise- or texture-driven dissolve of billboard alpha over lifetime. */
     dispersal?: ParticleRendererDispersal;
@@ -638,12 +637,15 @@ function getTextureSheetConfig(preset: ParticlePreset): TextureSheetConfig | und
   const columns = Math.max(1, Math.floor(sheet.columns));
   const rows = Math.max(1, Math.floor(sheet.rows));
   const totalFrames = columns * rows;
+  const mode = sheet.animationMode ?? "static";
+  const randomFromMode = mode === "randomStart" || mode === "randomStartOverLifetime";
+  const overLifetimeFromMode = mode === "overLifetime" || mode === "randomStartOverLifetime";
   return {
     columns,
     rows,
     totalFrames,
-    frameOverLifetime: sheet.frameOverLifetime ?? false,
-    randomFrame: sheet.randomFrame ?? sheet.randomStartFrame ?? false,
+    frameOverLifetime: overLifetimeFromMode,
+    randomFrame: randomFromMode,
   };
 }
 
@@ -2022,7 +2024,8 @@ class GPUParticleBackend implements ParticleBackend {
       }
     }
 
-    this.runSimulation(dt);
+    const simulationDt = this.playing ? dt : 0;
+    this.runSimulation(simulationDt);
     this.updateRenderUniforms(camera);
   }
 
@@ -2112,6 +2115,7 @@ class GPUParticleBackend implements ParticleBackend {
   }
 
   private runSimulation(dt: number): void {
+    if (dt === 0 && this.queuedSpawns.length === 0) return;
     const spawns = this.queuedSpawns.length > 0 ? this.queuedSpawns.splice(0) : [{ start: -1, count: 0, seed: 0 }];
 
     this.previousRenderTarget = this.renderer.getRenderTarget();
@@ -2223,8 +2227,9 @@ class GPUParticleBackend implements ParticleBackend {
     u.uTotalFrames.value = sheet?.totalFrames ?? 1;
     u.uSimulationSpace.value = this.simulationSpace === "world" ? 1 : 0;
     this.object.updateWorldMatrix(true, false);
-    const e = this.object.matrixWorld.elements;
-    u.uSystemWorldPosition.value.set(e[12], e[13], e[14]);
+    u.uSystemWorldMatrix.value.copy(this.object.matrixWorld);
+    tempMatrixA.copy(this.object.matrixWorld).setPosition(0, 0, 0);
+    u.uSystemWorldNormalMatrix.value.setFromMatrix4(tempMatrixA).invert().transpose();
   }
 
   private makeSimulationMaterial(): THREE.ShaderMaterial {
@@ -2281,7 +2286,8 @@ class GPUParticleBackend implements ParticleBackend {
         uRandomStartFrame: { value: 0 },
         uTotalFrames: { value: 1 },
         uSimulationSpace: { value: this.simulationSpace === "world" ? 1 : 0 },
-        uSystemWorldPosition: { value: new THREE.Vector3() },
+        uSystemWorldMatrix: { value: new THREE.Matrix4() },
+        uSystemWorldNormalMatrix: { value: new THREE.Matrix3() },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -2348,7 +2354,8 @@ class GPUParticleBackend implements ParticleBackend {
         uniform int uRandomStartFrame;
         uniform int uTotalFrames;
         uniform int uSimulationSpace;
-        uniform vec3 uSystemWorldPosition;
+        uniform mat4 uSystemWorldMatrix;
+        uniform mat3 uSystemWorldNormalMatrix;
 
         float hash(float n) { return fract(sin(n) * 43758.5453123); }
         float rand(float index, float salt) { return hash(index * 17.131 + salt * 113.71 + uSpawnSeed); }
@@ -2448,10 +2455,14 @@ class GPUParticleBackend implements ParticleBackend {
           if (spawn) {
             vec3 dir;
             vec3 pos = sampleEmitterPosition(rawIndex, dir);
-            if (uSimulationSpace == 1) pos += uSystemWorldPosition;
             float life = mix(uLifeRange.x, uLifeRange.y, rand(rawIndex, 11.0));
             float speed = mix(uSpeedRange.x, uSpeedRange.y, rand(rawIndex, 12.0));
             vec3 inheritedVelocity = mix(uVelocityMin, uVelocityMax, vec3(rand(rawIndex, 13.0), rand(rawIndex, 14.0), rand(rawIndex, 15.0)));
+            if (uSimulationSpace == 1) {
+              pos = (uSystemWorldMatrix * vec4(pos, 1.0)).xyz;
+              dir = normalize(uSystemWorldNormalMatrix * dir);
+              inheritedVelocity = uSystemWorldNormalMatrix * inheritedVelocity;
+            }
             vec3 velocity = dir * speed + inheritedVelocity;
             vec3 color = mix(uColorMin, uColorMax, rand(rawIndex, 16.0));
             float seed = rand(rawIndex, 17.0) * 1000.0;

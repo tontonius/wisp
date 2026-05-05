@@ -315,6 +315,17 @@ This is the “usable library” milestone.
 
 Goal: make CPU particles excellent for responsive game juice.
 
+### Status (library + demo)
+
+**Done**
+
+- All listed CPU gameplay modules in this milestone are implemented.
+- Demo includes a dedicated dash showcase (`dashTrailEmitterDemo`) that highlights `inheritVelocity` + `lifetimeByEmitterSpeed` with a back-and-forth eased emitter motion.
+
+**Next focus**
+
+- Move to Milestone 3 reliability polish on the GPU path (transform updates, pause/resume/restart behavior, atlas animation modes).
+
 ### Features
 
 - [x] CPU plane collision
@@ -461,11 +472,11 @@ Goal: make GPU particles reliable for large background and atmosphere effects.
 ### Features
 
 - [ ] Better GPU spawn scheduling
-- [ ] GPU emitter transform updates
+- [x] GPU emitter transform updates
 - [x] GPU bounds controls (`bounds.center` / `bounds.radius`)
-- [ ] GPU pause/resume/restart polish
+- [x] GPU pause/resume/restart polish
 - [x] Better noise (coherent FBM field + vortex-friendly controls)
-- [ ] GPU texture atlas animation modes
+- [x] GPU texture atlas animation modes
 - [x] Optional soft particles
 
 ### GPU Spawn Scheduling

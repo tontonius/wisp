@@ -10,7 +10,7 @@ renderer: {
   textureSheet: {
     columns: 4,
     rows: 4,
-    randomFrame: true,
+    animationMode: "randomStart",
   },
 }
 ```
@@ -25,7 +25,7 @@ renderer: {
   textureSheet: {
     columns: 4,
     rows: 4,
-    frameOverLifetime: true,
+    animationMode: "overLifetime",
   },
 }
 ```
@@ -40,8 +40,7 @@ renderer: {
   textureSheet: {
     columns: 4,
     rows: 4,
-    randomFrame: true,
-    frameOverLifetime: true,
+    animationMode: "randomStartOverLifetime",
   },
 }
 ```

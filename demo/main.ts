@@ -169,6 +169,7 @@ let demoSpriteSheetRows = 0;
 
 type TextureName = "softDisc" | "hardDisc" | "spark" | "demoSpriteSheet" | "customImage";
 type EmitterType = "point" | "sphere" | "hemisphere" | "cone" | "box";
+type TextureSheetMode = NonNullable<NonNullable<ParticlePreset["renderer"]>["textureSheet"]>["animationMode"];
 
 const customParams = {
   clickEffect: "customEffect" as DemoEffectName,
@@ -197,8 +198,7 @@ const customParams = {
   textureSheetEnabled: false,
   textureSheetColumns: 4,
   textureSheetRows: 4,
-  textureSheetRandomFrame: true,
-  textureSheetFrameOverLifetime: false,
+  textureSheetMode: "randomStart" as TextureSheetMode,
   softParticles: false,
   softness: 1.5,
   dispersalEnabled: false,
@@ -537,8 +537,7 @@ function makeCustomPreset(): ParticlePreset {
             ? {
                 columns: getTextureSheetColumns(),
                 rows: getTextureSheetRows(),
-                randomFrame: customParams.textureSheetRandomFrame,
-                frameOverLifetime: customParams.textureSheetFrameOverLifetime,
+                animationMode: customParams.textureSheetMode,
               }
             : undefined,
           dispersal:
@@ -745,6 +744,19 @@ runtimeFolder.addBinding(runtimeStats, "aliveTotal", { readonly: true, label: "a
 runtimeFolder.addBinding(runtimeStats, "maxTotal", { readonly: true, label: "max total" });
 runtimeFolder.addBinding(runtimeStats, "busiest", { readonly: true });
 runtimeFolder.addBinding(runtimeStats, "busiestAlive", { readonly: true, label: "busiest alive" });
+const playbackFolder = capturePane.addFolder({ title: "Playback", expanded: true });
+playbackFolder.addButton({ title: "Play" }).on("click", () => {
+  for (const system of particles.systems) system.play();
+});
+playbackFolder.addButton({ title: "Pause" }).on("click", () => {
+  for (const system of particles.systems) system.pause();
+});
+playbackFolder.addButton({ title: "Restart" }).on("click", () => {
+  for (const system of particles.systems) system.restart();
+});
+playbackFolder.addButton({ title: "Stop" }).on("click", () => {
+  for (const system of particles.systems) system.stop();
+});
 let loopPreview: ParticleSystem | undefined;
 let orbitingEmitterDemo:
   | {
@@ -1057,8 +1069,7 @@ function loadPresetIntoEditor(name: DemoEffectName): void {
   customParams.textureSheetEnabled = !!renderer?.textureSheet;
   customParams.textureSheetColumns = renderer?.textureSheet?.columns ?? 1;
   customParams.textureSheetRows = renderer?.textureSheet?.rows ?? 1;
-  customParams.textureSheetRandomFrame = renderer?.textureSheet?.randomFrame ?? renderer?.textureSheet?.randomStartFrame ?? false;
-  customParams.textureSheetFrameOverLifetime = renderer?.textureSheet?.frameOverLifetime ?? false;
+  customParams.textureSheetMode = renderer?.textureSheet?.animationMode ?? "static";
 
   refreshPaneBindings();
   refreshCustomPreset();
@@ -1350,8 +1361,15 @@ const sheetFolder = rendererFolder.addFolder({ title: "Texture Sheet", expanded:
 bind(sheetFolder, "textureSheetEnabled", { label: "enabled" });
 bind(sheetFolder, "textureSheetColumns", { label: "cols", min: 1, max: 12, step: 1 });
 bind(sheetFolder, "textureSheetRows", { label: "rows", min: 1, max: 12, step: 1 });
-bind(sheetFolder, "textureSheetRandomFrame", { label: "random frame" });
-bind(sheetFolder, "textureSheetFrameOverLifetime", { label: "over lifetime" });
+bind(sheetFolder, "textureSheetMode", {
+  label: "mode",
+  options: {
+    Static: "static",
+    "Random start": "randomStart",
+    "Over lifetime": "overLifetime",
+    "Random + over life": "randomStartOverLifetime",
+  },
+});
 
 const customImageInput = document.createElement("input");
 customImageInput.type = "file";

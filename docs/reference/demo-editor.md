@@ -17,10 +17,10 @@ Those PNGs are treated as **white (or light) art on black**: each bitmap is rast
 | File | Layout (columns × rows) | Used by (when loaded) |
 | --- | --- | --- |
 | `smoke_puff.png` | Single image | `smokePuff` |
-| `1x_4_smoke_puff_sheet.png` | 4 × 1 | `shockwaveCenterExplosion` (`textureSheet.randomFrame`) |
+| `1x_4_smoke_puff_sheet.png` | 4 × 1 | `shockwaveCenterExplosion` (`textureSheet.animationMode: "randomStart"`) |
 | `2x1_smoke_puffs.png` | 2 × 1 | Available via `demoBillboardUrls` / `DemoBillboardTextureSet.smokePuffsSheet2x1` for custom presets |
-| `4x4_smoke_puffs.png` | 4 × 4 | `stylizedExplosion` (`textureSheet.randomFrame`) |
-| `3x4_smoke_puff_dispersal.png` | 4 × 3 (from pixel grid) | `magicAuraGpu` (`textureSheet.randomFrame`) |
+| `4x4_smoke_puffs.png` | 4 × 4 | `stylizedExplosion` (`textureSheet.animationMode: "randomStart"`) |
+| `3x4_smoke_puff_dispersal.png` | 4 × 3 (from pixel grid) | `magicAuraGpu` (`textureSheet.animationMode: "overLifetime"`) |
 | `leaves_sprite_sheet.png` | 4 × 1 | `tornadoDemo`, `autumnLeaves` |
 | `snowflake_sprite_sheet.png` | 4 × 1 | `snowGpu` |
 | `sunburst.png` | Single image | `shockwaveSunburst` (spawned with **Shockwave**) |
@@ -46,6 +46,7 @@ Separate bottom-left Tweakpane used for recording-friendly camera motion. These 
 | `Orbit deg/s` | Constant angular speed in degrees per second (negative reverses direction). |
 | `FPS` | Essentials plugin `fpsgraph` blade showing frame-time/fps trend. |
 | `Runtime stats` | Read-only live summary of active particle systems (`systems`, CPU/GPU counts, total alive/max particles, busiest effect). |
+| `Playback` buttons (`Play`, `Pause`, `Restart`, `Stop`) | Applies the selected lifecycle action to all currently active systems in the demo `ParticleWorld`. Useful for validating lifecycle behavior across CPU and GPU effects. |
 
 ## Controls Folder
 
@@ -282,8 +283,7 @@ Soft particles in the demo:
 | `enabled` | Whether `renderer.textureSheet` is included. |
 | `cols` | `textureSheet.columns` |
 | `rows` | `textureSheet.rows` |
-| `random frame` | `textureSheet.randomFrame` |
-| `over lifetime` | `textureSheet.frameOverLifetime` |
+| `mode` | `textureSheet.animationMode` |
 
 ## Custom Image Loading
 

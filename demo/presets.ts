@@ -302,7 +302,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
       blendMode: "alpha",
       depthWrite: false,
       depthTest: true,
-      ...(bb ? { textureSheet: { columns: 4, rows: 1, randomFrame: true } } : {}),
+      ...(bb ? { textureSheet: { columns: 4, rows: 1, animationMode: "randomStart" } } : {}),
     },
   };
 
@@ -401,7 +401,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
       depthWrite: false,
       softParticles: true,
       softness: 1.35,
-      ...(bb ? { textureSheet: { columns: 2, rows: 1, randomFrame: true } } : {}),
+      ...(bb ? { textureSheet: { columns: 2, rows: 1, animationMode: "randomStart" } } : {}),
     },
   };
 
@@ -751,7 +751,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
     },
     renderer: {
       texture: bb?.smokePuffsSheet2x1 ?? softDisc,
-      ...(bb ? { textureSheet: { columns: 2, rows: 1, randomFrame: true } } : {}),
+      ...(bb ? { textureSheet: { columns: 2, rows: 1, animationMode: "randomStart" } } : {}),
       blendMode: "alpha",
       align: "camera",
       depthWrite: false,
@@ -828,7 +828,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
       depthWrite: false,
       softParticles: true,
       softness: 1.5,
-      ...(bb ? { textureSheet: { columns: 2, rows: 1, randomFrame: true } } : {}),
+      ...(bb ? { textureSheet: { columns: 2, rows: 1, animationMode: "randomStart" } } : {}),
     },
   };
 
@@ -982,7 +982,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
       size: [0.035, 0.12],
       color: ["#ffffff", "#f0f6fb"],
       opacity: [0.45, 0.9],
-      velocity: [[-0.45, -0.85, -0.25], [0.45, -1.8, 0.25]],
+      velocity: [[-0.45, -0.4, -0.25], [0.45, -0.8, 0.25]],
       rotation: [0, Math.PI * 2],
       angularVelocity: [-0.8, 0.8],
     },
@@ -996,7 +996,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
       texture: bb?.snowflakeSpriteSheet ?? softDisc,
       blendMode: "alpha",
       depthWrite: false,
-      ...(bb ? { textureSheet: { columns: 4, rows: 1, randomFrame: true } } : {}),
+      ...(bb ? { textureSheet: { columns: 4, rows: 1, animationMode: "randomStart" } } : {}),
     },
   };
 
@@ -1031,7 +1031,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
       texture: bb?.smokeDispersalSheet ?? softDisc,
       blendMode: "additive",
       depthWrite: false,
-      ...(bb ? { textureSheet: { columns: 4, rows: 3, randomFrame: false, frameOverLifetime: true } } : {}),
+      ...(bb ? { textureSheet: { columns: 4, rows: 3, animationMode: "overLifetime" } } : {}),
     },
   };
 
@@ -1349,8 +1349,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
             textureSheet: {
               columns: 4,
               rows: 4,
-              randomFrame: true,
-              frameOverLifetime: false,
+              animationMode: "randomStart",
             },
           }
         : {}),
@@ -1445,8 +1444,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
             textureSheet: {
               columns: 4,
               rows: 1,
-              randomFrame: true,
-              frameOverLifetime: false,
+              animationMode: "randomStart",
             },
           }
         : {}),

@@ -14,6 +14,7 @@ const EMITTER_TYPES = new Set(["point", "sphere", "hemisphere", "cone", "box"]);
 const RENDERER_TYPES = new Set(["billboard", "stretchedBillboard"]);
 const SORTING_MODES = new Set(["none", "distance", "youngestFirst", "oldestFirst"]);
 const SIMULATION_SPACES = new Set(["local", "world"]);
+const TEXTURE_SHEET_ANIMATION_MODES = new Set(["static", "randomStart", "overLifetime", "randomStartOverLifetime"]);
 
 function isFiniteNumber(n: unknown): n is number {
   return typeof n === "number" && Number.isFinite(n);
@@ -276,6 +277,11 @@ export function collectParticlePresetIssues(
     }
     if (!Number.isInteger(rows) || rows < 1 || !isFiniteNumber(rows)) {
       errors.push("renderer.textureSheet.rows: must be an integer >= 1.");
+    }
+    if (sheet.animationMode !== undefined && !TEXTURE_SHEET_ANIMATION_MODES.has(sheet.animationMode)) {
+      errors.push(
+        `renderer.textureSheet.animationMode: must be one of ${[...TEXTURE_SHEET_ANIMATION_MODES].map((m) => `"${m}"`).join(", ")} when set.`
+      );
     }
   }
 

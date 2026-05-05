@@ -487,12 +487,12 @@ renderer: {
   textureSheet: {
     columns: 4,
     rows: 4,
-    randomFrame: true,
+    animationMode: "randomStart",
   },
 }
 ```
 
-For flipbook animation, advance frames over each particle lifetime. `randomStartFrame` remains supported as an alias for `randomFrame`.
+For flipbook animation, use `animationMode`.
 
 ```ts
 renderer: {
@@ -500,8 +500,7 @@ renderer: {
   textureSheet: {
     columns: 4,
     rows: 4,
-    frameOverLifetime: true,
-    randomFrame: true,
+    animationMode: "randomStartOverLifetime",
   },
 }
 ```

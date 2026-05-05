@@ -8,8 +8,7 @@ renderer: {
   textureSheet: {
     columns: 4,
     rows: 4,
-    randomFrame: true,
-    frameOverLifetime: true,
+    animationMode: "randomStartOverLifetime",
   },
 }
 ```
@@ -20,9 +19,7 @@ renderer: {
 | --- | --- | --- |
 | `columns` | Required | Number of columns in the atlas. Clamped to at least `1`. |
 | `rows` | Required | Number of rows in the atlas. Clamped to at least `1`. |
-| `randomFrame` | `false` | Whether each particle starts on a random frame. |
-| `randomStartFrame` | Alias | Backward-compatible alias for `randomFrame`. |
-| `frameOverLifetime` | `false` | Whether frame advances by normalized age. |
+| `animationMode` | `"static"` | High-level frame selection mode: `"static"`, `"randomStart"`, `"overLifetime"`, `"randomStartOverLifetime"`. |
 
 Total frames:
 
@@ -32,15 +29,22 @@ totalFrames = columns * rows
 
 ## Frame Selection
 
+`animationMode` controls both start randomization and lifetime advancement:
+
+- `"static"`: frame `0`, no advancement
+- `"randomStart"`: random start frame, no advancement
+- `"overLifetime"`: frame `0` plus lifetime advancement
+- `"randomStartOverLifetime"`: random start plus lifetime advancement
+
 Base frame:
 
 - `0` by default.
-- Random frame if `randomFrame` or `randomStartFrame` is true.
+- Random frame for modes with `"randomStart"`.
 
 Lifetime advancement:
 
 ```ts
-if (frameOverLifetime) {
+if (animationMode advances over lifetime) {
   frame += floor(ageT * totalFrames)
 }
 ```
@@ -68,7 +72,7 @@ Random static variant:
 textureSheet: {
   columns: 4,
   rows: 4,
-  randomFrame: true,
+  animationMode: "randomStart",
 }
 ```
 
@@ -78,7 +82,7 @@ Flipbook animation:
 textureSheet: {
   columns: 4,
   rows: 4,
-  frameOverLifetime: true,
+  animationMode: "overLifetime",
 }
 ```
 
@@ -88,8 +92,7 @@ Randomized flipbook start:
 textureSheet: {
   columns: 4,
   rows: 4,
-  randomFrame: true,
-  frameOverLifetime: true,
+  animationMode: "randomStartOverLifetime",
 }
 ```
 

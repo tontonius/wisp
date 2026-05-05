@@ -18,9 +18,7 @@ renderer?: {
   textureSheet?: {
     columns: number;
     rows: number;
-    randomFrame?: boolean;
-    frameOverLifetime?: boolean;
-    randomStartFrame?: boolean;
+    animationMode?: "static" | "randomStart" | "overLifetime" | "randomStartOverLifetime";
   };
   dispersal?: {
     enabled?: boolean;
