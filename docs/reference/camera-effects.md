@@ -61,10 +61,14 @@ Getter:
 Wisp-facing API shape for camera effects:
 
 ```ts
-const wisp = new Wisp(camera, {
-  shake: {
-    decayRate: 1.4,
-    traumaExponent: 2,
+const wisp = new Wisp({
+  scene,
+  camera,
+  cameraEffects: {
+    shake: {
+      decayRate: 1.4,
+      traumaExponent: 2,
+    },
   },
 });
 

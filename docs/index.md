@@ -7,13 +7,20 @@ This documentation follows the Diataxis shape:
 - Reference documents describe every public API surface and option.
 - Explanations describe why the system is built the way it is.
 
-Wisp is a game-feel effects engine for Three.js. The current core module is a Unity/Shuriken-inspired particle system with JSON-style presets, CPU/GPU simulation backends, and ergonomic named effect spawning.
+Wisp is a modular game-feel effects engine for Three.js.
+
+Current core modules:
+
+- `particles`: Unity/Shuriken-inspired particle authoring with CPU/GPU simulation backends.
+- `camera`: trauma-based camera shake designed to layer onto existing camera rigs.
 
 ## Start Here
 
-- [Tutorial: First Particle Effect](tutorials/first-particle-effect.md)
-- [How To Choose CPU, GPU, Or Auto](how-to/choose-a-backend.md)
 - [Reference: Public API](reference/api.md)
+- [Reference: Camera Effects](reference/camera-effects.md)
+- [Tutorial: First Particle Effect](tutorials/first-particle-effect.md)
+- [How To Add Trauma-Based Camera Shake](how-to/add-camera-shake.md)
+- [How To Choose CPU, GPU, Or Auto](how-to/choose-a-backend.md)
 - [Explanation: Architecture](explanation/architecture.md)
 
 ## Tutorials
@@ -34,6 +41,9 @@ Wisp is a game-feel effects engine for Three.js. The current core module is a Un
 
 - [Public API](reference/api.md)
 - [Camera Effects](reference/camera-effects.md)
+
+Particle module reference:
+
 - [ParticlePreset](reference/particle-preset.md)
 - [Preset Validation](reference/preset-validation.md)
 - [Types And Value Shapes](reference/types-and-value-shapes.md)

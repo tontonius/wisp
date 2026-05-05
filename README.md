@@ -1,10 +1,21 @@
 # Wisp
 
-Wisp is a game-feel effects engine for Three.js.
+Wisp is a modular game-feel effects engine for Three.js.
 
-Today, the particle system is the core implemented module: a Unity-Shuriken-inspired foundation focused on game-ready ergonomics over exposing every possible low-level knob.
+Today, two core modules are implemented:
+
+- `particles`: a Unity-Shuriken-inspired foundation focused on game-ready ergonomics over exposing every possible low-level knob.
+- `camera`: trauma-based camera shake that layers onto existing camera rigs.
 
 ## Features
+
+Camera module:
+
+- Trauma-based camera shake module (`Wisp` / `wisp.camera.shake`)
+- Linear trauma decay with nonlinear response curve (`trauma^2` / `trauma^3` style tuning)
+- Coherent time-based shake noise for smooth handheld-style motion
+
+Particle module:
 
 - Hybrid CPU/GPU simulation backend
 - CPU backend for precise gameplay-ish effects
@@ -23,7 +34,9 @@ Today, the particle system is the core implemented module: a Unity-Shuriken-insp
 - Texture-sheet / flipbook UV support
 - JSON-style presets
 - `ParticleWorld` manager with auto-cleanup
-- Trauma-based camera shake module (`Wisp` / `wisp.camera.shake`)
+
+General:
+
 - TypeScript-first API
 
 ## Install
@@ -54,16 +67,18 @@ The full Diataxis-style documentation set lives in [`docs/`](docs/index.md):
 - Reference pages for every public API and preset module.
 - Explanations for architecture and backend tradeoffs.
 
-Camera documentation entry points:
+Module entry points:
 
 - [How To Add Trauma-Based Camera Shake](docs/how-to/add-camera-shake.md)
 - [Reference: Camera Effects](docs/reference/camera-effects.md)
+- [Tutorial: First Particle Effect](docs/tutorials/first-particle-effect.md)
+- [Reference: Particle API](docs/reference/api.md)
 
 ## Basic usage
 
 ```ts
 import * as THREE from "three";
-import { ParticleWorld, ParticlePreset } from "./src";
+import { Wisp, ParticlePreset } from "./src";
 
 const scene = new THREE.Scene();
 const renderer = new THREE.WebGLRenderer();
@@ -119,9 +134,16 @@ const explosion: ParticlePreset = {
   },
 };
 
-const particles = new ParticleWorld(scene, { explosion }, { renderer });
+const wisp = new Wisp({
+  scene,
+  camera,
+  particles: {
+    presets: { explosion },
+    renderer,
+  },
+});
 
-particles.spawn("explosion", {
+wisp.particles?.spawn("explosion", {
   position: [0, 0, 0],
 });
 
@@ -129,7 +151,7 @@ function animate() {
   requestAnimationFrame(animate);
 
   const dt = clock.getDelta();
-  particles.update(dt, camera);
+  wisp.update(dt);
 
   renderer.render(scene, camera);
 }
@@ -191,8 +213,12 @@ const magicStorm: ParticlePreset = {
 Then:
 
 ```ts
-const particles = new ParticleWorld(scene, { magicStorm }, { renderer });
-particles.spawn("magicStorm", { position: [0, 0, 0] });
+const wisp = new Wisp({
+  scene,
+  camera,
+  particles: { presets: { magicStorm }, renderer },
+});
+wisp.particles?.spawn("magicStorm", { position: [0, 0, 0] });
 ```
 
 If you create a GPU `ParticleSystem` manually, pass the renderer:

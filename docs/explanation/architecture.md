@@ -1,16 +1,35 @@
 # Architecture
 
-The system is built around a small public API and two simulation backends.
+Wisp is organized as a modular effects engine. Each module exposes its own runtime API and can be used independently.
 
 ```txt
-ParticleWorld
-  └─ ParticleEffectLibrary
-       └─ ParticleSystem
-            ├─ CPU backend
-            └─ GPU backend
+Wisp
+  ├─ camera module
+  │    └─ CameraEffectsSystem
+  │         └─ CameraShakeController
+  └─ particles module
+       └─ ParticleWorld
+            └─ ParticleEffectLibrary
+                 └─ ParticleSystem
+                      ├─ CPU backend
+                      └─ GPU backend
 ```
 
-## Preset-Driven Authoring
+## Modules
+
+### Camera module
+
+- Focused on trauma-based shake.
+- Integrates by layering on top of an existing camera controller/follow rig.
+- Public surfaces include `Wisp`, `WispCamera`, `CameraEffectsSystem`, and `CameraShakeController`.
+
+### Particles module
+
+- Preset-driven particle authoring for gameplay and visual effects.
+- Exposes `ParticleWorld`, `ParticleEffectLibrary`, and `ParticleSystem`.
+- Supports CPU/GPU backend selection under a shared authoring shape.
+
+## Preset-Driven Authoring (Particles)
 
 Effects are described as `ParticlePreset` objects:
 
@@ -24,7 +43,7 @@ const preset: ParticlePreset = {
 
 The preset is the authoring contract. Both CPU and GPU backends read the same shape where possible.
 
-## Runtime Objects
+## Runtime Objects (Particles)
 
 `ParticleWorld` is the game-facing manager:
 
@@ -46,7 +65,7 @@ The preset is the authoring contract. Both CPU and GPU backends read the same sh
 - Selects a backend.
 - Exposes playback, update, debug, and disposal methods.
 
-## Backend Boundary
+## Backend Boundary (Particles)
 
 CPU and GPU backends implement the same internal interface:
 
@@ -62,7 +81,7 @@ dispose
 
 This lets `ParticleSystem` expose one public API while the backends use very different storage and rendering strategies.
 
-## Why Two Backends
+## Why Two Backends (Particles)
 
 CPU is better for:
 
@@ -81,7 +100,7 @@ GPU is better for:
 
 Trying to make one backend perfect for both would make the system more complicated and less honest.
 
-## Rendering
+## Rendering (Particles)
 
 Both backends render billboard quads.
 

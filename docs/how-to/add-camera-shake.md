@@ -2,19 +2,29 @@
 
 Use the `Wisp` camera module to add event-driven shake with linear trauma decay and nonlinear intensity.
 
-## 1) Create Wisp with camera shake options
+## 1) Create one Wisp instance for modules
 
 ```ts
 import { Wisp } from "@wisp/three";
 
-const wisp = new Wisp(camera, {
-  shake: {
-    decayRate: 1.4,
-    traumaExponent: 2,
-    noiseFrequency: 22,
+const wisp = new Wisp({
+  scene,
+  camera,
+  cameraEffects: {
+    shake: {
+      decayRate: 1.4,
+      traumaExponent: 2,
+      noiseFrequency: 22,
+    },
+  },
+  particles: {
+    presets: { explosion },
+    renderer,
   },
 });
 ```
+
+You can still use the legacy constructor (`new Wisp(camera, { shake: ... })`), but the object form keeps camera and particles consistent under one facade.
 
 ## 2) Trigger shake from gameplay events
 

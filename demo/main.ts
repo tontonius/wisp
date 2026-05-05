@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { Pane } from "tweakpane";
 import * as EssentialsPlugin from "@tweakpane/plugin-essentials";
-import { ParticleWorld, Wisp } from "../src";
+import { Wisp } from "../src";
 import type { Curve, Gradient, ParticlePreset, ParticleSystem } from "../src";
 import {
   defaultGradientStops,
@@ -655,26 +655,31 @@ const particleWorldOptions = {
     : {}),
 };
 
-const particles = new ParticleWorld(
+const wisp = new Wisp({
   scene,
-  {
-    ...worldPresets,
-    customEffect: makeCustomPreset(),
+  camera,
+  cameraEffects: {
+    shake: {
+      decayRate: cameraShakeParams.decayRate,
+      traumaExponent: cameraShakeParams.traumaExponent,
+      noiseFrequency: cameraShakeParams.noiseFrequency,
+      maxRotation: [
+        THREE.MathUtils.degToRad(cameraShakeParams.maxPitchDeg),
+        THREE.MathUtils.degToRad(cameraShakeParams.maxYawDeg),
+        THREE.MathUtils.degToRad(cameraShakeParams.maxRollDeg),
+      ],
+    },
   },
-  particleWorldOptions
-);
-const wisp = new Wisp(camera, {
-  shake: {
-    decayRate: cameraShakeParams.decayRate,
-    traumaExponent: cameraShakeParams.traumaExponent,
-    noiseFrequency: cameraShakeParams.noiseFrequency,
-    maxRotation: [
-      THREE.MathUtils.degToRad(cameraShakeParams.maxPitchDeg),
-      THREE.MathUtils.degToRad(cameraShakeParams.maxYawDeg),
-      THREE.MathUtils.degToRad(cameraShakeParams.maxRollDeg),
-    ],
+  particles: {
+    presets: {
+      ...worldPresets,
+      customEffect: makeCustomPreset(),
+    },
+    renderer: particleWorldOptions.renderer,
+    pooling: particleWorldOptions.pooling,
   },
 });
+const particles = wisp.particles!;
 
 function applyCameraShakeConfig(): void {
   wisp.camera.configureShake({
@@ -1571,7 +1576,6 @@ function animate() {
   updateCameraOrbit();
   wisp.update(dt);
   cameraRuntime.trauma = wisp.camera.trauma;
-  particles.update(dt, camera);
   renderSceneDepthWithoutParticles();
   syncSoftParticleDepthTexture();
   runtimeStatsRefreshElapsed += dt;

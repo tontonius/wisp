@@ -1,12 +1,12 @@
 # First Particle Effect
 
-This tutorial creates a small burst effect, registers it in a `ParticleWorld`, spawns it, and updates it in a render loop.
+This tutorial creates a small burst effect, registers it in `wisp.particles`, spawns it, and updates it through the `Wisp` facade.
 
 ## 1. Create A Three.js Scene
 
 ```ts
 import * as THREE from "three";
-import { ParticleWorld, type ParticlePreset } from "../../src";
+import { Wisp, type ParticlePreset } from "../../src";
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -68,14 +68,21 @@ const sparkleBurst: ParticlePreset = {
 ## 3. Register And Spawn It
 
 ```ts
-const particles = new ParticleWorld(scene, { sparkleBurst }, { renderer });
+const wisp = new Wisp({
+  scene,
+  camera,
+  particles: {
+    presets: { sparkleBurst },
+    renderer,
+  },
+});
 
-particles.spawn("sparkleBurst", {
+wisp.particles!.spawn("sparkleBurst", {
   position: [0, 0.4, 0],
 });
 ```
 
-`ParticleWorld` adds the spawned `ParticleSystem` to `scene` and starts it by default.
+`wisp.particles.spawn` adds the spawned `ParticleSystem` to `scene` and starts it by default.
 
 ## 4. Update Every Frame
 
@@ -86,7 +93,7 @@ function animate() {
   requestAnimationFrame(animate);
 
   const dt = Math.min(clock.getDelta(), 1 / 30);
-  particles.update(dt, camera);
+  wisp.update(dt);
   renderer.render(scene, camera);
 }
 
@@ -120,5 +127,5 @@ simulation: "gpu",
 maxParticles: 4096,
 ```
 
-GPU systems require a `THREE.WebGLRenderer` in `ParticleSystemOptions` or `ParticleWorldOptions`.
+GPU systems require a `THREE.WebGLRenderer` in `Wisp` particle options (`particles.renderer`) or low-level `ParticleSystemOptions`/`ParticleWorldOptions`.
 

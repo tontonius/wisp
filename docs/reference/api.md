@@ -1,10 +1,17 @@
 # Public API Reference
 
-All public exports come from `src/index.ts`, which re-exports `src/particles.ts` (a compatibility barrel that forwards to `src/particles/index.ts`).
+All public exports come from `src/index.ts`.
 
 ```ts
 export * from "./particles";
+export * from "./camera";
+export * from "./wisp";
 ```
+
+Wisp currently exposes two core modules:
+
+- camera effects (`Wisp`, `WispCamera`, `CameraEffectsSystem`, `CameraShakeController`)
+- particles (`ParticleWorld`, `ParticleEffectLibrary`, `ParticleSystem`, and particle types/utilities)
 
 ## Exported Classes
 
@@ -14,12 +21,13 @@ export * from "./particles";
 class Wisp
 ```
 
-High-level facade for modular effects systems. In v0.2 this exposes camera effects:
+High-level facade for modular effects systems. It exposes `wisp.camera` and `wisp.particles`.
 
 Constructor:
 
 ```ts
 new Wisp(camera: THREE.Camera, options?: CameraEffectsOptions)
+new Wisp(options: WispOptions)
 ```
 
 Fields:
@@ -27,13 +35,40 @@ Fields:
 | Field | Type | Description |
 | --- | --- | --- |
 | `camera` | `WispCamera` | Camera effects namespace (`shake`, `update`, `reset`, tuning). |
+| `particles` | `WispParticles \| undefined` | Particle effects namespace when `WispOptions.scene` and `WispOptions.particles` are provided. |
 
 Methods:
 
 | Method | Returns | Description |
 | --- | --- | --- |
-| `update(dt)` | `void` | Updates camera effects each frame. |
+| `update(dt, camera?)` | `void` | Updates all active facade modules (`camera`, `particles`). |
 | `dispose()` | `void` | Resets camera effects state and releases internal references. |
+
+### `WispParticles`
+
+```ts
+class WispParticles
+```
+
+Facade wrapper around `ParticleWorld` under `wisp.particles`.
+
+Fields:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `systems` | `ReadonlySet<ParticleSystem>` | Live particle systems managed by this facade module. |
+| `debug` | `boolean \| ParticleDebugOptions` | Current debug setting. |
+
+Methods:
+
+| Method | Returns | Description |
+| --- | --- | --- |
+| `register(name, preset)` | `this` | Register or replace a named particle preset. |
+| `spawn(name, options?)` | `ParticleSystem` | Spawn a particle effect by name. |
+| `preload(name, count)` | `this` | Fill inactive pool for an effect (requires pooling). |
+| `setDebug(debug)` | `this` | Set debug behavior for currently active and future systems. |
+| `update(dt, camera)` | `void` | Advance particle simulation. Usually called via `wisp.update(dt)`. |
+| `clear()` | `void` | Dispose all active systems and clear inactive pool. |
 
 ### `WispCamera`
 
@@ -330,6 +365,18 @@ Exported functions (see [Preset validation](preset-validation.md)):
 | `CameraShakeMode` | `"rotationOnly" | "rotationAndTranslation"` |
 | `CameraShakeOptions` | Camera shake tuning object (decay, power curve, coherent noise, max offsets). |
 | `CameraEffectsOptions` | `{ shake?: CameraShakeOptions }` |
+| `WispParticleOptions` | `ParticleWorldOptions & { presets?: Record<string, ParticlePreset> }` |
+| `WispOptions` | `{ scene?: THREE.Object3D; camera: THREE.Camera; cameraEffects?: CameraEffectsOptions; particles?: WispParticleOptions }` |
 
 See the dedicated reference pages for exact option semantics.
+
+## Migration (ParticleWorld -> wisp.particles)
+
+| Before | After |
+| --- | --- |
+| `const world = new ParticleWorld(scene, presets, options)` | `const wisp = new Wisp({ scene, camera, particles: { presets, ...options } })` |
+| `world.register(name, preset)` | `wisp.particles?.register(name, preset)` |
+| `world.spawn(name, options)` | `wisp.particles?.spawn(name, options)` |
+| `world.update(dt, camera)` | `wisp.update(dt)` |
+| `world.clear()` | `wisp.particles?.clear()` |
 
