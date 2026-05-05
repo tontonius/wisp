@@ -781,6 +781,7 @@ function spawnEffect(name: DemoEffectName, position: THREE.Vector3 | [number, nu
   if (name === "shockwave") {
     particles.spawn("shockwave", { position });
     particles.spawn("shockwaveCenterExplosion", { position });
+    particles.spawn("shockwaveSunburst", { position });
     particles.spawn("shockwaveShrapnel", { position });
     return;
   }

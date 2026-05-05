@@ -666,7 +666,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
       },
     },
     overLifetime: {
-      size: [[0, 0], [0.12, 1], [1, 0]],
+      size: [[0, 0], [0.02, 1], [1, 0]],
       opacity: [
         [0, 1],
         [0.74515625, 0.6211032653942217],
@@ -682,8 +682,8 @@ export function createDemoPresets(textures: DemoPresetTextures): {
       ],
     },
     renderer: {
-      texture: bb?.smokePuffSheet1x4 ?? softDisc,
-      ...(bb ? { textureSheet: { columns: 4, rows: 1, randomFrame: true } } : {}),
+      texture: bb?.smokePuffsSheet2x1 ?? softDisc,
+      ...(bb ? { textureSheet: { columns: 2, rows: 1, randomFrame: true } } : {}),
       blendMode: "alpha",
       align: "camera",
       depthWrite: false,
@@ -712,7 +712,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
       bursts: [
         {
           time: 0,
-          count: [30, 40],
+          count: [20, 30],
         },
       ],
     },
@@ -727,7 +727,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
       angularVelocity: 0,
     },
     forces: {
-      acceleration: [0, -0.45, 0],
+      acceleration: [0, 1.75, 0],
       drag: 12.83,
       noise: {
         strength: 0.28,
@@ -742,31 +742,25 @@ export function createDemoPresets(textures: DemoPresetTextures): {
       speed: [[0, 30], [1, 0]],
       dampen: 1,
     },
-    velocityOverLifetime: {
-      linear: {
-        x: [[0, 0], [1, 0]],
-        y: [[0, 0.75], [1, -0.35]],
-        z: [[0, 0], [1, 0]],
-      },
-    },
+
     rotationBySpeed: {
       speedRange: [0, 8],
       angularVelocity: [[0, 0.65], [1, 17.6]],
     },
     overLifetime: {
       size: [[0, 0], [0.18, 1], [1, 1.25]],
-      opacity: [[0, 0], [0.12, 1], [0.95, 1], [1, 0]],
+      opacity: [[0, 0], [0.12, 1], [0.90, 1], [1, 0]],
       color: [[0, "#ffffff"], [0.16846354166666666, "#ffec70"], [0.8229427083333334, "#a46f4c"]],
     },
     renderer: {
-      texture: bb?.smokePuffSheet1x4 ?? softDisc,
+      texture: bb?.smokePuffsSheet2x1 ?? softDisc,
       blendMode: "alpha",
       align: "camera",
       sorting: "distance",
       depthWrite: false,
       softParticles: true,
       softness: 1.5,
-      ...(bb ? { textureSheet: { columns: 4, rows: 1, randomFrame: true } } : {}),
+      ...(bb ? { textureSheet: { columns: 2, rows: 1, randomFrame: true } } : {}),
     },
   };
 
@@ -817,6 +811,61 @@ export function createDemoPresets(textures: DemoPresetTextures): {
       blendMode: "alpha",
       align: "velocity",
       depthWrite: false,
+    },
+  };
+
+  const shockwaveSunburst: ParticlePreset = {
+    simulation: "cpu",
+    maxParticles: 512,
+    duration: 1.25,
+    loop: false,
+    prewarm: false,
+    autoDispose: false,
+    debug: false,
+    gpu: {
+      maxSpawnPerFrame: 512,
+    },
+    emitter: {
+      type: "point",
+    },
+    emission: {
+      bursts: [
+        {
+          time: 0,
+          count: [1, 1],
+        },
+      ],
+    },
+    start: {
+      lifetime: [0.1, 0.1],
+      speed: [0, 0],
+      size: [3, 3],
+      color: ["#ffffff", "#ffffff"],
+      opacity: [1, 1],
+      rotation: [0, Math.PI * 2],
+      angularVelocity: 0,
+    },
+    overLifetime: {
+      size: [
+        [0, 0],
+        [0.18, 1],
+        [1, 3.48],
+      ],
+      opacity: [
+        [0, 0],
+        [0.12, 1],
+        [1, 1],
+        [1, 0],
+      ],
+    },
+    renderer: {
+      texture: bb?.sunburst ?? softDisc,
+      blendMode: "alpha",
+      align: "camera",
+      sorting: "distance",
+      depthWrite: false,
+      softParticles: true,
+      softness: 1.5,
     },
   };
 
@@ -1269,6 +1318,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
     orbitingEmitterWorldDemo,
     shockwave,
     shockwaveCenterExplosion,
+    shockwaveSunburst,
     shockwaveShrapnel,
     gpuMagicStorm,
     speedVisualDemo,

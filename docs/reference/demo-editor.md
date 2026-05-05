@@ -12,15 +12,17 @@ The demo in `demo/main.ts` includes a Tweakpane editor for creating and copying 
 
 On startup, `demo/main.ts` loads PNGs via `loadDemoBillboardTextures` from `demo/billboard-textures.ts` and passes them into `createDemoPresets` as `textures.billboards`. If loading fails (network, missing files), the demo logs a warning and presets fall back to the procedural disc textures.
 
-Those PNGs are treated as **white (or light) art on black**: each bitmap is rasterized to a canvas and **alpha is derived from luminance** (`alpha *= luminance/255`), matching the Tweakpane custom image option “alpha from luminance” in `main.ts`. True RGBA assets still work; premultiplied alpha is respected via the existing alpha channel in that formula.
+Those PNGs are treated as **white (or light) art on black**: each bitmap is rasterized to a canvas, then near-black luminance is hard-cut to transparent while mid/high luminance keeps source alpha. This is intentionally a stronger matte cutoff than plain `alpha *= luminance/255` so dark background haze does not linger. True RGBA assets still work; premultiplied alpha is respected via the existing alpha channel.
 
 | File | Layout (columns × rows) | Used by (when loaded) |
 | --- | --- | --- |
 | `smoke_puff.png` | Single image | `smokePuff` |
 | `1x_4_smoke_puff_sheet.png` | 4 × 1 | `shockwaveCenterExplosion` (`textureSheet.randomFrame`) |
+| `2x1_smoke_puffs.png` | 2 × 1 | Available via `demoBillboardUrls` / `DemoBillboardTextureSet.smokePuffsSheet2x1` for custom presets |
 | `3x4_smoke_puff_dispersal.png` | 4 × 3 (from pixel grid) | `magicAuraGpu` (`textureSheet.randomFrame`) |
 | `leaves_sprite_sheet.png` | 4 × 1 | `tornadoDemo`, `autumnLeaves` |
 | `snowflake_sprite_sheet.png` | 4 × 1 | `snowGpu` |
+| `sunburst.png` | Single image | `shockwaveSunburst` (spawned with **Shockwave**) |
 
 To reuse the same resolved URLs elsewhere (e.g. your own loader), import `demoBillboardUrls` from `demo/billboard-textures.ts` (built with `new URL(..., import.meta.url)` so Vite includes the files in the bundle).
 
@@ -48,7 +50,7 @@ Separate bottom-left Tweakpane used for recording-friendly camera motion. These 
 
 | Control | Effect |
 | --- | --- |
-| `click` | Selects the effect spawned by pointer clicks and buttons (including **Speed visual (CPU)**, **Candy vortex**, **Blue flame (dispersal)** for `renderer.dispersal`, and **Shockwave** which spawns a ring + center blast + shrapnel burst). |
+| `click` | Selects the effect spawned by pointer clicks and buttons (including **Speed visual (CPU)**, **Candy vortex**, **Blue flame (dispersal)** for `renderer.dispersal`, and **Shockwave** which spawns a ring + center blast + sunburst + shrapnel burst). |
 | `Spawn at center` | Spawns the selected effect near the center of the scene. |
 | `Load selected into editor` | Copies a built-in preset into the custom editor controls. |
 | `Preview loop` | Spawns or respawns the custom effect as a loop preview. |
