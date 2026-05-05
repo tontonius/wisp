@@ -1,6 +1,6 @@
 # Public API Reference
 
-All public exports come from `src/index.ts`, which re-exports `src/particles.ts`.
+All public exports come from `src/index.ts`, which re-exports `src/particles.ts` (a compatibility barrel that forwards to `src/particles/index.ts`).
 
 ```ts
 export * from "./particles";
