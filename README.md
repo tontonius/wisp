@@ -84,6 +84,28 @@ Module entry points:
 
 ```ts
 import * as THREE from "three";
+import { Wisp, createStarterKit, type ParticlePreset } from "@tontonius/wisp";
+
+const scene = new THREE.Scene();
+const renderer = new THREE.WebGLRenderer();
+const { presets } = createStarterKit();
+
+const wisp = new Wisp({
+  scene,
+  camera,
+  particles: {
+    presets,
+    renderer,
+  },
+});
+
+wisp.particles?.spawn("explosion", { position: [0, 0, 0] });
+```
+
+Custom preset path:
+
+```ts
+import * as THREE from "three";
 import { Wisp, type ParticlePreset } from "@tontonius/wisp";
 
 const scene = new THREE.Scene();
@@ -140,14 +162,7 @@ const explosion: ParticlePreset = {
   },
 };
 
-const wisp = new Wisp({
-  scene,
-  camera,
-  particles: {
-    presets: { explosion },
-    renderer,
-  },
-});
+wisp.particles?.register("explosion", explosion);
 
 wisp.particles?.spawn("explosion", {
   position: [0, 0, 0],

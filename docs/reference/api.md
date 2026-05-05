@@ -8,10 +8,11 @@ export * from "./camera";
 export * from "./wisp";
 ```
 
-Wisp currently exposes two core modules:
+Wisp currently exposes three core areas:
 
 - camera effects (`Wisp`, `WispCamera`, `CameraEffectsSystem`, `CameraShakeController`)
 - particles (`ParticleWorld`, `ParticleEffectLibrary`, `ParticleSystem`, and particle types/utilities)
+- starter content (`createStarterTextures`, `createStarterPresets`, `createStarterKit`, `starterBillboardUrls`)
 
 ## IntelliSense Contract
 
@@ -375,8 +376,35 @@ Exported functions (see [Preset validation](preset-validation.md)):
 | `CameraEffectsOptions` | `{ shake?: CameraShakeOptions }` |
 | `WispParticleOptions` | `ParticleWorldOptions & { presets?: Record<string, ParticlePreset> }` |
 | `WispOptions` | `{ scene?: THREE.Object3D; camera: THREE.Camera; cameraEffects?: CameraEffectsOptions; particles?: WispParticleOptions }` |
+| `StarterTexturePack` | `{ softDisc; hardDisc; spark; smokePuffsSheet4x4 }` as `THREE.Texture` values. |
+| `StarterEffectName` | `"explosion" | "muzzleFlash" | "smokePuff" | "hitSparks" | "magicBurst" | "runSmoke" | "jumpSmokeRing"` |
+| `StarterKit` | `{ textures: StarterTexturePack; presets: Record<StarterEffectName, ParticlePreset> }` |
 
 See the dedicated reference pages for exact option semantics.
+
+## Starter Kit Helpers
+
+Use these helpers when you want a zero-setup starter pack:
+
+```ts
+import { createStarterKit } from "@tontonius/wisp";
+
+const { presets } = createStarterKit();
+```
+
+Then pass those presets directly into `Wisp`:
+
+```ts
+const wisp = new Wisp({
+  scene,
+  camera,
+  particles: { renderer, presets },
+});
+
+wisp.particles?.spawn("explosion");
+```
+
+See [Starter Kit](starter-kit.md) for details.
 
 ## Migration (ParticleWorld -> wisp.particles)
 

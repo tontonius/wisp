@@ -16,6 +16,7 @@
   },
   "files": [
     "dist",
+    "demo/billboards/4x4_smoke_puffs.png",
     "README.md",
     "LICENSE",
     "docs"

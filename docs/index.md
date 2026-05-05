@@ -17,6 +17,7 @@ Current core modules:
 ## Start Here
 
 - [Reference: Public API](reference/api.md)
+- [Reference: Starter Kit](reference/starter-kit.md)
 - [Reference: Camera Effects](reference/camera-effects.md)
 - [Tutorial: First Particle Effect](tutorials/first-particle-effect.md)
 - [How To Add Trauma-Based Camera Shake](how-to/add-camera-shake.md)
@@ -40,6 +41,7 @@ Current core modules:
 ## Reference
 
 - [Public API](reference/api.md)
+- [Starter Kit](reference/starter-kit.md)
 - [Camera Effects](reference/camera-effects.md)
 
 Particle module reference:
