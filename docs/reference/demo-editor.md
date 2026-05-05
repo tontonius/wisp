@@ -19,6 +19,7 @@ Those PNGs are treated as **white (or light) art on black**: each bitmap is rast
 | `smoke_puff.png` | Single image | `smokePuff` |
 | `1x_4_smoke_puff_sheet.png` | 4 × 1 | `shockwaveCenterExplosion` (`textureSheet.randomFrame`) |
 | `2x1_smoke_puffs.png` | 2 × 1 | Available via `demoBillboardUrls` / `DemoBillboardTextureSet.smokePuffsSheet2x1` for custom presets |
+| `4x4_smoke_puffs.png` | 4 × 4 | `stylizedExplosion` (`textureSheet.randomFrame`) |
 | `3x4_smoke_puff_dispersal.png` | 4 × 3 (from pixel grid) | `magicAuraGpu` (`textureSheet.randomFrame`) |
 | `leaves_sprite_sheet.png` | 4 × 1 | `tornadoDemo`, `autumnLeaves` |
 | `snowflake_sprite_sheet.png` | 4 × 1 | `snowGpu` |
@@ -50,7 +51,7 @@ Separate bottom-left Tweakpane used for recording-friendly camera motion. These 
 
 | Control | Effect |
 | --- | --- |
-| `click` | Selects the effect spawned by pointer clicks and buttons (including **Speed visual (CPU)**, **Candy vortex**, **Blue flame (dispersal)** for `renderer.dispersal`, and **Shockwave** which spawns a ring + center blast + sunburst + shrapnel burst). |
+| `click` | Selects the effect spawned by pointer clicks and buttons (including **Speed visual (CPU)**, **Candy vortex**, **Blue flame (dispersal)** for `renderer.dispersal`, **Stylized explosion**, and **Shockwave** which spawns a ring + center blast + sunburst + shrapnel burst). |
 | `Spawn at center` | Spawns the selected effect near the center of the scene. |
 | `Load selected into editor` | Copies a built-in preset into the custom editor controls. |
 | `Preview loop` | Spawns or respawns the custom effect as a loop preview. |
@@ -288,5 +289,5 @@ Soft particles in the demo:
 
 `Load billboard image` opens a local file input. The demo creates a `THREE.CanvasTexture`.
 
-If `image alpha` is enabled, image alpha is multiplied by luminance so white-on-black images can become useful alpha sprites.
+If `image alpha` is enabled, near-black luminance is hard-cut to transparent while mid/high luminance keeps source alpha. This makes white-on-black sprites key out cleanly without over-fading dark grays.
 

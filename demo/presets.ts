@@ -29,7 +29,8 @@ export type DemoEffectName =
   | "customEffect"
   | "explosionCombo"
   | "blueFlameDispersal"
-  | "autumnLeaves";
+  | "autumnLeaves"
+  | "stylizedExplosion";
 
 type DemoPresetTextures = {
   softDisc: THREE.Texture;
@@ -1202,6 +1203,104 @@ export function createDemoPresets(textures: DemoPresetTextures): {
     },
   };
 
+  const stylizedExplosion: ParticlePreset = {
+    name: "Stylized explosion",
+    simulation: "cpu",
+    maxParticles: 512,
+    duration: 1.25,
+    loop: false,
+    prewarm: false,
+    autoDispose: true,
+    debug: false,
+    gpu: {
+      maxSpawnPerFrame: 512,
+    },
+    emitter: {
+      type: "hemisphere",
+      radius: 0.45,
+      emitFrom: "volume",
+    },
+    emission: {
+      bursts: [{ time: 0, count: [90, 140] }],
+    },
+    start: {
+      lifetime: [1.86, 2.95],
+      speed: [20, 20],
+      size: [1.675, 1.675],
+      color: "#ffffff",
+      opacity: [1, 1],
+      velocity: [
+        [-4, 0, -4],
+        [4, 0.9, 4],
+      ],
+      rotation: [0, Math.PI * 2],
+      angularVelocity: [-1.5, 1.5],
+    },
+    forces: {
+      acceleration: [0, 2.17, 0],
+      drag: 7.39,
+      vortex: {
+        center: [0, 0, 0],
+        axis: [0, 1, 0],
+        orbitalSpeed: 0,
+        inward: 0,
+        upward: 0,
+      },
+      noise: {
+        strength: 0.28,
+        frequency: 4.5,
+        scroll: [0.2, 0.35, 0.17],
+        octaves: 2,
+        lacunarity: 2,
+        persistence: 0.5,
+      },
+    },
+    overLifetime: {
+      opacity: [
+        [0, 1],
+        [1, 1],
+      ],
+      color: [
+        [0, "#ffffff"],
+        [0.11036458333333334, "#fff59d"],
+        [0.2570572916666667, "#f4b53f"],
+        [0.4859895833333333, "#b47a2e"],
+        [0.6268489583333333, "#7c574b"],
+        [0.828984375, "#545454"],
+      ],
+    },
+    renderer: {
+      texture: bb?.smokePuffsSheet4x4 ?? softDisc,
+      blendMode: "alpha",
+      align: "camera",
+      sorting: "distance",
+      depthWrite: false,
+      softParticles: true,
+      softness: 1.5,
+      ...(bb
+        ? {
+            textureSheet: {
+              columns: 4,
+              rows: 4,
+              randomFrame: true,
+              frameOverLifetime: false,
+            },
+          }
+        : {}),
+      dispersal: {
+        strength: 1,
+        noiseScale: 20.4,
+        edgeSoftness: 0.02,
+        scroll: [0, 0],
+        amount: [
+          [0, 0],
+          [0.65, 0],
+          [1, 1],
+        ],
+      },
+    },
+  };
+
   /** CPU: `leaves_sprite_sheet.png` (4×1), vortex + noise; green → autumn tint over lifetime. */
   const autumnLeaves: ParticlePreset = {
     name: "Autumn leaves (billboard)",
@@ -1324,6 +1423,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
     speedVisualDemo,
     candyVortex,
     blueFlameDispersal,
+    stylizedExplosion,
     autumnLeaves,
   };
 
@@ -1352,6 +1452,7 @@ export function createDemoPresets(textures: DemoPresetTextures): {
     speedVisualDemo,
     candyVortex,
     blueFlameDispersal,
+    stylizedExplosion,
     autumnLeaves,
   };
 

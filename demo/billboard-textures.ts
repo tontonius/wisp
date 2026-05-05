@@ -4,6 +4,7 @@ const demoBillboardUrls = {
   smokePuff: new URL("./billboards/smoke_puff.png", import.meta.url).href,
   smokePuffSheet1x4: new URL("./billboards/1x_4_smoke_puff_sheet.png", import.meta.url).href,
   smokePuffsSheet2x1: new URL("./billboards/2x1_smoke_puffs.png", import.meta.url).href,
+  smokePuffsSheet4x4: new URL("./billboards/4x4_smoke_puffs.png", import.meta.url).href,
   smokeDispersal3x4: new URL("./billboards/3x4_smoke_puff_dispersal.png", import.meta.url).href,
   leavesSpriteSheet: new URL("./billboards/leaves_sprite_sheet.png", import.meta.url).href,
   snowflakeSpriteSheet: new URL("./billboards/snowflake_sprite_sheet.png", import.meta.url).href,
@@ -17,6 +18,7 @@ export type DemoBillboardTextureSet = {
   smokePuff: THREE.Texture;
   smokePuffSheet1x4: THREE.Texture;
   smokePuffsSheet2x1: THREE.Texture;
+  smokePuffsSheet4x4: THREE.Texture;
   smokeDispersalSheet: THREE.Texture;
   leavesSpriteSheet: THREE.Texture;
   snowflakeSpriteSheet: THREE.Texture;
@@ -89,6 +91,7 @@ function finalizeBillboardTexture(texture: THREE.Texture): void {
  * Sprite sheet layout (from image dimensions):
  * - `1x_4_smoke_puff_sheet.png`: 4×1 tiles (one row).
  * - `2x1_smoke_puffs.png`: 2×1 tiles (two smoke-puff variants in one row).
+ * - `4x4_smoke_puffs.png`: 4×4 tiles (`stylizedExplosion`).
  * - `3x4_smoke_puff_dispersal.png`: 4×3 tiles (736÷184, 552÷184).
  * - `leaves_sprite_sheet.png` / `snowflake_sprite_sheet.png`: 4×1 tiles (2508÷627).
  * - `sunburst.png`: single radial burst art (`shockwaveSunburst`).
@@ -112,11 +115,12 @@ export async function loadDemoBillboardTextures(loader: THREE.TextureLoader): Pr
     return out;
   };
 
-  const [smokePuff, smokePuffSheet1x4, smokePuffsSheet2x1, smokeDispersalSheet, leavesSpriteSheet, snowflakeSpriteSheet, sunburst] =
+  const [smokePuff, smokePuffSheet1x4, smokePuffsSheet2x1, smokePuffsSheet4x4, smokeDispersalSheet, leavesSpriteSheet, snowflakeSpriteSheet, sunburst] =
     await Promise.all([
       toBillboardTexture(demoBillboardUrls.smokePuff),
       toBillboardTexture(demoBillboardUrls.smokePuffSheet1x4),
       toBillboardTexture(demoBillboardUrls.smokePuffsSheet2x1),
+      toBillboardTexture(demoBillboardUrls.smokePuffsSheet4x4),
       toBillboardTexture(demoBillboardUrls.smokeDispersal3x4),
       toBillboardTexture(demoBillboardUrls.leavesSpriteSheet),
       toBillboardTexture(demoBillboardUrls.snowflakeSpriteSheet),
@@ -127,6 +131,7 @@ export async function loadDemoBillboardTextures(loader: THREE.TextureLoader): Pr
     smokePuff,
     smokePuffSheet1x4,
     smokePuffsSheet2x1,
+    smokePuffsSheet4x4,
     smokeDispersalSheet,
     leavesSpriteSheet,
     snowflakeSpriteSheet,
@@ -139,6 +144,7 @@ export async function loadDemoBillboardTextures(loader: THREE.TextureLoader): Pr
     smokePuff,
     smokePuffSheet1x4,
     smokePuffsSheet2x1,
+    smokePuffsSheet4x4,
     smokeDispersalSheet,
     leavesSpriteSheet,
     snowflakeSpriteSheet,

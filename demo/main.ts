@@ -315,6 +315,8 @@ function getSelectedTexture(): THREE.Texture {
 }
 
 function makeTextureFromImage(image: HTMLImageElement, alphaFromLuminance: boolean): THREE.Texture {
+  const BLACK_CUTOFF_LUMA = 32;
+
   const canvas = document.createElement("canvas");
   canvas.width = image.naturalWidth;
   canvas.height = image.naturalHeight;
@@ -328,7 +330,11 @@ function makeTextureFromImage(image: HTMLImageElement, alphaFromLuminance: boole
     const data = imageData.data;
     for (let i = 0; i < data.length; i += 4) {
       const luminance = data[i] * 0.2126 + data[i + 1] * 0.7152 + data[i + 2] * 0.0722;
-      data[i + 3] = Math.round((data[i + 3] * luminance) / 255);
+      if (luminance <= BLACK_CUTOFF_LUMA) {
+        data[i + 3] = 0;
+        continue;
+      }
+      data[i + 3] = Math.round(data[i + 3]);
     }
     ctx.putImageData(imageData, 0, 0);
   }
@@ -1134,6 +1140,7 @@ bind(controlsFolder, "clickEffect", {
     "Speed visual (CPU)": "speedVisualDemo",
     "Candy vortex": "candyVortex",
     "Blue flame (dispersal)": "blueFlameDispersal",
+    "Stylized explosion": "stylizedExplosion",
   },
 });
 controlsFolder.addButton({ title: "Spawn at center" }).on("click", () => spawnEffect(customParams.clickEffect, [0, 0, 0]));
