@@ -1,8 +1,8 @@
-# Three Particles MVP
+# Wisp
 
-A small Unity-Shuriken-inspired particle system for Three.js.
+Wisp is a game-feel effects engine for Three.js.
 
-It is designed for game effects where the developer ergonomics matter more than exposing every cursed knob known to mankind.
+Today, the particle system is the core implemented module: a Unity-Shuriken-inspired foundation focused on game-ready ergonomics over exposing every possible low-level knob.
 
 ## Features
 

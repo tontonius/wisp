@@ -1,8 +1,8 @@
-# Three Particles Roadmap
+# Wisp Roadmap
 
-This document describes the current state of the Three.js particle system library and the planned roadmap ahead.
+This document describes the current state of Wisp's particle module and the planned roadmap ahead for the broader game-feel system.
 
-The goal is to build a reusable, Unity/Shuriken-inspired particle system for Three.js games with strong developer ergonomics, JSON-style presets, and both CPU and GPU simulation backends.
+The current implementation focus is a reusable, Unity/Shuriken-inspired particle system for Three.js games with strong developer ergonomics, JSON-style presets, and both CPU and GPU simulation backends.
 
 ## North Star
 

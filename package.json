@@ -1,6 +1,7 @@
 {
-  "name": "three-particles-mvp",
+  "name": "@wisp/three",
   "version": "0.2.0",
+  "description": "Game-feel effects for Three.js, starting with a high-performance particle system.",
   "type": "module",
   "private": true,
   "scripts": {

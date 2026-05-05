@@ -1,4 +1,4 @@
-# Three Particles Documentation
+# Wisp Documentation
 
 This documentation follows the Diataxis shape:
 
@@ -7,7 +7,7 @@ This documentation follows the Diataxis shape:
 - Reference documents describe every public API surface and option.
 - Explanations describe why the system is built the way it is.
 
-The library is a Unity/Shuriken-inspired particle system for Three.js. It uses JSON-style presets, supports both CPU and GPU simulation backends, and is designed for game effects where spawning named effects should stay ergonomic.
+Wisp is a game-feel effects engine for Three.js. The current core module is a Unity/Shuriken-inspired particle system with JSON-style presets, CPU/GPU simulation backends, and ergonomic named effect spawning.
 
 ## Start Here
 

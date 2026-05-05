@@ -1,6 +1,6 @@
 # Demo Editor Reference
 
-The demo in `demo/main.ts` includes a Tweakpane editor for creating and copying `ParticlePreset` code.
+The Wisp demo in `demo/main.ts` includes a Tweakpane editor for creating and copying `ParticlePreset` code.
 
 ## URL parameters
 
