@@ -28,3 +28,7 @@ Thumbs.db
 # Local agent instructions (not tracked)
 AGENTS.md
 VISION.md
+
+# Internal notes
+.internal-docs/
+internal-docs/

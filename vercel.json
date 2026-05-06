@@ -1,0 +1,4 @@
+{
+  "rewrites": [{ "source": "/editor", "destination": "/" }],
+  "redirects": [{ "source": "/editor/", "destination": "/", "permanent": false }]
+}
