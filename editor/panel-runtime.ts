@@ -24,6 +24,9 @@ export type PanelRuntime = {
     groundVisible: boolean;
     groundColor: string;
     backgroundColor: string;
+    fogEnabled: boolean;
+    fogColor: string;
+    fogNearFar: { x: number; y: number };
   };
 
   softDisc: THREE.Texture;

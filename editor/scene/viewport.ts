@@ -15,6 +15,9 @@ export type ViewportBundle = {
     groundVisible: boolean;
     groundColor: string;
     backgroundColor: string;
+    fogEnabled: boolean;
+    fogColor: string;
+    fogNearFar: { x: number; y: number };
   };
   createSceneDepthTarget: () => THREE.WebGLRenderTarget;
 };
@@ -81,6 +84,9 @@ export function createViewport(canvas: HTMLCanvasElement): ViewportBundle {
     groundVisible: true,
     groundColor: "#6f6f6f",
     backgroundColor: "#2e2f33",
+    fogEnabled: false,
+    fogColor: "#2e2f33",
+    fogNearFar: { x: 3, y: 18 },
   };
 
   function createSceneDepthTarget(): THREE.WebGLRenderTarget {

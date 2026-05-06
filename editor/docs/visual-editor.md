@@ -28,7 +28,7 @@ When adding or changing editor controls, prefer `editor/panels/particle-editor-p
 - Multiple panes (`Scene`, `Layers`, `Particle Editor`, `Diagnostics`, `Debug`) similar to the demo workflow; `Export` is a tab inside the top-right `Layers` pane.
 - Additional bottom-right `Debug` pane with a global on/off `Debug Gizmos` toggle (`wisp.particles.setDebug(...)`) for active and future systems.
 - The `Debug` pane has a `Camera` section with `Auto orbit` and `Speed (deg/s)` controls, using an orbit camera around scene center.
-- The `Scene` pane (docked left of `Layers`) includes `Ground Plane` visibility, `Ground Color`, and `Background` color controls for preview-only scene tuning.
+- The `Scene` pane (docked left of `Layers`) includes `Ground Plane` visibility, `Ground Color`, `Background`, and a `Fog` subfolder with `Enabled`, `Color`, and `Near/Far` controls for preview-only scene tuning.
 - The `Debug` pane has a `Movement` section with `Enabled` and `Mode`; `circleLinear` moves active emitters in a circular path to preview effects on moving objects.
 - The `Layers` pane supports multi-effect composition in one editor session: one folder per layer, opening/clicking a folder selects that layer for parameter editing, with `Name`, `Muted`, `Solo`, and `Offset` controls inside each folder.
 - Layer folder titles append `(M)` when muted and `(S)` when soloed.
