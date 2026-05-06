@@ -4186,8 +4186,9 @@ float dispersalMask(float noise, float progress, float edge) {
         }
         if (uDispersalEnabled == 1) {
           vec2 scroll = uDispersalScroll * uDispersalTime;
-          vec2 dUv = vUv * uDispersalNoiseScale + vec2(vDispersalSeed * 17.413, vDispersalSeed * 63.291) + scroll;
-          float n = uDispersalUseMap == 1 ? texture2D(uDispersalMap, dUv).r : dispersalValueNoise(dUv);
+          vec2 dUvNoise = vUv * uDispersalNoiseScale + vec2(vDispersalSeed * 17.413, vDispersalSeed * 63.291) + scroll;
+          vec2 dUvMap = (vUv - vec2(0.5)) * uDispersalNoiseScale + vec2(0.5) + scroll;
+          float n = uDispersalUseMap == 1 ? texture2D(uDispersalMap, dUvMap).r : dispersalValueNoise(dUvNoise);
           float amount = texture2D(uDispersalAmountCurve, vec2(clamp(vAgeT, 0.0, 1.0), 0.5)).r;
           float m = dispersalMask(n, amount, uDispersalEdge);
           outColor.a *= mix(1.0, m, clamp(uDispersalStrength, 0.0, 1.0));
@@ -4583,8 +4584,9 @@ float dispersalMask(float noise, float progress, float edge) {
           }
           if (uDispersalEnabled == 1) {
             vec2 scroll = uDispersalScroll * uDispersalTime;
-            vec2 dUv = vUv * uDispersalNoiseScale + vec2(vDispersalSeed * 17.413, vDispersalSeed * 63.291) + scroll;
-            float n = uDispersalUseMap == 1 ? texture2D(uDispersalMap, dUv).r : dispersalValueNoise(dUv);
+            vec2 dUvNoise = vUv * uDispersalNoiseScale + vec2(vDispersalSeed * 17.413, vDispersalSeed * 63.291) + scroll;
+            vec2 dUvMap = (vUv - vec2(0.5)) * uDispersalNoiseScale + vec2(0.5) + scroll;
+            float n = uDispersalUseMap == 1 ? texture2D(uDispersalMap, dUvMap).r : dispersalValueNoise(dUvNoise);
             float amount = texture2D(uDispersalAmountCurve, vec2(clamp(vAgeT, 0.0, 1.0), 0.5)).r;
             float m = dispersalMask(n, amount, uDispersalEdge);
             outColor.a *= mix(1.0, m, clamp(uDispersalStrength, 0.0, 1.0));

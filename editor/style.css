@@ -34,12 +34,21 @@ body,
   overflow-y: auto !important;
 }
 
+.pane-dock-top-center {
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
 /* .pane-dock-left .tp-dfwv {
   max-height: calc(100vh - 24px);
   overflow-y: auto !important;
 } */
 
-.pane-dock-right {
+.pane-dock-right-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
   top: 12px;
   right: 12px;
 }

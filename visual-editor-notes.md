@@ -6,3 +6,4 @@
 - Use human-readable UI labels (for example, `Noise Strength`) instead of raw API/camelCase names (for example, `noiseStrength`).
 - For bezier-based lifetime controls, treat bezier as easing/remap from start→end (sampled into a small curve), not as raw keyframe values; normalize drag values defensively to avoid non-finite keyframes during interaction.
 - JSON import/apply still has known flakiness in some paste-and-apply flows (UI state and applied preset can desync); keep this as a follow-up reliability fix before calling import production-ready.
+- Default to the Wisp API for editor features and behavior whenever possible; only build custom behavior outside the Wisp API when absolutely necessary, and ask for explicit confirmation before doing so.

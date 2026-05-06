@@ -220,19 +220,23 @@ const app = document.querySelector<HTMLDivElement>("#app");
 if (!app) throw new Error("Missing #app root.");
 app.innerHTML = `
   <canvas id="viewport-canvas"></canvas>
+  <div id="pane-right-group" class="pane-dock pane-dock-right-group">
+    <div id="pane-scene"></div>
+    <div id="pane-layers"></div>
+  </div>
   <div id="pane-editor" class="pane-dock pane-dock-left"></div>
-  <div id="pane-json" class="pane-dock pane-dock-right"></div>
   <div id="pane-diagnostics" class="pane-dock pane-dock-bottom"></div>
   <div id="pane-debug" class="pane-dock pane-dock-bottom-right"></div>
 `;
 const canvas = document.querySelector<HTMLCanvasElement>("#viewport-canvas")!;
+const scenePaneHost = document.querySelector<HTMLDivElement>("#pane-scene")!;
+const layersPaneHost = document.querySelector<HTMLDivElement>("#pane-layers")!;
 const editorPaneHost = document.querySelector<HTMLDivElement>("#pane-editor")!;
-const jsonPaneHost = document.querySelector<HTMLDivElement>("#pane-json")!;
 const diagnosticsPaneHost = document.querySelector<HTMLDivElement>("#pane-diagnostics")!;
 const debugPaneHost = document.querySelector<HTMLDivElement>("#pane-debug")!;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color("#20242d");
+scene.background = new THREE.Color("#2e2f33");
 const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
 const orbitTarget = new THREE.Vector3(0, 0, 0);
 const orbitOffset = new THREE.Vector3(0, 2.8, 6.5).sub(orbitTarget);
@@ -294,13 +298,20 @@ scene.add(key);
 
 const checker = makeCheckerTexture({ squares: 8, colorA: "#a1a1a1", colorB: "#bbbbbb" });
 checker.repeat.set(2, 2);
+const floorMaterial = new THREE.MeshStandardMaterial({ map: checker, roughness: 1, metalness: 0, color: "#6f6f6f" });
 const floor = new THREE.Mesh(
   new THREE.PlaneGeometry(16, 16),
-  new THREE.MeshStandardMaterial({ map: checker, roughness:1, metalness: 0 })
+  floorMaterial
 );
 floor.rotation.x = -Math.PI / 2;
 scene.add(floor);
 // scene.add(new THREE.GridHelper(16, 16, "#5a6072", "#404654"));
+
+const sceneParams = {
+  groundVisible: true,
+  groundColor: "#6f6f6f",
+  backgroundColor: "#2e2f33",
+};
 
 const wisp = new Wisp({
   scene,
@@ -362,8 +373,41 @@ const defaultPresetTemplate: ParticlePreset = {
 };
 
 let baselinePreset = clonePreset(defaultPresetTemplate);
-let workingPreset = clonePreset(defaultPresetTemplate);
-let activeSystem: ParticleSystem | undefined;
+type EditorLayer = {
+  id: string;
+  name: string;
+  preset: ParticlePreset;
+  muted: boolean;
+  solo: boolean;
+  startOffsetSec: number;
+  eventLinks: {
+    onBirth: string;
+    onDeath: string;
+    onCollision: string;
+  };
+};
+let nextLayerId = 1;
+function createLayer(preset: ParticlePreset): EditorLayer {
+  const id = `layer_${nextLayerId++}`;
+  return {
+    id,
+    name: `Layer ${nextLayerId - 1}`,
+    preset,
+    muted: false,
+    solo: false,
+    startOffsetSec: 0,
+    eventLinks: {
+      onBirth: "none",
+      onDeath: "none",
+      onCollision: "none",
+    },
+  };
+}
+const layers: EditorLayer[] = [createLayer(clonePreset(defaultPresetTemplate))];
+let selectedLayerId = layers[0].id;
+let workingPreset = layers[0].preset;
+const activeSystemsByLayerId = new Map<string, ParticleSystem>();
+const pendingSpawnTimers = new Map<string, number>();
 let isRefreshingPane = false;
 let customRendererTexture: THREE.Texture | undefined;
 let customRendererTextureObjectUrl: string | undefined;
@@ -400,6 +444,64 @@ function createSafePresetSerializer() {
 
 function stringifyPreset(preset: ParticlePreset, pretty = false): string {
   return JSON.stringify(preset, createSafePresetSerializer(), pretty ? 2 : undefined);
+}
+
+function getSelectedLayer(): EditorLayer | undefined {
+  return layers.find((layer) => layer.id === selectedLayerId);
+}
+
+function ensureSelectedLayer(): EditorLayer {
+  let layer = getSelectedLayer();
+  if (layer) return layer;
+  if (layers.length === 0) {
+    layers.push(createLayer(clonePreset(defaultPresetTemplate)));
+  }
+  layer = layers[0];
+  selectedLayerId = layer.id;
+  workingPreset = layer.preset;
+  return layer;
+}
+
+function setSelectedLayerById(id: string): void {
+  const layer = layers.find((entry) => entry.id === id);
+  if (!layer) return;
+  selectedLayerId = id;
+  workingPreset = layer.preset;
+}
+
+function getActiveLayerSystems(): ParticleSystem[] {
+  const soloed = layers.filter((layer) => layer.solo && !layer.muted);
+  const activeLayers = soloed.length > 0 ? soloed : layers.filter((layer) => !layer.muted);
+  return activeLayers.map((layer) => activeSystemsByLayerId.get(layer.id)).filter((s): s is ParticleSystem => !!s);
+}
+
+function getSelectedActiveSystem(): ParticleSystem | undefined {
+  return activeSystemsByLayerId.get(selectedLayerId);
+}
+
+function sanitizeLayerEventLinks(): void {
+  const validLayerIds = new Set(layers.map((layer) => layer.id));
+  for (const layer of layers) {
+    const links = layer.eventLinks;
+    if (!validLayerIds.has(links.onBirth)) links.onBirth = "none";
+    if (!validLayerIds.has(links.onDeath)) links.onDeath = "none";
+    if (!validLayerIds.has(links.onCollision)) links.onCollision = "none";
+  }
+}
+
+function layerRuntimeName(layerId: string): string {
+  return `editorLayer:${layerId}`;
+}
+
+function createRuntimePresetForLayer(layer: EditorLayer): ParticlePreset {
+  const preset = clonePreset(layer.preset);
+  const nextSubEmitters: NonNullable<ParticlePreset["subEmitters"]> = {};
+  if (layer.eventLinks.onBirth !== "none") nextSubEmitters.onBirth = layerRuntimeName(layer.eventLinks.onBirth);
+  if (layer.eventLinks.onDeath !== "none") nextSubEmitters.onDeath = layerRuntimeName(layer.eventLinks.onDeath);
+  if (layer.eventLinks.onCollision !== "none") nextSubEmitters.onCollision = layerRuntimeName(layer.eventLinks.onCollision);
+  if (nextSubEmitters.onBirth || nextSubEmitters.onDeath || nextSubEmitters.onCollision) preset.subEmitters = nextSubEmitters;
+  else delete preset.subEmitters;
+  return preset;
 }
 
 const PRESET_TOP_LEVEL_KEYS = new Set([
@@ -460,6 +562,53 @@ function extractPresetFromJsonValue(value: unknown): ParticlePreset | undefined 
   const directValues = Object.values(value);
   const firstPreset = directValues.find((item) => looksLikePresetCandidate(item));
   return firstPreset as ParticlePreset | undefined;
+}
+
+function stringifyEditorSession(pretty = false): string {
+  const payload = {
+    schema: "editor-multi-effect-session-v1",
+    layers: layers.map((layer) => ({
+      name: layer.name,
+      muted: layer.muted,
+      solo: layer.solo,
+      startOffsetSec: layer.startOffsetSec,
+      eventLinks: layer.eventLinks,
+      preset: layer.preset,
+    })),
+    selectedLayerIndex: Math.max(0, layers.findIndex((layer) => layer.id === selectedLayerId)),
+  };
+  return JSON.stringify(payload, createSafePresetSerializer(), pretty ? 2 : undefined);
+}
+
+function extractSessionLayersFromJsonValue(value: unknown): Array<Omit<EditorLayer, "id">> | undefined {
+  if (!isPlainObject(value)) return undefined;
+  const collection = (value as Record<string, unknown>).layers;
+  if (!Array.isArray(collection)) return undefined;
+  const parsed: Array<Omit<EditorLayer, "id">> = [];
+  for (const item of collection) {
+    if (!isPlainObject(item)) continue;
+    const candidate = extractPresetFromJsonValue((item as Record<string, unknown>).preset ?? item);
+    if (!candidate) continue;
+    parsed.push({
+      name: typeof item.name === "string" ? item.name : `Layer ${parsed.length + 1}`,
+      muted: !!item.muted,
+      solo: !!item.solo,
+      startOffsetSec: Math.max(0, Number(item.startOffsetSec) || 0),
+      eventLinks: {
+        onBirth: typeof item.eventLinks === "object" && item.eventLinks && typeof (item.eventLinks as Record<string, unknown>).onBirth === "string"
+          ? ((item.eventLinks as Record<string, string>).onBirth ?? "none")
+          : "none",
+        onDeath: typeof item.eventLinks === "object" && item.eventLinks && typeof (item.eventLinks as Record<string, unknown>).onDeath === "string"
+          ? ((item.eventLinks as Record<string, string>).onDeath ?? "none")
+          : "none",
+        onCollision: typeof item.eventLinks === "object" && item.eventLinks && typeof (item.eventLinks as Record<string, unknown>).onCollision === "string"
+          ? ((item.eventLinks as Record<string, string>).onCollision ?? "none")
+          : "none",
+      },
+      preset: clonePreset(candidate),
+    });
+  }
+  return parsed.length > 0 ? parsed : undefined;
 }
 
 function parsePresetInput(text: string): unknown {
@@ -600,7 +749,7 @@ const params = {
   rotationBySpeedEnabled: false,
   rotationBySpeedRange: { x: 0, y: 10 },
   rotationBySpeedAngular: { x: 0, y: 0 },
-  rawJson: "",
+  exportJson: "",
   diagnostics: "No validation issues.",
 };
 
@@ -616,11 +765,16 @@ const runtimeStats = {
 const globalDebugParams = {
   enabled: false,
   playbackTime: 0,
+  playbackSpeed: 1,
   autoOrbit: false,
   orbitSpeedDegPerSec: 18,
+  movementEnabled: false,
+  movementMode: "circleLinear" as "circleLinear" | "stationary",
+  movementSpeed: 1,
 };
 let runtimeStatsRefreshElapsed = 0;
-let debugPlaybackDuration = Math.max(0.01, workingPreset.duration ?? 1);
+let movementElapsed = 0;
+let debugPlaybackDuration = Math.max(0.01, ensureSelectedLayer().preset.duration ?? 1);
 let debugPlaybackMode: "play" | "pause" = "play";
 let debugPlaybackBinding:
   | {
@@ -631,10 +785,37 @@ let debugPlaybackBinding:
   | undefined;
 
 function respawn(): void {
-  if (!wisp.particles) return;
-  if (activeSystem) activeSystem.dispose();
-  wisp.particles.register("editorWorking", workingPreset);
-  activeSystem = wisp.particles.spawn("editorWorking", { position: [0, 0.02, 0] });
+  const particles = wisp.particles;
+  if (!particles) return;
+  refreshExportJson();
+  for (const timerId of pendingSpawnTimers.values()) window.clearTimeout(timerId);
+  pendingSpawnTimers.clear();
+  for (const system of activeSystemsByLayerId.values()) system.dispose();
+  activeSystemsByLayerId.clear();
+  sanitizeLayerEventLinks();
+  for (const layer of layers) {
+    particles.register(layerRuntimeName(layer.id), createRuntimePresetForLayer(layer));
+  }
+
+  const soloed = layers.filter((layer) => layer.solo && !layer.muted);
+  const activeLayers = soloed.length > 0 ? soloed : layers.filter((layer) => !layer.muted);
+  for (const layer of activeLayers) {
+    const key = layerRuntimeName(layer.id);
+    const spawnLayer = (): void => {
+      const system = particles.spawn(key, { position: [0, 0.02, 0] });
+      activeSystemsByLayerId.set(layer.id, system);
+      if (debugPlaybackMode === "pause") system.pause();
+    };
+    if (layer.startOffsetSec > 0) {
+      const timerId = window.setTimeout(() => {
+        pendingSpawnTimers.delete(layer.id);
+        spawnLayer();
+      }, Math.max(0, layer.startOffsetSec) * 1000);
+      pendingSpawnTimers.set(layer.id, timerId);
+    } else {
+      spawnLayer();
+    }
+  }
 }
 
 function syncParamsFromPreset(): void {
@@ -810,7 +991,7 @@ function syncParamsFromPreset(): void {
     x: rbs?.angularVelocity?.[0]?.[1] ?? 0,
     y: rbs?.angularVelocity?.[rbs.angularVelocity.length - 1]?.[1] ?? 0,
   };
-  params.rawJson = stringifyPreset(workingPreset, true);
+  refreshExportJson();
 }
 
 function applyParamsToPreset(): void {
@@ -1013,7 +1194,7 @@ function applyParamsToPreset(): void {
   if (!overLifetime.size && !overLifetime.opacity && !overLifetime.color) {
     delete workingPreset.overLifetime;
   }
-  params.rawJson = stringifyPreset(workingPreset, true);
+  refreshExportJson();
 }
 
 function refreshRuntimeStats(): void {
@@ -1088,6 +1269,243 @@ function syncSoftParticleDepthTexture(): void {
     system.setSoftParticleDepthTexture(depthTexture, { width, height });
   }
 }
+
+const scenePane = new Pane({ title: "Scene", expanded: false, container: scenePaneHost });
+scenePane.addBinding(sceneParams, "groundVisible", { label: "Ground Plane" }).on("change", () => {
+  floor.visible = sceneParams.groundVisible;
+});
+scenePane.addBinding(sceneParams, "groundColor", { label: "Ground Color" }).on("change", () => {
+  floorMaterial.color.set(sceneParams.groundColor);
+});
+scenePane.addBinding(sceneParams, "backgroundColor", { label: "Background" }).on("change", () => {
+  scene.background = new THREE.Color(sceneParams.backgroundColor);
+});
+
+const layersPaneParams = {
+  layerSummary: "",
+};
+
+const layersRootPane = new Pane({ title: "Layers", expanded: true, container: layersPaneHost });
+const layersTabs = (layersRootPane as unknown as {
+  addTab: (options: { pages: Array<{ title: string }> }) => { pages: unknown[] };
+}).addTab({
+  pages: [{ title: "Layers" }, { title: "Export" }],
+});
+const layersPane = layersTabs.pages[0] as Pane;
+const jsonPane = layersTabs.pages[1] as Pane;
+const layersPaneDynamicDisposables: Array<{ dispose?: () => void }> = [];
+const layersPaneDynamicCleanups: Array<() => void> = [];
+
+function layerTitleWithState(layer: EditorLayer): string {
+  const suffix = `${layer.muted ? " (M)" : ""}${layer.solo ? " (S)" : ""}`;
+  return `${layer.name}${suffix}`;
+}
+
+function toExportEffectKey(name: string): string {
+  const normalized = name
+    .trim()
+    .replace(/\s+/g, "_")
+    .replace(/[^a-zA-Z0-9_]/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return normalized.length > 0 ? normalized : "effect";
+}
+
+function buildExportEffectKeyMap(): Map<string, string> {
+  const keyByLayerId = new Map<string, string>();
+  const used = new Set<string>();
+  for (const layer of layers) {
+    const base = toExportEffectKey(layer.name);
+    let key = base;
+    let suffix = 2;
+    while (used.has(key)) {
+      key = `${base}_${suffix++}`;
+    }
+    used.add(key);
+    keyByLayerId.set(layer.id, key);
+  }
+  return keyByLayerId;
+}
+
+function buildExportEffectsPayload(): { effects: Record<string, ParticlePreset> } {
+  const keyByLayerId = buildExportEffectKeyMap();
+  const effects: Record<string, ParticlePreset> = {};
+  for (const layer of layers) {
+    const key = keyByLayerId.get(layer.id);
+    if (!key) continue;
+    const preset = clonePreset(layer.preset);
+    const subEmitters: NonNullable<ParticlePreset["subEmitters"]> = {};
+    if (layer.eventLinks.onBirth !== "none") {
+      const target = keyByLayerId.get(layer.eventLinks.onBirth);
+      if (target) subEmitters.onBirth = target;
+    }
+    if (layer.eventLinks.onDeath !== "none") {
+      const target = keyByLayerId.get(layer.eventLinks.onDeath);
+      if (target) subEmitters.onDeath = target;
+    }
+    if (layer.eventLinks.onCollision !== "none") {
+      const target = keyByLayerId.get(layer.eventLinks.onCollision);
+      if (target) subEmitters.onCollision = target;
+    }
+    if (subEmitters.onBirth || subEmitters.onDeath || subEmitters.onCollision) preset.subEmitters = subEmitters;
+    effects[key] = preset;
+  }
+  return { effects };
+}
+
+function refreshExportJson(): void {
+  params.exportJson = JSON.stringify(buildExportEffectsPayload(), createSafePresetSerializer(), 2);
+}
+
+function clearLayersPaneDynamicControls(): void {
+  for (const cleanup of layersPaneDynamicCleanups.splice(0, layersPaneDynamicCleanups.length)) cleanup();
+  for (const item of layersPaneDynamicDisposables.splice(0, layersPaneDynamicDisposables.length)) item.dispose?.();
+}
+
+function refreshLayersSummary(): void {
+  const soloCount = layers.filter((layer) => layer.solo && !layer.muted).length;
+  layersPaneParams.layerSummary = `${layers.length} layer(s), ${soloCount} soloed`;
+  refreshExportJson();
+}
+
+function selectLayerAndRefresh(layerId: string): void {
+  setSelectedLayerById(layerId);
+  syncParamsFromPreset();
+  refreshDiagnostics();
+  refreshPaneSafely();
+  jsonPane.refresh();
+  diagnosticsPane.refresh();
+  refreshLayersSummary();
+  rebuildLayersPaneFolders();
+}
+
+function rebuildLayersPaneFolders(): void {
+  sanitizeLayerEventLinks();
+  clearLayersPaneDynamicControls();
+  for (const layer of layers) {
+    const folder = layersPane.addFolder({
+      title: layerTitleWithState(layer),
+      expanded: layer.id === selectedLayerId,
+    }) as unknown as {
+      addFolder: (options: { title: string; expanded?: boolean }) => {
+        addBinding: (
+          object: object,
+          key: string,
+          options?: Record<string, unknown>
+        ) => { on: (event: string, handler: () => void) => void; dispose?: () => void };
+        dispose?: () => void;
+      };
+      addBinding: (
+        object: object,
+        key: string,
+        options?: Record<string, unknown>
+      ) => { on: (event: string, handler: () => void) => void; dispose?: () => void };
+      addButton: (options: { title: string }) => { on: (event: string, handler: () => void) => void; dispose?: () => void };
+      element?: HTMLElement;
+      dispose?: () => void;
+    };
+    layersPaneDynamicDisposables.push(folder);
+
+    const titleElement = folder.element?.querySelector<HTMLElement>(".tp-fldv_t");
+    const onTitleClick = (): void => {
+      if (layer.id !== selectedLayerId) selectLayerAndRefresh(layer.id);
+    };
+    titleElement?.addEventListener("click", onTitleClick);
+    layersPaneDynamicCleanups.push(() => titleElement?.removeEventListener("click", onTitleClick));
+
+    const nameBinding = folder.addBinding(layer, "name", { label: "Name", view: "text" });
+    nameBinding.on("change", () => {
+      layer.name = layer.name.trim() || "Layer";
+      refreshLayersSummary();
+      rebuildLayersPaneFolders();
+    });
+    layersPaneDynamicDisposables.push(nameBinding);
+
+    const mutedBinding = folder.addBinding(layer, "muted", { label: "Muted" });
+    mutedBinding.on("change", () => {
+      refreshLayersSummary();
+      rebuildLayersPaneFolders();
+      respawn();
+    });
+    layersPaneDynamicDisposables.push(mutedBinding);
+
+    const soloBinding = folder.addBinding(layer, "solo", { label: "Solo" });
+    soloBinding.on("change", () => {
+      refreshLayersSummary();
+      rebuildLayersPaneFolders();
+      respawn();
+    });
+    layersPaneDynamicDisposables.push(soloBinding);
+
+    const offsetBinding = folder.addBinding(layer, "startOffsetSec", {
+      label: "Offset (s)",
+      min: 0,
+      max: 30,
+      step: 0.01,
+    });
+    offsetBinding.on("change", () => {
+      layer.startOffsetSec = Math.max(0, layer.startOffsetSec);
+      respawn();
+    });
+    layersPaneDynamicDisposables.push(offsetBinding);
+
+    const eventsFolder = folder.addFolder({ title: "Events", expanded: false });
+    layersPaneDynamicDisposables.push(eventsFolder);
+    const linkOptions = {
+      None: "none",
+      ...Object.fromEntries(
+        layers.map((candidate) => [layerTitleWithState(candidate), candidate.id])
+      ),
+    };
+    const onBirthBinding = eventsFolder.addBinding(layer.eventLinks, "onBirth", { label: "On Birth", options: linkOptions });
+    onBirthBinding.on("change", () => respawn());
+    layersPaneDynamicDisposables.push(onBirthBinding);
+    const onDeathBinding = eventsFolder.addBinding(layer.eventLinks, "onDeath", { label: "On Death", options: linkOptions });
+    onDeathBinding.on("change", () => respawn());
+    layersPaneDynamicDisposables.push(onDeathBinding);
+    const onCollisionBinding = eventsFolder.addBinding(layer.eventLinks, "onCollision", { label: "On Collision", options: linkOptions });
+    onCollisionBinding.on("change", () => respawn());
+    layersPaneDynamicDisposables.push(onCollisionBinding);
+
+    const deleteButton = folder.addButton({ title: "Delete Layer" });
+    deleteButton.on("click", () => {
+      if (layers.length <= 1) {
+        window.alert("At least one layer is required.");
+        return;
+      }
+      if (!window.confirm(`Delete layer \"${layer.name}\"?`)) return;
+      const idx = layers.findIndex((entry) => entry.id === layer.id);
+      if (idx >= 0) layers.splice(idx, 1);
+      sanitizeLayerEventLinks();
+      const fallback = layers[Math.max(0, idx - 1)] ?? layers[0];
+      selectLayerAndRefresh(fallback.id);
+      respawn();
+    });
+    layersPaneDynamicDisposables.push(deleteButton);
+  }
+  layersPane.refresh();
+}
+
+layersPane.addBinding(layersPaneParams, "layerSummary", { label: "Session", readonly: true });
+layersPane.addButton({ title: "Add Layer (clone selected)" }).on("click", () => {
+  const selected = ensureSelectedLayer();
+  const next = createLayer(clonePreset(selected.preset));
+  next.name = `${selected.name} Copy`;
+  layers.push(next);
+  sanitizeLayerEventLinks();
+  setSelectedLayerById(next.id);
+  syncParamsFromPreset();
+  refreshLayersSummary();
+  rebuildLayersPaneFolders();
+  refreshPaneSafely();
+  jsonPane.refresh();
+  respawn();
+});
+layersPane.addButton({ title: "Restart Active Layers" }).on("click", () => {
+  for (const system of getActiveLayerSystems()) system.restart();
+});
+refreshLayersSummary();
+rebuildLayersPaneFolders();
 
 const pane = new Pane({ title: "Particle Editor", expanded: true, container: editorPaneHost });
 pane.registerPlugin(EssentialsPlugin);
@@ -1846,7 +2264,9 @@ rendererTextureSheetEnabledBinding.on("change", () => updateRendererVisibility()
 
 const actionsFolder = pane.addFolder({ title: "Actions", expanded: false });
 actionsFolder.addButton({ title: "Reset to baseline" }).on("click", () => {
-  workingPreset = clonePreset(baselinePreset);
+  const selected = ensureSelectedLayer();
+  selected.preset = clonePreset(baselinePreset);
+  workingPreset = selected.preset;
   syncParamsFromPreset();
   updateRendererVisibility();
   updateDispersalVisibility();
@@ -1854,58 +2274,22 @@ actionsFolder.addButton({ title: "Reset to baseline" }).on("click", () => {
   refreshPaneSafely();
   respawn();
 });
-actionsFolder.addButton({ title: "Restart effect" }).on("click", () => activeSystem?.restart());
+actionsFolder.addButton({ title: "Restart effect" }).on("click", () => getSelectedActiveSystem()?.restart());
 actionsFolder.addButton({ title: "Copy JSON" }).on("click", async () => {
-  await navigator.clipboard.writeText(stringifyPreset(workingPreset, true));
+  await navigator.clipboard.writeText(stringifyPreset(ensureSelectedLayer().preset, true));
 });
 
-const jsonPane = new Pane({ title: "Preset JSON", expanded: true, container: jsonPaneHost });
-const jsonContent = jsonPane.addBinding(params, "rawJson", {
-  label: "Preset",
+const jsonContent = jsonPane.addBinding(params, "exportJson", {
+  label: "Wisp effects JSON",
   multiline: true,
   rows: 24,
+  readonly: true,
 });
 jsonContent.on("change", () => {
   if (isRefreshingPane) return;
 });
-jsonPane.addButton({ title: "Apply JSON" }).on("click", () => {
-  try {
-    const rawInput = jsonPaneHost.querySelector<HTMLTextAreaElement>("textarea")?.value ?? params.rawJson;
-    params.rawJson = rawInput;
-
-    // 1) parse + clean the input into a usable preset
-    const parsed = parsePresetInput(rawInput);
-    const extracted = extractPresetFromJsonValue(parsed);
-    if (!extracted) {
-      throw new Error("Could not find a valid ParticlePreset shape in the pasted JSON.");
-    }
-    const sanitized = sanitizeImportedPreset(extracted);
-    workingPreset = sanitized.preset;
-
-    // 2) sync UI model from imported preset
-    syncParamsFromPreset();
-
-    // 3) refresh all dependent visibility/sections, then refresh panes
-    updateEmissionVisibility();
-    updateEmitterVisibility();
-    updateStartVisibility();
-    updateForcesVisibility();
-    updateLifetimeModifierVisibility();
-    updateRendererVisibility();
-    updateDispersalVisibility();
-    refreshDiagnostics();
-    refreshPaneSafely();
-    jsonPane.refresh();
-    diagnosticsPane.refresh();
-
-    // 4) restart effect from imported preset
-    respawn();
-    if (sanitized.warnings.length > 0) {
-      window.alert(`Imported with adjustments:\n- ${sanitized.warnings.join("\n- ")}`);
-    }
-  } catch (err) {
-    window.alert(`Invalid JSON: ${(err as Error).message}`);
-  }
+jsonPane.addButton({ title: "Copy Export JSON" }).on("click", async () => {
+  await navigator.clipboard.writeText(params.exportJson);
 });
 
 const diagnosticsPane = new Pane({ title: "Diagnostics", expanded: true, container: diagnosticsPaneHost });
@@ -1941,6 +2325,21 @@ cameraFolder.addBinding(globalDebugParams, "orbitSpeedDegPerSec", {
   max: 180,
   step: 1,
 });
+const movementFolder = debugPane.addFolder({ title: "Movement", expanded: false });
+movementFolder.addBinding(globalDebugParams, "movementEnabled", { label: "Enabled" });
+movementFolder.addBinding(globalDebugParams, "movementMode", {
+  label: "Mode",
+  options: {
+    circleLinear: "circleLinear",
+    stationary: "stationary",
+  },
+});
+movementFolder.addBinding(globalDebugParams, "movementSpeed", {
+  label: "Speed",
+  min: 0,
+  max: 10,
+  step: 0.01,
+});
 const debugPlaybackControls = document.createElement("div");
 debugPlaybackControls.className = "debug-playback-grid";
 const playButton = document.createElement("button");
@@ -1954,6 +2353,12 @@ resetButton.type = "button";
 resetButton.textContent = "Reset";
 debugPlaybackControls.append(playButton, pauseButton, resetButton);
 ((debugPane as unknown as { element?: HTMLElement }).element ?? debugPaneHost).appendChild(debugPlaybackControls);
+debugPane.addBinding(globalDebugParams, "playbackSpeed", {
+  label: "Playback Speed",
+  min: 0,
+  max: 2,
+  step: 0.01,
+});
 
 function updateDebugPlaybackButtons(): void {
   playButton.classList.toggle("is-active", debugPlaybackMode === "play");
@@ -1961,12 +2366,13 @@ function updateDebugPlaybackButtons(): void {
 }
 
 function seekActiveSystemTo(targetTime: number): void {
-  if (!activeSystem) return;
-  const duration = Math.max(0.01, workingPreset.duration ?? 1);
+  const selectedSystem = getSelectedActiveSystem();
+  if (!selectedSystem) return;
+  const duration = Math.max(0.01, ensureSelectedLayer().preset.duration ?? 1);
   const clamped = THREE.MathUtils.clamp(targetTime, 0, duration);
-  activeSystem.restart();
+  selectedSystem.restart();
   if (clamped <= 0) {
-    activeSystem.pause();
+    selectedSystem.pause();
     globalDebugParams.playbackTime = 0;
     return;
   }
@@ -1974,18 +2380,18 @@ function seekActiveSystemTo(targetTime: number): void {
   const step = 1 / 120;
   while (remaining > 0) {
     const dtSeek = Math.min(step, remaining);
-    activeSystem.update(dtSeek, camera);
+    selectedSystem.update(dtSeek, camera);
     remaining -= dtSeek;
   }
-  activeSystem.pause();
+  selectedSystem.pause();
   globalDebugParams.playbackTime = clamped;
 }
 
 function setDebugPlaybackMode(mode: "play" | "pause"): void {
   debugPlaybackMode = mode;
-  if (activeSystem) {
-    if (mode === "play") activeSystem.play();
-    if (mode === "pause") activeSystem.pause();
+  for (const system of getActiveLayerSystems()) {
+    if (mode === "play") system.play();
+    if (mode === "pause") system.pause();
   }
   updateDebugPlaybackButtons();
 }
@@ -1993,9 +2399,12 @@ function setDebugPlaybackMode(mode: "play" | "pause"): void {
 playButton.addEventListener("click", () => setDebugPlaybackMode("play"));
 pauseButton.addEventListener("click", () => setDebugPlaybackMode("pause"));
 resetButton.addEventListener("click", () => {
-  if (!activeSystem) return;
-  activeSystem.restart();
-  if (debugPlaybackMode !== "play") activeSystem.pause();
+  const activeSystems = getActiveLayerSystems();
+  if (activeSystems.length === 0) return;
+  for (const system of activeSystems) {
+    system.restart();
+    if (debugPlaybackMode !== "play") system.pause();
+  }
   globalDebugParams.playbackTime = 0;
 });
 updateDebugPlaybackButtons();
@@ -2014,6 +2423,28 @@ function rebuildDebugPlaybackBinding(): void {
 }
 rebuildDebugPlaybackBinding();
 
+function updateEmitterMovement(dt: number): void {
+  if (!globalDebugParams.movementEnabled) return;
+  movementElapsed += dt;
+  const y = 0.02;
+  if (globalDebugParams.movementMode === "stationary") {
+    for (const system of getActiveLayerSystems()) {
+      const object = system as unknown as THREE.Object3D;
+      object.position.set(0, y, 0);
+    }
+    return;
+  }
+  const radius = 1.8;
+  const angularSpeedRadPerSec = 0.8 * Math.max(0, globalDebugParams.movementSpeed);
+  const angle = movementElapsed * angularSpeedRadPerSec;
+  const x = Math.cos(angle) * radius;
+  const z = Math.sin(angle) * radius;
+  for (const system of getActiveLayerSystems()) {
+    const object = system as unknown as THREE.Object3D;
+    object.position.set(x, y, z);
+  }
+}
+
 pane.on("change", () => {
   if (isRefreshingPane) return;
   const beforePresetJson = stringifyPreset(workingPreset);
@@ -2030,7 +2461,9 @@ pane.on("change", () => {
   jsonPane.refresh();
   if (didPresetChange) {
     respawn();
-    if (debugPlaybackMode === "pause") activeSystem?.pause();
+    if (debugPlaybackMode === "pause") {
+      for (const system of getActiveLayerSystems()) system.pause();
+    }
   }
 });
 
@@ -2053,10 +2486,12 @@ function tick(): void {
   fpsGraph.begin();
   timer.update();
   const dt = Math.min(timer.getDelta(), 0.033);
+  const simulationDt = dt * Math.max(0, globalDebugParams.playbackSpeed);
   orbitControls.autoRotate = globalDebugParams.autoOrbit;
   orbitControls.autoRotateSpeed = globalDebugParams.orbitSpeedDegPerSec / 6;
   orbitControls.update();
-  wisp.update(dt, camera);
+  updateEmitterMovement(simulationDt);
+  wisp.update(simulationDt, camera);
   renderSceneDepthWithoutParticles();
   syncSoftParticleDepthTexture();
   renderer.render(scene, camera);
@@ -2068,14 +2503,16 @@ function tick(): void {
     refreshRuntimeStats();
   }
 
-  const duration = Math.max(0.01, workingPreset.duration ?? 1);
+  const duration = Math.max(0.01, ensureSelectedLayer().preset.duration ?? 1);
   if (Math.abs(duration - debugPlaybackDuration) > 1e-6) {
     debugPlaybackDuration = duration;
     rebuildDebugPlaybackBinding();
   }
-  if (activeSystem) {
-    const elapsed = activeSystem.elapsed;
-    globalDebugParams.playbackTime = workingPreset.loop ? elapsed % duration : Math.min(elapsed, duration);
+  const selectedSystem = getSelectedActiveSystem();
+  const selected = ensureSelectedLayer();
+  if (selectedSystem) {
+    const elapsed = selectedSystem.elapsed;
+    globalDebugParams.playbackTime = selected.preset.loop ? elapsed % duration : Math.min(elapsed, duration);
   } else {
     globalDebugParams.playbackTime = 0;
   }

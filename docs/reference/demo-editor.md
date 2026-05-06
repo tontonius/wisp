@@ -13,10 +13,18 @@ A separate visual-editor prototype now exists in `editor/` as an alternate autho
 Current alpha capabilities:
 
 - Tweakpane-driven controls and actions for all editor UI.
-- Multiple panes (`Particle Editor`, `Preset JSON`, `Diagnostics`) similar to the demo workflow.
+- Multiple panes (`Scene`, `Layers`, `Particle Editor`, `Diagnostics`, `Debug`) similar to the demo workflow; `Export` is a tab inside the top-right `Layers` pane.
 - Additional bottom-right `Debug` pane with a global on/off `Debug Gizmos` toggle (`wisp.particles.setDebug(...)`) for active and future systems.
 - The `Debug` pane has a `Camera` section with `Auto orbit` and `Speed (deg/s)` controls, using an orbit camera around scene center.
-- The `Debug` pane includes playback controls (`Play`, `Pause`, `Reset`) and a playback slider (`Playback (s)`) that tracks active system elapsed time, wraps/reset to `0` for looping effects, and dynamically uses the current preset `duration` as slider max. When paused, you can drag the slider to scrub time.
+- The `Scene` pane (docked left of `Layers`) includes `Ground Plane` visibility, `Ground Color`, and `Background` color controls for preview-only scene tuning.
+- The `Debug` pane has a `Movement` section with `Enabled` and `Mode`; `circleLinear` moves active emitters in a circular path to preview effects on moving objects.
+- The `Layers` pane supports multi-effect composition in one editor session: one folder per layer, opening/clicking a folder selects that layer for parameter editing, with `Name`, `Muted`, `Solo`, and `Offset` controls inside each folder.
+- Layer folder titles append `(M)` when muted and `(S)` when soloed.
+- Each layer has an `Events` subfolder with `On Birth`, `On Death`, and `On Collision` target-layer dropdowns; muted layers can still be selected as child targets.
+- In editor preview, these event links are mapped to runtime `subEmitters` (`onBirth`, `onDeath`, `onCollision`) using layer IDs, matching the demo/runtime sub-emitter flow. Note: sub-emitters are CPU-only.
+- `Particle Editor` controls always edit the currently selected layer from the `Layers` pane.
+- The `Debug` pane includes playback controls (`Play`, `Pause`, `Reset`) and a playback slider (`Playback (s)`) that tracks the selected layer elapsed time, wraps/reset to `0` for looping effects, and dynamically uses the selected layer `duration` as slider max. Playback buttons act on all currently active (non-muted / solo-filtered) layers.
+- The `Debug` pane includes `Playback Speed` (`0..2`) to time-scale simulation `dt` for previewing effects in slow motion or faster-than-real-time.
 - Main editor uses API-mapped folders (for example `Particle System`, `Emission`, `Emitter`, `Start`, `Forces`, `Renderer`, and `Over Lifetime`).
 - The `Start` folder includes start rotation controls (`start.rotation` and `start.angularVelocity`) as min/max ranges in radians and radians/sec.
 - `Renderer` is organized by intent-first subfolders (`Render Style`, `Compositing`, `Depth`, `Texture Processing`, `Texture Sheet`) with conditional controls for stretched billboards, soft particles, luminance alpha keying, and texture-sheet animation.
@@ -29,12 +37,15 @@ Current alpha capabilities:
 - Visual editor baseline defaults now start with `start.size: [1, 1]` and `renderer.texture: hardDisc`.
 - Vector-like controls via Tweakpane point bindings for `Vec3` style fields.
 - Essentials plugin cubic-bezier control mapped to over-lifetime size shaping.
-- Live preview respawn on edit.
-- Vanilla preset authoring flow (no built-in preset selector in the visual editor).
+- Live preview respawn on edit, with all active layers respawned together.
+- Multi-layer authoring flow with selected-layer editing in the visual editor.
 - Diagnostics pane includes an FPS graph and live runtime stats (`systems`, CPU/GPU split, alive/max totals, busiest system).
-- JSON import/export actions through pane buttons.
-- `Apply JSON` accepts multiple Wisp-style shapes: direct `ParticlePreset` JSON, wrappers like `{ "preset": { ... } }`, and collections/maps like `{ "effects": { "name": { ... } } }` (loads the first valid effect found).
-- `Apply JSON` also accepts JS/TS-style object literals copied from source files (for example from `demo/presets.ts`: unquoted keys, trailing commas, single quotes).
+- Export actions through pane buttons.
+- `Export` includes a multiline `Wisp effects JSON` textarea (copy/export only), containing all session layers as:
+  - `{ "effects": { "<effectKey>": <ParticlePreset>, ... } }`
+  - muted/child-only layers are included
+  - per-layer event links are converted to exported effect-key sub-emitters
+- Import/apply back into editor from this tab is intentionally deferred for now.
 - In the visual editor, `renderer.softParticles` now works because the editor runs an internal scene-depth prepass and syncs that depth texture into live systems each frame.
 
 This editor is intentionally early-stage and does not replace the Tweakpane flow yet.
