@@ -6,6 +6,7 @@ import { installParticleEditorPane } from "./panels/particle-editor-pane.js";
 import { installScenePane } from "./panels/scene-pane.js";
 import { installDiagnosticsPane } from "./panels/diagnostics-pane.js";
 import { installDebugPane } from "./panels/debug-pane.js";
+import { installCameraPane } from "./panels/camera-pane.js";
 import type { PanelRuntime } from "./panel-runtime.js";
 import { createViewport } from "./scene/viewport.js";
 import { updateEmitterMovement } from "./scene/movement.js";
@@ -41,7 +42,10 @@ export function startEditor(): void {
     <div id="pane-scene"></div>
     <div id="pane-layers"></div>
   </div>
-  <div id="pane-editor" class="pane-dock pane-dock-left"></div>
+  <div id="pane-left-group" class="pane-dock pane-dock-left-group">
+    <div id="pane-editor"></div>
+    <div id="pane-camera"></div>
+  </div>
   <div id="pane-diagnostics" class="pane-dock pane-dock-bottom"></div>
   <div id="pane-debug" class="pane-dock pane-dock-bottom-right"></div>
 `;
@@ -49,6 +53,7 @@ export function startEditor(): void {
   const scenePaneHost = document.querySelector<HTMLDivElement>("#pane-scene")!;
   const layersPaneHost = document.querySelector<HTMLDivElement>("#pane-layers")!;
   const editorPaneHost = document.querySelector<HTMLDivElement>("#pane-editor")!;
+  const cameraPaneHost = document.querySelector<HTMLDivElement>("#pane-camera")!;
   const diagnosticsPaneHost = document.querySelector<HTMLDivElement>("#pane-diagnostics")!;
   const debugPaneHost = document.querySelector<HTMLDivElement>("#pane-debug")!;
 
@@ -131,6 +136,20 @@ export function startEditor(): void {
     movementMode: "circleLinear" as "circleLinear" | "stationary",
     movementSpeed: 1,
   };
+  const cameraShakeParams = {
+    enabled: true,
+    onRespawn: false,
+    triggerTrauma: 0.35,
+    decayRate: 1.4,
+    traumaExponent: 2,
+    noiseFrequency: 22,
+    mode: "rotationOnly" as "rotationOnly" | "rotationAndTranslation",
+    maxPitchDeg: 1.8,
+    maxYawDeg: 1.8,
+    maxRollDeg: 2.4,
+    maxTranslation: { x: 0.03, y: 0.03, z: 0.03 },
+  };
+  const cameraRuntime = { trauma: 0 };
 
   let runtimeStatsRefreshElapsed = 0;
   let movementElapsed = 0;
@@ -151,6 +170,24 @@ export function startEditor(): void {
   const wisp = new Wisp({
     scene: vp.scene,
     camera: vp.camera,
+    cameraEffects: {
+      shake: {
+        decayRate: cameraShakeParams.decayRate,
+        traumaExponent: cameraShakeParams.traumaExponent,
+        noiseFrequency: cameraShakeParams.noiseFrequency,
+        mode: cameraShakeParams.mode,
+        maxRotation: [
+          THREE.MathUtils.degToRad(cameraShakeParams.maxPitchDeg),
+          THREE.MathUtils.degToRad(cameraShakeParams.maxYawDeg),
+          THREE.MathUtils.degToRad(cameraShakeParams.maxRollDeg),
+        ],
+        maxTranslation: [
+          cameraShakeParams.maxTranslation.x,
+          cameraShakeParams.maxTranslation.y,
+          cameraShakeParams.maxTranslation.z,
+        ],
+      },
+    },
     particles: { renderer: vp.renderer },
   });
 
@@ -235,6 +272,9 @@ export function startEditor(): void {
     for (const layer of activeLayers) {
       const sysKey = layerRuntimeName(layer.id);
       const spawnLayer = (): void => {
+        if (cameraShakeParams.enabled && cameraShakeParams.onRespawn) {
+          wisp.camera.shake(cameraShakeParams.triggerTrauma);
+        }
         const system = particles.spawn(sysKey, { position: [0, 0.02, 0] });
         activeSystemsByLayerId.set(layer.id, system);
         if (debugPlaybackMode === "pause") system.pause();
@@ -346,6 +386,8 @@ export function startEditor(): void {
     params,
     runtimeStats,
     globalDebugParams,
+    cameraShakeParams,
+    cameraRuntime,
     runtimeStatsRefreshElapsed,
     movementElapsed,
     debugPlaybackDuration,
@@ -358,6 +400,7 @@ export function startEditor(): void {
     jsonPane: undefined as unknown as PanelRuntime["jsonPane"],
     layersRootPane: undefined as unknown as PanelRuntime["layersRootPane"],
     scenePane: undefined as unknown as PanelRuntime["scenePane"],
+    cameraPane: undefined as unknown as PanelRuntime["cameraPane"],
     diagnosticsPane: undefined as unknown as PanelRuntime["diagnosticsPane"],
     debugPane: undefined as unknown as PanelRuntime["debugPane"],
     pane: undefined as unknown as PanelRuntime["pane"],
@@ -487,6 +530,7 @@ export function startEditor(): void {
   installScenePane(rt, scenePaneHost);
   installLayersPane(rt, layersPaneHost);
   installParticleEditorPane(rt, editorPaneHost);
+  installCameraPane(rt, cameraPaneHost);
   installDiagnosticsPane(rt, diagnosticsPaneHost);
   installDebugPane(rt, debugPaneHost);
 
@@ -566,6 +610,8 @@ export function startEditor(): void {
       rt.globalDebugParams.playbackTime = 0;
     }
     rt.debugPane.refresh();
+    rt.cameraRuntime.trauma = rt.wisp.camera.trauma;
+    rt.cameraPane.refresh();
 
     requestAnimationFrame(tick);
   }

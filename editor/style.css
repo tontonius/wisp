@@ -34,6 +34,16 @@ body,
   overflow-y: auto !important;
 }
 
+.pane-dock-left-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  top: 12px;
+  left: 12px;
+  max-height: calc(100vh - 64px);
+  overflow-y: auto !important;
+}
+
 .pane-dock-top-center {
   top: 12px;
   left: 50%;

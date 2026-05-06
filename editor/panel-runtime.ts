@@ -74,6 +74,22 @@ export type PanelRuntime = {
     movementMode: "circleLinear" | "stationary";
     movementSpeed: number;
   };
+  cameraShakeParams: {
+    enabled: boolean;
+    onRespawn: boolean;
+    triggerTrauma: number;
+    decayRate: number;
+    traumaExponent: number;
+    noiseFrequency: number;
+    mode: "rotationOnly" | "rotationAndTranslation";
+    maxPitchDeg: number;
+    maxYawDeg: number;
+    maxRollDeg: number;
+    maxTranslation: { x: number; y: number; z: number };
+  };
+  cameraRuntime: {
+    trauma: number;
+  };
 
   runtimeStatsRefreshElapsed: number;
   movementElapsed: number;
@@ -96,6 +112,7 @@ export type PanelRuntime = {
   layersPaneDynamicCleanups: Array<() => void>;
 
   scenePane: Pane;
+  cameraPane: Pane;
   diagnosticsPane: Pane;
   debugPane: Pane;
 

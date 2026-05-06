@@ -26,6 +26,7 @@ When adding or changing editor controls, prefer `editor/panels/particle-editor-p
 
 - Tweakpane-driven controls and actions for all editor UI.
 - Multiple panes (`Scene`, `Layers`, `Particle Editor`, `Diagnostics`, `Debug`) similar to the demo workflow; `Export` is a tab inside the top-right `Layers` pane.
+- A dedicated `Camera FX` pane is docked to the right of `Particle Editor` for camera shake tweaking and preview.
 - Additional bottom-right `Debug` pane with a global on/off `Debug Gizmos` toggle (`wisp.particles.setDebug(...)`) for active and future systems.
 - The `Debug` pane has a `Camera` section with `Auto orbit` and `Speed (deg/s)` controls, using an orbit camera around scene center.
 - The `Scene` pane (docked left of `Layers`) includes `Ground Plane` visibility, `Ground Color`, `Background`, and a `Fog` subfolder with `Enabled`, `Color`, and `Near/Far` controls for preview-only scene tuning.
@@ -37,6 +38,7 @@ When adding or changing editor controls, prefer `editor/panels/particle-editor-p
 - In editor preview, these event links are mapped to runtime `subEmitters` (`onBirth`, `onDeath`, `onCollision`) using layer IDs, matching the demo/runtime sub-emitter flow. Note: sub-emitters are CPU-only.
 - `Particle Editor` controls always edit the currently selected layer from the `Layers` pane.
 - The `Debug` pane includes playback controls (`Play`, `Pause`, `Reset`) and a playback slider (`Playback (s)`) that tracks the selected layer elapsed time, wraps/reset to `0` for looping effects, and dynamically uses the selected layer `duration` as slider max. Playback buttons act on all currently active (non-muted / solo-filtered) layers.
+- The `Camera FX` pane includes `Camera shake` controls (`Enabled`, `On respawn`, `Trigger trauma`, decay/power/noise, mode, rotation/translation limits), plus `Shake camera`, `Reset shake`, and live trauma graph preview.
 - The `Debug` pane includes `Playback Speed` (`0..2`) to time-scale simulation `dt` for previewing effects in slow motion or faster-than-real-time.
 - Main editor uses API-mapped folders (for example `Particle System`, `Emission`, `Emitter`, `Start`, `Forces`, `Renderer`, and `Over Lifetime`).
 - The `Start` folder includes start rotation controls (`start.rotation` and `start.angularVelocity`) as min/max ranges in radians and radians/sec.
