@@ -30,6 +30,19 @@ export function installLayersPane(rt: PanelRuntime, host: HTMLDivElement): void 
   }
 
   function rebuildLayersPaneFolders(): void {
+    const addNewEffectLayer = (): void => {
+      const next = createLayer(clonePreset(rt.defaultPresetTemplate), rt.layerIdCounter);
+      rt.layers.push(next);
+      sanitizeLayerEventLinks(rt.layers);
+      rt.setSelectedLayerById(next.id);
+      rt.syncParamsFromPreset();
+      refreshLayersSummary();
+      rebuildLayersPaneFolders();
+      rt.refreshPaneSafely();
+      rt.jsonPane.refresh();
+      rt.respawn();
+    };
+
     sanitizeLayerEventLinks(rt.layers);
     clearLayersPaneDynamicControls();
     for (const layer of rt.layers) {
@@ -117,8 +130,31 @@ export function installLayersPane(rt: PanelRuntime, host: HTMLDivElement): void 
       onCollisionBinding.on("change", () => rt.respawn());
       rt.layersPaneDynamicDisposables.push(onCollisionBinding);
 
-      const deleteButton = folder.addButton({ title: "Delete Layer" });
-      deleteButton.on("click", () => {
+      const actionGrid = document.createElement("div");
+      actionGrid.className = "layer-actions-grid";
+      const cloneButton = document.createElement("button");
+      cloneButton.type = "button";
+      cloneButton.textContent = "Clone";
+      const deleteButton = document.createElement("button");
+      deleteButton.type = "button";
+      deleteButton.textContent = "Delete";
+      actionGrid.append(cloneButton, deleteButton);
+      const folderContentElement = folder.element?.querySelector<HTMLElement>(".tp-fldv_c");
+      (folderContentElement ?? folder.element)?.appendChild(actionGrid);
+      const onClone = (): void => {
+        const next = createLayer(clonePreset(layer.preset), rt.layerIdCounter);
+        next.name = `${layer.name} Copy`;
+        rt.layers.push(next);
+        sanitizeLayerEventLinks(rt.layers);
+        rt.setSelectedLayerById(next.id);
+        rt.syncParamsFromPreset();
+        refreshLayersSummary();
+        rebuildLayersPaneFolders();
+        rt.refreshPaneSafely();
+        rt.jsonPane.refresh();
+        rt.respawn();
+      };
+      const onDelete = (): void => {
         if (rt.layers.length <= 1) {
           window.alert("At least one layer is required.");
           return;
@@ -130,8 +166,18 @@ export function installLayersPane(rt: PanelRuntime, host: HTMLDivElement): void 
         const fallback = rt.layers[Math.max(0, idx - 1)] ?? rt.layers[0];
         rt.selectLayerAndRefresh(fallback.id);
         rt.respawn();
+      };
+      cloneButton.addEventListener("click", onClone);
+      deleteButton.addEventListener("click", onDelete);
+      rt.layersPaneDynamicCleanups.push(() => {
+        cloneButton.removeEventListener("click", onClone);
+        deleteButton.removeEventListener("click", onDelete);
+        actionGrid.remove();
       });
-      rt.layersPaneDynamicDisposables.push(deleteButton);
+
+      const newEffectButton = rt.layersPane.addButton({ title: "New effect" });
+      newEffectButton.on("click", addNewEffectLayer);
+      rt.layersPaneDynamicDisposables.push(newEffectButton);
     }
     rt.layersPane.refresh();
   }
@@ -158,20 +204,6 @@ export function installLayersPane(rt: PanelRuntime, host: HTMLDivElement): void 
   rt.selectLayerAndRefresh = selectLayerAndRefresh;
 
   rt.layersPane.addBinding(rt.layersPaneParams, "layerSummary", { label: "Session", readonly: true });
-  rt.layersPane.addButton({ title: "Add Layer (clone selected)" }).on("click", () => {
-    const selected = rt.ensureSelectedLayer();
-    const next = createLayer(clonePreset(selected.preset), rt.layerIdCounter);
-    next.name = `${selected.name} Copy`;
-    rt.layers.push(next);
-    sanitizeLayerEventLinks(rt.layers);
-    rt.setSelectedLayerById(next.id);
-    rt.syncParamsFromPreset();
-    refreshLayersSummary();
-    rebuildLayersPaneFolders();
-    rt.refreshPaneSafely();
-    rt.jsonPane.refresh();
-    rt.respawn();
-  });
   rt.layersPane.addButton({ title: "Restart Active Layers" }).on("click", () => {
     for (const system of getActiveLayerSystems(rt.layers, rt.activeSystemsByLayerId)) system.restart();
   });

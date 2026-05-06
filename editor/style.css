@@ -86,6 +86,23 @@ body,
   border-color: rgba(160, 174, 255, 0.65);
 }
 
+.layer-actions-grid {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.layer-actions-grid button {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.9);
+  border-radius: 4px;
+  padding: 4px 6px;
+  font: inherit;
+  cursor: pointer;
+}
+
 /* Hide Point2D popup picker "+" toggles by default. */
 .tp-p2dv_b {
   display: none !important;
