@@ -1,5 +1,7 @@
 # Publish The Demo To GitHub Pages
 
+Deprecated: `demo/` is no longer an active development surface. This page is retained as legacy deployment documentation only.
+
 The demo is a Vite app. GitHub Pages serves it as a project page for the `tontonius/wisp` repository, so production assets need the `/wisp/` base path.
 
 ## Build Locally For Pages

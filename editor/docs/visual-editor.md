@@ -1,0 +1,69 @@
+# Visual Editor (alpha)
+
+The visual editor in `editor/` is an alternate authoring surface for Wisp effects.
+
+- Run with `npm run dev:editor`.
+- Build with `npm run build:editor`.
+- Open at `/editor/` during local Vite dev.
+
+## Source Layout
+
+```txt
+editor/
+  main.ts               # thin entrypoint; calls startEditor()
+  start-editor.ts       # bootstrap + tick loop wiring
+  panel-runtime.ts      # shared runtime object consumed by panes
+  types.ts              # shared editor scalar tuple types
+  lib/                  # pure helpers (curves, gradients, textures, preset io)
+  state/                # params, layer model, sync/apply bridge, export mapping
+  scene/                # viewport/camera setup + emitter movement updates
+  panels/               # scene/layers/editor/diagnostics/debug panes
+```
+
+When adding or changing editor controls, prefer `editor/panels/particle-editor-pane.ts` for UI bindings and visibility logic, and keep preset translation behavior in `editor/state/preset-bridge.ts`.
+
+## Current Capabilities
+
+- Tweakpane-driven controls and actions for all editor UI.
+- Multiple panes (`Scene`, `Layers`, `Particle Editor`, `Diagnostics`, `Debug`) similar to the demo workflow; `Export` is a tab inside the top-right `Layers` pane.
+- Additional bottom-right `Debug` pane with a global on/off `Debug Gizmos` toggle (`wisp.particles.setDebug(...)`) for active and future systems.
+- The `Debug` pane has a `Camera` section with `Auto orbit` and `Speed (deg/s)` controls, using an orbit camera around scene center.
+- The `Scene` pane (docked left of `Layers`) includes `Ground Plane` visibility, `Ground Color`, and `Background` color controls for preview-only scene tuning.
+- The `Debug` pane has a `Movement` section with `Enabled` and `Mode`; `circleLinear` moves active emitters in a circular path to preview effects on moving objects.
+- The `Layers` pane supports multi-effect composition in one editor session: one folder per layer, opening/clicking a folder selects that layer for parameter editing, with `Name`, `Muted`, `Solo`, and `Offset` controls inside each folder.
+- Layer folder titles append `(M)` when muted and `(S)` when soloed.
+- Each layer has an `Events` subfolder with `On Birth`, `On Death`, and `On Collision` target-layer dropdowns; muted layers can still be selected as child targets.
+- In editor preview, these event links are mapped to runtime `subEmitters` (`onBirth`, `onDeath`, `onCollision`) using layer IDs, matching the demo/runtime sub-emitter flow. Note: sub-emitters are CPU-only.
+- `Particle Editor` controls always edit the currently selected layer from the `Layers` pane.
+- The `Debug` pane includes playback controls (`Play`, `Pause`, `Reset`) and a playback slider (`Playback (s)`) that tracks the selected layer elapsed time, wraps/reset to `0` for looping effects, and dynamically uses the selected layer `duration` as slider max. Playback buttons act on all currently active (non-muted / solo-filtered) layers.
+- The `Debug` pane includes `Playback Speed` (`0..2`) to time-scale simulation `dt` for previewing effects in slow motion or faster-than-real-time.
+- Main editor uses API-mapped folders (for example `Particle System`, `Emission`, `Emitter`, `Start`, `Forces`, `Renderer`, and `Over Lifetime`).
+- The `Start` folder includes start rotation controls (`start.rotation` and `start.angularVelocity`) as min/max ranges in radians and radians/sec.
+- `Renderer` is organized by intent-first subfolders (`Render Style`, `Compositing`, `Depth`, `Texture Processing`, `Texture Sheet`) with conditional controls for stretched billboards, soft particles, luminance alpha keying, and texture-sheet animation.
+- `Renderer > Texture Sheet` supports drag-and-drop (and click-to-browse) for custom atlas textures, including a live sheet preview and a `Clear Sheet Texture` action.
+- `Dispersal` is exposed as its own top-level folder in the visual editor (still mapped to `renderer.dispersal`) with `Enabled`, `Strength`, `Amount`, `Noise Scale`, `Edge Softness`, and `Scroll`.
+- `Dispersal` includes `Start At` (`0..1`) to delay dissolve onset over normalized lifetime; the editor maps this to a three-key amount curve (`[0, start] -> [startAt, start] -> [1, end]`).
+- The `Dispersal` folder includes a drag-and-drop dropzone (plus click-to-browse) for loading a custom image as `renderer.dispersal.texture`, and a `Clear Texture` action to revert to built-in procedural noise.
+- The `Dispersal` folder also includes a live `Mask Preview` panel: it shows the imported texture when present, or the generated procedural noise preview when no texture is loaded.
+- Imported `Dispersal` textures are sampled centered in each particle sprite (not random phase-shifted per particle), which is friendlier for non-tileable round masks.
+- Visual editor baseline defaults now start with `start.size: [1, 1]` and `renderer.texture: hardDisc`.
+- Vector-like controls via Tweakpane point bindings for `Vec3` style fields.
+- Essentials plugin cubic-bezier control mapped to over-lifetime size shaping.
+- Live preview respawn on edit, with all active layers respawned together.
+- Multi-layer authoring flow with selected-layer editing in the visual editor.
+- Diagnostics pane includes an FPS graph and live runtime stats (`systems`, CPU/GPU split, alive/max totals, busiest system).
+- Export actions through pane buttons.
+- `Export` includes a multiline `Wisp effects JSON` textarea (copy/export only), containing all session layers as:
+  - `{ "effects": { "<effectKey>": <ParticlePreset>, ... } }`
+  - muted/child-only layers are included
+  - per-layer event links are converted to exported effect-key sub-emitters
+- Import/apply back into editor from this tab is intentionally deferred for now.
+- In the visual editor, `renderer.softParticles` now works because the editor runs an internal scene-depth prepass and syncs that depth texture into live systems each frame.
+
+This editor is intentionally early-stage and does not replace the demo Tweakpane flow yet.
+
+## URL Parameters
+
+| Query | Effect |
+| --- | --- |
+| `?pool=1` | Enables inactive pooling (`pooling: true`) so repeated one-shot spawns reuse GPU/CPU backends. |

@@ -224,7 +224,7 @@ Goal: make the library pleasant and robust in real game scenes.
 - `aliveCount`, `elapsed`, and lifecycle flags (`isPlaying`, `isAlive`, `isComplete`)
 - Lifecycle callbacks (`onStart`, `onStop`, `onComplete`) and CPU `onParticleDeath`
 - Auto-cleanup via `ParticleManager` when `autoDispose` completes a system
-- Diataxis docs in `docs/` and a demo preset editor / debug gizmos (see `docs/reference/demo-editor.md`)
+- Diataxis docs in `docs/` and a demo preset editor / debug gizmos (see `editor/docs/index.md`)
 - Demo ships the example presets below (selectable in the playground)
 - Opt-in inactive-system pooling on `ParticleManager` (`pooling` in `ParticleManagerOptions`)
 - Preset validation at `ParticleSystem` construction (`collectParticlePresetIssues`, `assertValidParticlePreset`; see `docs/reference/preset-validation.md`)

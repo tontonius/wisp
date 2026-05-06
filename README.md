@@ -56,13 +56,13 @@ npm run dev
 
 Then open the Vite URL.
 
-## Demo controls
+Testing commands are documented in [`docs/how-to/run-tests.md`](docs/how-to/run-tests.md).
 
-```txt
-Click = spawn selected effect from the demo controls
-```
+## Legacy demo status
 
-The scene starts with a small CPU aura on the left and a larger GPU magic storm on the right.
+The legacy `demo/` app is deprecated and is no longer an active development surface.
+
+Use `editor/` for ongoing authoring workflow and tooling.
 
 ## Documentation
 
@@ -72,6 +72,8 @@ The full Diataxis-style documentation set lives in [`docs/`](docs/index.md):
 - How-to guides for focused tasks.
 - Reference pages for every public API and preset module.
 - Explanations for architecture and backend tradeoffs.
+
+Editor-specific docs are available separately at [`editor/docs/`](editor/docs/index.md).
 
 Module entry points:
 

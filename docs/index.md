@@ -24,11 +24,13 @@ Current core modules:
 - [How To Choose CPU, GPU, Or Auto](how-to/choose-a-backend.md)
 - [Explanation: Architecture](explanation/architecture.md)
 
-## Tutorials
+## Wisp Library
+
+### Tutorials
 
 - [First Particle Effect](tutorials/first-particle-effect.md)
 
-## How-To Guides
+### How-To Guides
 
 - [Choose A Backend](how-to/choose-a-backend.md)
 - [Author A Preset](how-to/author-a-preset.md)
@@ -36,9 +38,8 @@ Current core modules:
 - [Use Texture Sheets](how-to/use-texture-sheets.md)
 - [Add Trauma-Based Camera Shake](how-to/add-camera-shake.md)
 - [Debug Emitters](how-to/debug-emitters.md)
-- [Publish The Demo To GitHub Pages](how-to/publish-github-pages.md)
 
-## Reference
+### Reference
 
 - [Public API](reference/api.md)
 - [Starter Kit](reference/starter-kit.md)
@@ -61,12 +62,18 @@ Particle module reference:
 - [Lifecycle And Callbacks](reference/lifecycle.md)
 - [CPU Backend](reference/cpu-backend.md)
 - [GPU Backend](reference/gpu-backend.md)
-- [Demo Editor](reference/demo-editor.md)
-
-## Explanations
+### Explanations
 
 - [Architecture](explanation/architecture.md)
 - [CPU Versus GPU Design](explanation/cpu-vs-gpu.md)
 - [Simulation Model](explanation/simulation-model.md)
 - [Rendering Model](explanation/rendering-model.md)
 - [Known Limitations](explanation/known-limitations.md)
+
+## Editor
+
+- [Editor Documentation Index](../editor/docs/index.md)
+- [Visual Editor (alpha)](../editor/docs/visual-editor.md)
+- [Demo Tweakpane Editor](../editor/docs/demo-tweakpane.md)
+
+The legacy `demo/` app is deprecated. Editor docs may still mention it where needed for migration context.
