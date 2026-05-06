@@ -33,18 +33,27 @@
     "build:demo": "vite build",
     "build:editor": "vite build --outDir dist-editor",
     "build:pages": "GITHUB_PAGES=true vite build",
-    "prepublishOnly": "npm run build:lib && npm pack --dry-run"
+    "prepublishOnly": "npm run build:lib && npm pack --dry-run",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:all": "vitest run && playwright test"
   },
   "peerDependencies": {
     "three": ">=0.150.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^22.10.0",
+    "@vitest/ui": "^3.0.0",
     "@tweakpane/core": "^2.0.5",
     "@tweakpane/plugin-essentials": "^0.2.1",
     "@types/three": "^0.184.0",
     "@vitejs/plugin-basic-ssl": "latest",
+    "happy-dom": "^15.11.7",
     "tweakpane": "^4.0.5",
     "typescript": "latest",
-    "vite": "latest"
+    "vite": "latest",
+    "vitest": "^3.0.0"
   }
 }
