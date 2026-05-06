@@ -2,6 +2,43 @@
 
 The Wisp demo in `demo/main.ts` includes a Tweakpane editor for creating and copying `ParticlePreset` code.
 
+## Visual Editor (alpha)
+
+A separate visual-editor prototype now exists in `editor/` as an alternate authoring surface.
+
+- Run with `npm run dev:editor`.
+- Build with `npm run build:editor`.
+- Open at `/editor/` during local Vite dev.
+
+Current alpha capabilities:
+
+- Tweakpane-driven controls and actions for all editor UI.
+- Multiple panes (`Particle Editor`, `Preset JSON`, `Diagnostics`) similar to the demo workflow.
+- Additional bottom-right `Debug` pane with a global on/off `Debug Gizmos` toggle (`wisp.particles.setDebug(...)`) for active and future systems.
+- The `Debug` pane has a `Camera` section with `Auto orbit` and `Speed (deg/s)` controls, using an orbit camera around scene center.
+- The `Debug` pane includes playback controls (`Play`, `Pause`, `Reset`) and a playback slider (`Playback (s)`) that tracks active system elapsed time, wraps/reset to `0` for looping effects, and dynamically uses the current preset `duration` as slider max. When paused, you can drag the slider to scrub time.
+- Main editor uses API-mapped folders (for example `Particle System`, `Emission`, `Emitter`, `Start`, `Forces`, `Renderer`, and `Over Lifetime`).
+- The `Start` folder includes start rotation controls (`start.rotation` and `start.angularVelocity`) as min/max ranges in radians and radians/sec.
+- `Renderer` is organized by intent-first subfolders (`Render Style`, `Compositing`, `Depth`, `Texture Processing`, `Texture Sheet`) with conditional controls for stretched billboards, soft particles, luminance alpha keying, and texture-sheet animation.
+- `Renderer > Texture Sheet` supports drag-and-drop (and click-to-browse) for custom atlas textures, including a live sheet preview and a `Clear Sheet Texture` action.
+- `Dispersal` is exposed as its own top-level folder in the visual editor (still mapped to `renderer.dispersal`) with `Enabled`, `Strength`, `Amount`, `Noise Scale`, `Edge Softness`, and `Scroll`.
+- `Dispersal` includes `Start At` (`0..1`) to delay dissolve onset over normalized lifetime; the editor maps this to a three-key amount curve (`[0, start] -> [startAt, start] -> [1, end]`).
+- The `Dispersal` folder includes a drag-and-drop dropzone (plus click-to-browse) for loading a custom image as `renderer.dispersal.texture`, and a `Clear Texture` action to revert to built-in procedural noise.
+- The `Dispersal` folder also includes a live `Mask Preview` panel: it shows the imported texture when present, or the generated procedural noise preview when no texture is loaded.
+- Imported `Dispersal` textures are sampled centered in each particle sprite (not random phase-shifted per particle), which is friendlier for non-tileable round masks.
+- Visual editor baseline defaults now start with `start.size: [1, 1]` and `renderer.texture: hardDisc`.
+- Vector-like controls via Tweakpane point bindings for `Vec3` style fields.
+- Essentials plugin cubic-bezier control mapped to over-lifetime size shaping.
+- Live preview respawn on edit.
+- Vanilla preset authoring flow (no built-in preset selector in the visual editor).
+- Diagnostics pane includes an FPS graph and live runtime stats (`systems`, CPU/GPU split, alive/max totals, busiest system).
+- JSON import/export actions through pane buttons.
+- `Apply JSON` accepts multiple Wisp-style shapes: direct `ParticlePreset` JSON, wrappers like `{ "preset": { ... } }`, and collections/maps like `{ "effects": { "name": { ... } } }` (loads the first valid effect found).
+- `Apply JSON` also accepts JS/TS-style object literals copied from source files (for example from `demo/presets.ts`: unquoted keys, trailing commas, single quotes).
+- In the visual editor, `renderer.softParticles` now works because the editor runs an internal scene-depth prepass and syncs that depth texture into live systems each frame.
+
+This editor is intentionally early-stage and does not replace the Tweakpane flow yet.
+
 ## URL parameters
 
 | Query | Effect |
