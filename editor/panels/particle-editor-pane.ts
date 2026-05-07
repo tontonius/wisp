@@ -788,10 +788,13 @@ importContent.on("change", () => {
     rt.importPane.refresh();
   }
 });
-rt.importPane.addBinding(rt.params, "importStatus", {
-  label: "Status",
+const importStatusBinding = rt.importPane.addBinding(rt.params, "importStatus", {
+  label: "",
+  multiline: true,
+  rows: 4,
   readonly: true,
 });
+importStatusBinding.element.classList.add("import-status-binding");
 rt.importPane.addButton({ title: "Load Import JSON" }).on("click", () => {
   const source = rt.params.importJson.trim();
   if (!source) {

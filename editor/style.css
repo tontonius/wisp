@@ -195,3 +195,16 @@ body,
   border-color: rgba(255, 255, 255, 0.75);
   background: rgba(255, 255, 255, 0.08);
 }
+
+/* Import JSON status: multiline, full-width (no label column). */
+.import-status-binding .tp-lblv {
+  grid-template-columns: 1fr !important;
+}
+
+.import-status-binding .tp-lblv_l {
+  display: none !important;
+}
+
+.import-status-binding .tp-lblv_v {
+  width: 100% !important;
+}
