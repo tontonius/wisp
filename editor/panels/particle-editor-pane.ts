@@ -813,7 +813,7 @@ rt.importPane.addButton({ title: "Load Import JSON" }).on("click", () => {
   }
   try {
     const payload = parseImportEffectsPayload(source);
-    const importedLayers = buildLayersFromImportEffectsPayload(payload, rt.layerIdCounter);
+    const { layers: importedLayers, warnings } = buildLayersFromImportEffectsPayload(payload, rt.layerIdCounter);
     if (importedLayers.length === 0) {
       rt.params.importStatus = "No effect layers found in import.";
       rt.importPane.refresh();
@@ -830,7 +830,9 @@ rt.importPane.addButton({ title: "Load Import JSON" }).on("click", () => {
     rt.jsonPane.refresh();
     rt.diagnosticsPane.refresh();
     rt.respawn();
-    rt.params.importStatus = `Imported ${importedLayers.length} layer(s).`;
+    rt.params.importStatus = warnings.length > 0
+      ? `Imported ${importedLayers.length} layer(s) with ${warnings.length} warning(s): ${warnings.join(" ")}`
+      : `Imported ${importedLayers.length} layer(s).`;
   } catch (error) {
     rt.params.importStatus = `Import failed: ${(error as Error).message}`;
   }

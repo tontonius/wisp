@@ -1,4 +1,5 @@
 import type { ParticlePreset } from "../../src";
+import { sanitizeImportedPreset } from "../lib/preset-io";
 import { clonePreset } from "../lib/preset-utils";
 import { createLayer, type EditorLayer } from "./layers";
 
@@ -33,13 +34,17 @@ export function parseImportEffectsPayload(source: string): ImportEffectsPayload 
 export function buildLayersFromImportEffectsPayload(
   payload: ImportEffectsPayload,
   layerIdCounter: { next: number }
-): EditorLayer[] {
+): { layers: EditorLayer[]; warnings: string[] } {
   const importedEffects = Object.entries(payload.effects);
+  const warnings: string[] = [];
   const layers = importedEffects.map(([effectKey, importedPreset]) => {
     const nextPreset = clonePreset(importedPreset);
-    const subEmitters = nextPreset.subEmitters;
-    delete nextPreset.subEmitters;
-    const layer = createLayer(nextPreset, layerIdCounter);
+    const { preset: sanitizedPreset, warnings: presetWarnings } = sanitizeImportedPreset(nextPreset);
+    for (const warning of presetWarnings) warnings.push(`${effectKey}: ${warning}`);
+    const normalizedPreset = sanitizedPreset;
+    const subEmitters = normalizedPreset.subEmitters;
+    delete normalizedPreset.subEmitters;
+    const layer = createLayer(normalizedPreset, layerIdCounter);
     layer.name = effectKey.trim() || layer.name;
     layer.eventLinks = {
       onBirth: subEmitters?.onBirth ?? "none",
@@ -58,5 +63,5 @@ export function buildLayersFromImportEffectsPayload(
     };
   }
 
-  return layers;
+  return { layers, warnings };
 }

@@ -522,6 +522,11 @@ export function startEditor(): void {
 
   function refreshPaneSafely(): void {
     isRefreshingPane = true;
+
+    const selectedIndex = rt.layers.findIndex((layer) => layer.id === rt.selectedLayerId);
+    const layerNumber = selectedIndex >= 0 ? selectedIndex + 1 : 1;
+    rt.pane.title = `Particle Editor - Layer ${layerNumber}`;
+
     rt.pane.refresh();
     isRefreshingPane = false;
   }

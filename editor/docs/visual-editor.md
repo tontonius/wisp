@@ -63,6 +63,7 @@ When adding or changing editor controls, prefer `editor/panels/particle-editor-p
   - per-layer event links are converted to exported effect-key sub-emitters
 - `Import` includes a multiline `Wisp effects JSON` textarea where pasted `{ "effects": ... }` payloads can be applied into the active editor session.
 - Import supports multiple layers in a single payload and restores `subEmitters` links between imported layers by resolving effect keys from the payload.
+- Import sanitizes serialized texture placeholders/objects (for example `"[Texture:...]"`) by removing non-live texture references and reporting warnings in the import status.
 - In the visual editor, `renderer.softParticles` now works because the editor runs an internal scene-depth prepass and syncs that depth texture into live systems each frame.
 
 This editor is intentionally early-stage and does not replace the demo Tweakpane flow yet.
