@@ -113,6 +113,17 @@ export function installLayersPane(rt: PanelRuntime, host: HTMLDivElement): void 
       });
       rt.layersPaneDynamicDisposables.push(offsetBinding);
 
+      const emitterOffsetBinding = folder.addBinding(layer, "emitterOffset", {
+        label: "Emitter XYZ",
+        x: { step: 0.01 },
+        y: { step: 0.01 },
+        z: { step: 0.01 },
+      });
+      emitterOffsetBinding.on("change", () => {
+        rt.respawn();
+      });
+      rt.layersPaneDynamicDisposables.push(emitterOffsetBinding);
+
       const eventsFolder = folder.addFolder({ title: "Events", expanded: false });
       rt.layersPaneDynamicDisposables.push(eventsFolder);
       const linkOptions = {

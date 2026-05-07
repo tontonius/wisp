@@ -1,16 +1,17 @@
 import type { Object3D } from "three";
 import type { PanelRuntime } from "../panel-runtime";
-import { getActiveLayerSystems } from "../state/layers";
 
 export function updateEmitterMovement(dt: number, rt: PanelRuntime): void {
   if (!rt.globalDebugParams.movementEnabled) return;
   rt.movementElapsed += dt;
-  const y = 0.02;
-  const systems = getActiveLayerSystems(rt.layers, rt.activeSystemsByLayerId);
+  const soloed = rt.layers.filter((layer) => layer.solo && !layer.muted);
+  const activeLayers = soloed.length > 0 ? soloed : rt.layers.filter((layer) => !layer.muted);
   if (rt.globalDebugParams.movementMode === "stationary") {
-    for (const system of systems) {
+    for (const layer of activeLayers) {
+      const system = rt.activeSystemsByLayerId.get(layer.id);
+      if (!system) continue;
       const object = system as unknown as Object3D;
-      object.position.set(0, y, 0);
+      object.position.set(layer.emitterOffset.x, layer.emitterOffset.y, layer.emitterOffset.z);
     }
     return;
   }
@@ -19,8 +20,10 @@ export function updateEmitterMovement(dt: number, rt: PanelRuntime): void {
   const angle = rt.movementElapsed * angularSpeedRadPerSec;
   const x = Math.cos(angle) * radius;
   const z = Math.sin(angle) * radius;
-  for (const system of systems) {
+  for (const layer of activeLayers) {
+    const system = rt.activeSystemsByLayerId.get(layer.id);
+    if (!system) continue;
     const object = system as unknown as Object3D;
-    object.position.set(x, y, z);
+    object.position.set(x + layer.emitterOffset.x, layer.emitterOffset.y, z + layer.emitterOffset.z);
   }
 }

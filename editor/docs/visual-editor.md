@@ -31,7 +31,7 @@ When adding or changing editor controls, prefer `editor/panels/particle-editor-p
 - The `Debug` pane has a `Camera` section with `Auto orbit` and `Speed (deg/s)` controls, using an orbit camera around scene center.
 - The `Scene` pane (docked left of `Layers`) includes `Ground Plane` visibility, `Ground Color`, `Background`, and a `Fog` subfolder with `Enabled`, `Color`, and `Near/Far` controls for preview-only scene tuning.
 - The `Debug` pane has a `Movement` section with `Enabled` and `Mode`; `circleLinear` moves active emitters in a circular path to preview effects on moving objects.
-- The `Layers` pane supports multi-effect composition in one editor session: one folder per layer, opening/clicking a folder selects that layer for parameter editing, with `Name`, `Muted`, `Solo`, and `Offset` controls plus in-folder `Clone`/`Delete` action buttons.
+- The `Layers` pane supports multi-effect composition in one editor session: one folder per layer, opening/clicking a folder selects that layer for parameter editing, with `Name`, `Muted`, `Solo`, `Offset`, and `Emitter XYZ` controls plus in-folder `Clone`/`Delete` action buttons.
 - A `New effect` button appears below each layer folder and adds a fresh default particle effect layer.
 - Layer folder titles append `(M)` when muted and `(S)` when soloed.
 - Each layer has an `Events` subfolder with `On Birth`, `On Death`, and `On Collision` target-layer dropdowns; muted layers can still be selected as child targets.

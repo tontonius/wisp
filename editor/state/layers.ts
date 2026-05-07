@@ -8,6 +8,7 @@ export type EditorLayer = {
   muted: boolean;
   solo: boolean;
   startOffsetSec: number;
+  emitterOffset: { x: number; y: number; z: number };
   eventLinks: {
     onBirth: string;
     onDeath: string;
@@ -24,6 +25,7 @@ export function createLayer(preset: ParticlePreset, counter: { next: number }): 
     muted: false,
     solo: false,
     startOffsetSec: 0,
+    emitterOffset: { x: 0, y: 0.02, z: 0 },
     eventLinks: {
       onBirth: "none",
       onDeath: "none",

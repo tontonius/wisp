@@ -43,6 +43,12 @@ describe("layers export", () => {
     expect(b.eventLinks.onBirth).toBe("none");
   });
 
+  it("createLayer includes editor-only emitter offset defaults", () => {
+    const counter = { next: 1 };
+    const layer = createLayer(minimalPreset(), counter);
+    expect(layer.emitterOffset).toEqual({ x: 0, y: 0.02, z: 0 });
+  });
+
   it("createRuntimePresetForLayer maps event links to runtime names", () => {
     const counter = { next: 1 };
     const a = createLayer(minimalPreset(), counter);

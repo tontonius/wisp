@@ -275,7 +275,9 @@ export function startEditor(): void {
         if (cameraShakeParams.enabled && cameraShakeParams.onRespawn) {
           wisp.camera.shake(cameraShakeParams.triggerTrauma);
         }
-        const system = particles.spawn(sysKey, { position: [0, 0.02, 0] });
+        const system = particles.spawn(sysKey, {
+          position: [layer.emitterOffset.x, layer.emitterOffset.y, layer.emitterOffset.z],
+        });
         activeSystemsByLayerId.set(layer.id, system);
         if (debugPlaybackMode === "pause") system.pause();
       };
