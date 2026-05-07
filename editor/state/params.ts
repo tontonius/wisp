@@ -1,7 +1,6 @@
 import { defaultGradientStops } from "../../demo/tweakpane-gradient-plugin/index.js";
 
 export type EditorParams = {
-  presetName: string;
   simulationSpace: "local" | "world";
   simulation: "auto" | "cpu" | "gpu";
   maxParticles: number;
@@ -25,6 +24,8 @@ export type EditorParams = {
   opacityRange: { x: number; y: number };
   startRotationRange: { x: number; y: number };
   startAngularVelocityRange: { x: number; y: number };
+  startVelocityMin: { x: number; y: number; z: number };
+  startVelocityMax: { x: number; y: number; z: number };
   startColorMode: "single" | "range";
   startColorA: string;
   startColorB: string;
@@ -98,7 +99,6 @@ export type EditorParams = {
 
 export function createInitialEditorParams(): EditorParams {
   return {
-    presetName: "customEffect",
     simulationSpace: "local",
     simulation: "auto",
     maxParticles: 256,
@@ -122,6 +122,8 @@ export function createInitialEditorParams(): EditorParams {
     opacityRange: { x: 1, y: 1 },
     startRotationRange: { x: 0, y: 0 },
     startAngularVelocityRange: { x: 0, y: 0 },
+    startVelocityMin: { x: 0, y: 0, z: 0 },
+    startVelocityMax: { x: 0, y: 0, z: 0 },
     startColorMode: "single",
     startColorA: "#ffffff",
     startColorB: "#ffb36b",

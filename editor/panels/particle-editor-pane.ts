@@ -15,9 +15,6 @@ const pane = new Pane({ title: "Particle Editor", expanded: true, container: hos
 pane.registerPlugin(EssentialsPlugin);
 pane.registerPlugin(tweakpaneGradientPluginBundle);
 
-const topFolder = pane.addFolder({ title: "Preset", expanded: false });
-topFolder.addBinding(rt.params, "presetName", { label: "Name", view: "text" });
-
 const systemFolder = pane.addFolder({ title: "Particle System", expanded: false });
 systemFolder.addBinding(rt.params, "simulation", { label: "Simulation", options: { auto: "auto", cpu: "cpu", gpu: "gpu" } });
 systemFolder.addBinding(rt.params, "simulationSpace", { label: "Simulation Space", options: { local: "local", world: "world" } });
@@ -123,6 +120,18 @@ startFolder.addBinding(rt.params, "startAngularVelocityRange", {
   label: "Angular Vel (rad/s)",
   x: { min: -20, max: 20, step: 0.01 },
   y: { min: -20, max: 20, step: 0.01 },
+});
+startFolder.addBinding(rt.params, "startVelocityMin", {
+  label: "Velocity Min",
+  x: { min: -50, max: 50, step: 0.01 },
+  y: { min: -50, max: 50, step: 0.01 },
+  z: { min: -50, max: 50, step: 0.01 },
+});
+startFolder.addBinding(rt.params, "startVelocityMax", {
+  label: "Velocity Max",
+  x: { min: -50, max: 50, step: 0.01 },
+  y: { min: -50, max: 50, step: 0.01 },
+  z: { min: -50, max: 50, step: 0.01 },
 });
 const startColorModeBinding = startFolder.addBinding(rt.params, "startColorMode", {
   label: "Color Mode",

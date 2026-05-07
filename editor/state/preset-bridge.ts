@@ -57,6 +57,17 @@ export function syncParamsFromPreset(ctx: PresetSyncApplyContext): void {
   params.startRotationRange = { x: rotation[0], y: rotation[1] };
   const angularVelocity = asRange(start.angularVelocity, [0, 0]);
   params.startAngularVelocityRange = { x: angularVelocity[0], y: angularVelocity[1] };
+  const startVelocity = start.velocity;
+  if (Array.isArray(startVelocity) && typeof startVelocity[0] === "number") {
+    params.startVelocityMin = { x: startVelocity[0], y: startVelocity[1], z: startVelocity[2] };
+    params.startVelocityMax = { x: startVelocity[0], y: startVelocity[1], z: startVelocity[2] };
+  } else if (Array.isArray(startVelocity) && Array.isArray(startVelocity[0]) && Array.isArray(startVelocity[1])) {
+    params.startVelocityMin = { x: startVelocity[0][0], y: startVelocity[0][1], z: startVelocity[0][2] };
+    params.startVelocityMax = { x: startVelocity[1][0], y: startVelocity[1][1], z: startVelocity[1][2] };
+  } else {
+    params.startVelocityMin = { x: 0, y: 0, z: 0 };
+    params.startVelocityMax = { x: 0, y: 0, z: 0 };
+  }
   const color = start.color;
   if (Array.isArray(color)) {
     params.startColorMode = "range";
@@ -247,6 +258,10 @@ export function applyParamsToPreset(ctx: PresetSyncApplyContext): void {
   start.opacity = [Math.max(0, params.opacityRange.x), Math.min(1, Math.max(0, params.opacityRange.y))];
   start.rotation = [params.startRotationRange.x, params.startRotationRange.y];
   start.angularVelocity = [params.startAngularVelocityRange.x, params.startAngularVelocityRange.y];
+  start.velocity = [
+    [params.startVelocityMin.x, params.startVelocityMin.y, params.startVelocityMin.z],
+    [params.startVelocityMax.x, params.startVelocityMax.y, params.startVelocityMax.z],
+  ];
   start.color = params.startColorMode === "range"
     ? [params.startColorA, params.startColorB]
     : params.startColorA;

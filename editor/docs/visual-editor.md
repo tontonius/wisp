@@ -42,6 +42,7 @@ When adding or changing editor controls, prefer `editor/panels/particle-editor-p
 - The `Debug` pane includes `Playback Speed` (`0..2`) to time-scale simulation `dt` for previewing effects in slow motion or faster-than-real-time.
 - Main editor uses API-mapped folders (for example `Particle System`, `Emission`, `Emitter`, `Start`, `Forces`, `Renderer`, and `Over Lifetime`).
 - The `Start` folder includes start rotation controls (`start.rotation` and `start.angularVelocity`) as min/max ranges in radians and radians/sec.
+- The `Start` folder also exposes `start.velocity` as `Velocity Min`/`Velocity Max` (Vec3) for directional launch offsets beyond scalar `start.speed`.
 - `Renderer` is organized by intent-first subfolders (`Render Style`, `Compositing`, `Depth`, `Texture Processing`, `Texture Sheet`) with conditional controls for stretched billboards, soft particles, luminance alpha keying, and texture-sheet animation.
 - `Renderer > Texture Sheet` supports drag-and-drop (and click-to-browse) for custom atlas textures, including a live sheet preview and a `Clear Sheet Texture` action.
 - `Dispersal` is exposed as its own top-level folder in the visual editor (still mapped to `renderer.dispersal`) with `Enabled`, `Strength`, `Amount`, `Noise Scale`, `Edge Softness`, and `Scroll`.
