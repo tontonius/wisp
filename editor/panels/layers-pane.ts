@@ -176,10 +176,10 @@ export function installLayersPane(rt: PanelRuntime, host: HTMLDivElement): void 
         actionGrid.remove();
       });
 
-      const newEffectButton = rt.layersPane.addButton({ title: "New effect" });
-      newEffectButton.on("click", addNewEffectLayer);
-      rt.layersPaneDynamicDisposables.push(newEffectButton);
     }
+    const newEffectButton = rt.layersPane.addButton({ title: "New effect" });
+    newEffectButton.on("click", addNewEffectLayer);
+    rt.layersPaneDynamicDisposables.push(newEffectButton);
     rt.layersPane.refresh();
   }
 
