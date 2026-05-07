@@ -7,6 +7,7 @@ import { clonePreset } from "../lib/preset-utils.js";
 import { stringifyPreset } from "../lib/preset-io.js";
 import { setFolderTitleEnabledState } from "../lib/tweakpane-helpers.js";
 import { dispersalValueNoise2D } from "../lib/dispersal-noise.js";
+import { buildLayersFromImportEffectsPayload, parseImportEffectsPayload } from "../state/import.js";
 import type { PanelRuntime } from "../panel-runtime.js";
 
 export function installParticleEditorPane(rt: PanelRuntime, host: HTMLDivElement): void {
@@ -775,6 +776,65 @@ rt.jsonPane.addButton({ title: "Copy Export JSON" }).on("click", async () => {
   await navigator.clipboard.writeText(rt.params.exportJson);
 });
 
+const importContent = rt.importPane.addBinding(rt.params, "importJson", {
+  label: "Wisp effects JSON",
+  multiline: true,
+  rows: 24,
+});
+importContent.on("change", () => {
+  if (rt.isRefreshingPane) return;
+  if (rt.params.importStatus) {
+    rt.params.importStatus = "";
+    rt.importPane.refresh();
+  }
+});
+rt.importPane.addBinding(rt.params, "importStatus", {
+  label: "Status",
+  readonly: true,
+});
+rt.importPane.addButton({ title: "Load Import JSON" }).on("click", () => {
+  const source = rt.params.importJson.trim();
+  if (!source) {
+    rt.params.importStatus = "Paste JSON before importing.";
+    rt.importPane.refresh();
+    return;
+  }
+  try {
+    const payload = parseImportEffectsPayload(source);
+    const importedLayers = buildLayersFromImportEffectsPayload(payload, rt.layerIdCounter);
+    if (importedLayers.length === 0) {
+      rt.params.importStatus = "No effect layers found in import.";
+      rt.importPane.refresh();
+      return;
+    }
+    rt.layers.splice(0, rt.layers.length, ...importedLayers);
+    const firstLayerId = importedLayers[0]?.id;
+    if (firstLayerId) rt.setSelectedLayerById(firstLayerId);
+    rt.syncParamsFromPreset();
+    rt.refreshDiagnostics();
+    rt.refreshLayersSummary();
+    rt.rebuildLayersPaneFolders();
+    rt.refreshPaneSafely();
+    rt.jsonPane.refresh();
+    rt.diagnosticsPane.refresh();
+    rt.respawn();
+    rt.params.importStatus = `Imported ${importedLayers.length} layer(s).`;
+  } catch (error) {
+    rt.params.importStatus = `Import failed: ${(error as Error).message}`;
+  }
+  rt.importPane.refresh();
+});
+rt.importPane.addButton({ title: "Paste from Clipboard" }).on("click", async () => {
+  try {
+    rt.params.importJson = await navigator.clipboard.readText();
+    rt.params.importStatus = rt.params.importJson.trim().length > 0
+      ? "Clipboard JSON pasted."
+      : "Clipboard is empty.";
+  } catch (error) {
+    rt.params.importStatus = `Could not read clipboard: ${(error as Error).message}`;
+  }
+  rt.importPane.refresh();
+});
   rt.pane = pane;
   rt.updateEmissionVisibility = updateEmissionVisibility;
   rt.updateEmitterVisibility = updateEmitterVisibility;

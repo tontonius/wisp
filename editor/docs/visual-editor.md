@@ -25,7 +25,7 @@ When adding or changing editor controls, prefer `editor/panels/particle-editor-p
 ## Current Capabilities
 
 - Tweakpane-driven controls and actions for all editor UI.
-- Multiple panes (`Scene`, `Layers`, `Particle Editor`, `Diagnostics`, `Debug`) similar to the demo workflow; `Export` is a tab inside the top-right `Layers` pane.
+- Multiple panes (`Scene`, `Layers`, `Particle Editor`, `Diagnostics`, `Debug`) similar to the demo workflow; `Export` and `Import` are tabs inside the top-right `Layers` pane.
 - A dedicated `Camera FX` pane is docked to the right of `Particle Editor` for camera shake tweaking and preview.
 - Additional bottom-right `Debug` pane with a global on/off `Debug Gizmos` toggle (`wisp.particles.setDebug(...)`) for active and future systems.
 - The `Debug` pane has a `Camera` section with `Auto orbit` and `Speed (deg/s)` controls, using an orbit camera around scene center.
@@ -60,7 +60,8 @@ When adding or changing editor controls, prefer `editor/panels/particle-editor-p
   - `{ "effects": { "<effectKey>": <ParticlePreset>, ... } }`
   - muted/child-only layers are included
   - per-layer event links are converted to exported effect-key sub-emitters
-- Import/apply back into editor from this tab is intentionally deferred for now.
+- `Import` includes a multiline `Wisp effects JSON` textarea where pasted `{ "effects": ... }` payloads can be applied into the active editor session.
+- Import supports multiple layers in a single payload and restores `subEmitters` links between imported layers by resolving effect keys from the payload.
 - In the visual editor, `renderer.softParticles` now works because the editor runs an internal scene-depth prepass and syncs that depth texture into live systems each frame.
 
 This editor is intentionally early-stage and does not replace the demo Tweakpane flow yet.

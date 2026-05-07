@@ -398,6 +398,7 @@ export function startEditor(): void {
     layersPaneDynamicCleanups,
     layersPane: undefined as unknown as PanelRuntime["layersPane"],
     jsonPane: undefined as unknown as PanelRuntime["jsonPane"],
+    importPane: undefined as unknown as PanelRuntime["importPane"],
     layersRootPane: undefined as unknown as PanelRuntime["layersRootPane"],
     scenePane: undefined as unknown as PanelRuntime["scenePane"],
     cameraPane: undefined as unknown as PanelRuntime["cameraPane"],

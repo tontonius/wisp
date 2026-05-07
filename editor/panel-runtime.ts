@@ -108,6 +108,7 @@ export type PanelRuntime = {
   layersRootPane: Pane;
   layersPane: Pane;
   jsonPane: Pane;
+  importPane: Pane;
   layersPaneDynamicDisposables: Array<{ dispose?: () => void }>;
   layersPaneDynamicCleanups: Array<() => void>;
 

@@ -19,10 +19,11 @@ export function installLayersPane(rt: PanelRuntime, host: HTMLDivElement): void 
   const layersTabs = (layersRootPane as unknown as {
     addTab: (options: { pages: Array<{ title: string }> }) => { pages: unknown[] };
   }).addTab({
-    pages: [{ title: "Layers" }, { title: "Export" }],
+    pages: [{ title: "Layers" }, { title: "Export" }, { title: "Import" }],
   });
   rt.layersPane = layersTabs.pages[0] as Pane;
   rt.jsonPane = layersTabs.pages[1] as Pane;
+  rt.importPane = layersTabs.pages[2] as Pane;
 
   function clearLayersPaneDynamicControls(): void {
     for (const cleanup of rt.layersPaneDynamicCleanups.splice(0, rt.layersPaneDynamicCleanups.length)) cleanup();

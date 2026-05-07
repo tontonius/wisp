@@ -91,6 +91,8 @@ export type EditorParams = {
   rotationBySpeedRange: { x: number; y: number };
   rotationBySpeedAngular: { x: number; y: number };
   exportJson: string;
+  importJson: string;
+  importStatus: string;
   diagnostics: string;
 };
 
@@ -186,6 +188,8 @@ export function createInitialEditorParams(): EditorParams {
     rotationBySpeedRange: { x: 0, y: 10 },
     rotationBySpeedAngular: { x: 0, y: 0 },
     exportJson: "",
+    importJson: "",
+    importStatus: "",
     diagnostics: "No validation issues.",
   };
 }
