@@ -10,3 +10,4 @@ The legacy `demo/` app is deprecated and not part of the forward authoring workf
 
 - [Visual Editor (alpha)](visual-editor.md)
 - [Demo Tweakpane Editor](demo-tweakpane.md)
+- Motion Test view is documented in the Visual Editor page.

@@ -11,6 +11,7 @@ export * from "./wisp";
 Wisp currently exposes three core areas:
 
 - camera effects (`Wisp`, `WispCamera`, `CameraEffectsSystem`, `CameraShakeController`)
+- motion effects (`WispMotion`, `MotionEffectsSystem`, `MotionController`)
 - particles (`ParticleManager`, `ParticleEffectLibrary`, `ParticleSystem`, and particle types/utilities)
 - starter content (`createStarterTextures`, `createStarterPresets`, `createStarterKit`, `starterBillboardUrls`)
 
@@ -44,6 +45,7 @@ Fields:
 | Field | Type | Description |
 | --- | --- | --- |
 | `camera` | `WispCamera` | Camera effects namespace (`shake`, `update`, `reset`, tuning). |
+| `motion` | `WispMotion \| undefined` | Motion effects namespace when `WispOptions.motion` is provided. |
 | `particles` | `WispParticles \| undefined` | Particle effects namespace when `WispOptions.scene` and `WispOptions.particles` are provided. |
 
 Methods:
@@ -52,6 +54,35 @@ Methods:
 | --- | --- | --- |
 | `update(dt, camera?)` | `void` | Updates all active facade modules (`camera`, `particles`). |
 | `dispose()` | `void` | Resets camera effects state and releases internal references. |
+
+### `WispMotion`
+
+```ts
+class WispMotion
+```
+
+Facade wrapper around `MotionEffectsSystem` under `wisp.motion`.
+
+Methods:
+
+| Method | Returns | Description |
+| --- | --- | --- |
+| `motion(target)` | `MotionHandle` | Returns fluent per-object motion handle. |
+| `pop(target, options?)` | `this` | Adds a one-shot scale pop effect. |
+| `squash(target, options?)` | `this` | Adds a one-shot squash/stretch effect. |
+| `recoil(target, direction, options?)` | `this` | Adds recoil position/rotation impulse. |
+| `hover(target, options?)` | `this` | Enables looping hover offset. |
+| `breathe(target, options?)` | `this` | Enables looping breathe scale modulation. |
+| `leanByVelocity(target, source, options?)` | `this` | Adds velocity-response lean effect. |
+| `release(target)` | `void` | Removes controller and restores baseline transform. |
+| `update(dt)` | `void` | Advances motion simulation. Usually called via `wisp.update(dt)`. |
+| `clear()` | `void` | Restores all controlled objects and removes controllers. |
+
+Getters:
+
+| Getter | Type | Description |
+| --- | --- | --- |
+| `size` | `number` | Number of active motion controllers. |
 
 ### `WispParticles`
 
@@ -154,6 +185,35 @@ Getters:
 | Getter | Type | Description |
 | --- | --- | --- |
 | `trauma` | `number` | Current trauma value in `[0, 1]`. |
+
+### `MotionEffectsSystem`
+
+```ts
+class MotionEffectsSystem
+```
+
+Low-level additive transform manager for object motion effects.
+
+Constructor:
+
+```ts
+new MotionEffectsSystem(options?: MotionControllerOptions)
+```
+
+Methods:
+
+| Method | Returns | Description |
+| --- | --- | --- |
+| `motion(target)` | `MotionHandle` | Creates/reuses controller and returns fluent handle. |
+| `release(target)` | `void` | Restores target baseline transform and removes controller. |
+| `update(dt)` | `void` | Updates all controllers by `dt` seconds. |
+| `clear()` | `void` | Resets all controlled targets and clears controllers. |
+
+Getters:
+
+| Getter | Type | Description |
+| --- | --- | --- |
+| `size` | `number` | Number of active controllers. |
 
 ### `ParticleSystem`
 
@@ -374,8 +434,19 @@ Exported functions (see [Preset validation](preset-validation.md)):
 | `CameraShakeMode` | `"rotationOnly" | "rotationAndTranslation"` |
 | `CameraShakeOptions` | Camera shake tuning object (decay, power curve, coherent noise, max offsets). |
 | `CameraEffectsOptions` | `{ shake?: CameraShakeOptions }` |
+| `MotionEffectPhase` | `"persistent" | "response" | "impulse" | "oneshot"` |
+| `MotionOffset` | Optional channel offsets `{ position?, rotation?, scale? }`. |
+| `MotionControllerOptions` | `{ maxDt?: number }` |
+| `MotionPopOptions` | One-shot pop tuning `{ duration?, strength? }` |
+| `MotionSquashOptions` | One-shot squash tuning `{ duration?, amount? }` |
+| `MotionRecoilOptions` | Recoil tuning `{ duration?, distance?, rotation? }` |
+| `MotionHoverOptions` | Hover tuning `{ amplitude?, frequency? }` |
+| `MotionBreatheOptions` | Breathe tuning `{ amplitude?, frequency? }` |
+| `MotionLeanByVelocityOptions` | Lean tuning `{ maxAngle?, response? }` |
+| `MotionVectorSource` | `() => THREE.Vector3 | [number, number, number]` |
+| `WispMotionOptions` | Motion module options (currently `MotionControllerOptions`). |
 | `WispParticleOptions` | `ParticleManagerOptions & { presets?: Record<string, ParticlePreset> }` |
-| `WispOptions` | `{ scene?: THREE.Object3D; camera: THREE.Camera; cameraEffects?: CameraEffectsOptions; particles?: WispParticleOptions }` |
+| `WispOptions` | `{ scene?: THREE.Object3D; camera: THREE.Camera; cameraEffects?: CameraEffectsOptions; motion?: WispMotionOptions; particles?: WispParticleOptions }` |
 | `StarterTexturePack` | `{ softDisc; hardDisc; spark; smokePuffsSheet4x4 }` as `THREE.Texture` values. |
 | `StarterEffectName` | `"explosion" | "muzzleFlash" | "smokePuff" | "hitSparks" | "magicBurst" | "runSmoke" | "jumpSmokeRing"` |
 | `StarterKit` | `{ textures: StarterTexturePack; presets: Record<StarterEffectName, ParticlePreset> }` |

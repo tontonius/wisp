@@ -7,9 +7,11 @@ import { installScenePane } from "./panels/scene-pane.js";
 import { installDiagnosticsPane } from "./panels/diagnostics-pane.js";
 import { installDebugPane } from "./panels/debug-pane.js";
 import { installCameraPane } from "./panels/camera-pane.js";
+import { installMotionPane } from "./panels/motion-pane.js";
 import type { PanelRuntime } from "./panel-runtime.js";
 import { createViewport } from "./scene/viewport.js";
 import { updateEmitterMovement } from "./scene/movement.js";
+import { MotionTestSceneController } from "./scene/motion-test-scene.js";
 import {
   makeHardDiscTexture,
   makeSoftDiscTexture,
@@ -32,6 +34,7 @@ import {
   layerRuntimeName,
   type EditorLayer,
 } from "./state/layers.js";
+import { EditorViewState, type EditorViewMode } from "./state/editor-view-mode.js";
 
 export function startEditor(): void {
   const app = document.querySelector<HTMLDivElement>("#app");
@@ -45,6 +48,7 @@ export function startEditor(): void {
   <div id="pane-left-group" class="pane-dock pane-dock-left-group">
     <div id="pane-editor"></div>
     <div id="pane-camera"></div>
+    <div id="pane-motion"></div>
   </div>
   <div id="pane-diagnostics" class="pane-dock pane-dock-bottom"></div>
   <div id="pane-debug" class="pane-dock pane-dock-bottom-right"></div>
@@ -54,6 +58,7 @@ export function startEditor(): void {
   const layersPaneHost = document.querySelector<HTMLDivElement>("#pane-layers")!;
   const editorPaneHost = document.querySelector<HTMLDivElement>("#pane-editor")!;
   const cameraPaneHost = document.querySelector<HTMLDivElement>("#pane-camera")!;
+  const motionPaneHost = document.querySelector<HTMLDivElement>("#pane-motion")!;
   const diagnosticsPaneHost = document.querySelector<HTMLDivElement>("#pane-diagnostics")!;
   const debugPaneHost = document.querySelector<HTMLDivElement>("#pane-debug")!;
 
@@ -108,6 +113,7 @@ export function startEditor(): void {
 
   const activeSystemsByLayerId = new Map<string, ParticleSystem>();
   const pendingSpawnTimers = new Map<string, number>();
+  const editorView = new EditorViewState();
 
   let isRefreshingPane = false;
 
@@ -189,7 +195,13 @@ export function startEditor(): void {
       },
     },
     particles: { renderer: vp.renderer },
+    motion: {},
   });
+  const motionTestScene = new MotionTestSceneController({
+    scene: vp.scene,
+    wisp,
+  });
+  const motionParams = motionTestScene.getParams();
 
   function refreshExportJson(): void {
     params.exportJson = JSON.stringify(buildExportEffectsPayload(layers), createSafePresetSerializer(), 2);
@@ -255,6 +267,10 @@ export function startEditor(): void {
   }
 
   function respawn(): void {
+    if (editorView.isMotionTestMode()) {
+      editorView.markParticlesDirty();
+      return;
+    }
     const particles = wisp.particles;
     if (!particles) return;
     refreshExportJson();
@@ -355,6 +371,30 @@ export function startEditor(): void {
     }
   }
 
+  function setParticlesVisible(visible: boolean): void {
+    if (!wisp.particles) return;
+    for (const system of wisp.particles.systems) {
+      const object = system as unknown as THREE.Object3D;
+      object.visible = visible;
+    }
+  }
+
+  function setEditorViewMode(mode: EditorViewMode): void {
+    const didChange = editorView.setMode(mode);
+    if (!didChange) return;
+    if (mode === "motionTest") {
+      setParticlesVisible(false);
+      motionTestScene.enter();
+      return;
+    }
+
+    motionTestScene.exit();
+    setParticlesVisible(true);
+    if (editorView.consumeParticlesDirty()) {
+      respawn();
+    }
+  }
+
   const rt = {
     canvas,
     scene: vp.scene,
@@ -388,6 +428,7 @@ export function startEditor(): void {
     params,
     runtimeStats,
     globalDebugParams,
+    editorViewMode: editorView.current,
     cameraShakeParams,
     cameraRuntime,
     runtimeStatsRefreshElapsed,
@@ -404,8 +445,19 @@ export function startEditor(): void {
     layersRootPane: undefined as unknown as PanelRuntime["layersRootPane"],
     scenePane: undefined as unknown as PanelRuntime["scenePane"],
     cameraPane: undefined as unknown as PanelRuntime["cameraPane"],
+    motionPane: undefined as unknown as PanelRuntime["motionPane"],
     diagnosticsPane: undefined as unknown as PanelRuntime["diagnosticsPane"],
     debugPane: undefined as unknown as PanelRuntime["debugPane"],
+    motionParams,
+    motionActions: {
+      setHoverEnabled: (enabled: boolean) => motionTestScene.setHoverEnabled(enabled),
+      setBreatheEnabled: (enabled: boolean) => motionTestScene.setBreatheEnabled(enabled),
+      setLeanEnabled: (enabled: boolean) => motionTestScene.setLeanEnabled(enabled),
+      setAutoPopEnabled: (enabled: boolean) => motionTestScene.setAutoPopEnabled(enabled),
+      triggerPop: () => motionTestScene.triggerPop(),
+      triggerSquash: () => motionTestScene.triggerSquash(),
+      triggerRecoil: () => motionTestScene.triggerRecoil(),
+    },
     pane: undefined as unknown as PanelRuntime["pane"],
     fpsGraph: undefined as unknown as PanelRuntime["fpsGraph"],
   } as PanelRuntime;
@@ -417,6 +469,11 @@ export function startEditor(): void {
   rt.refreshRuntimeStats = refreshRuntimeStats;
   rt.renderSceneDepthWithoutParticles = renderSceneDepthWithoutParticles;
   rt.syncSoftParticleDepthTexture = syncSoftParticleDepthTexture;
+  rt.setEditorViewMode = (mode) => {
+    setEditorViewMode(mode);
+    rt.editorViewMode = editorView.current;
+    rt.scenePane.refresh();
+  };
   rt.respawn = respawn;
   rt.ensureSelectedLayer = ensureSelectedLayer;
   rt.setSelectedLayerById = setSelectedLayerById;
@@ -539,6 +596,7 @@ export function startEditor(): void {
   installLayersPane(rt, layersPaneHost);
   installParticleEditorPane(rt, editorPaneHost);
   installCameraPane(rt, cameraPaneHost);
+  installMotionPane(rt, motionPaneHost);
   installDiagnosticsPane(rt, diagnosticsPaneHost);
   installDebugPane(rt, debugPaneHost);
 
@@ -591,10 +649,15 @@ export function startEditor(): void {
     rt.orbitControls.autoRotate = rt.globalDebugParams.autoOrbit;
     rt.orbitControls.autoRotateSpeed = rt.globalDebugParams.orbitSpeedDegPerSec / 6;
     rt.orbitControls.update();
-    updateEmitterMovement(simulationDt, rt);
-    wisp.update(simulationDt, vp.camera);
-    renderSceneDepthWithoutParticles();
-    syncSoftParticleDepthTexture();
+    if (editorView.isParticlesMode()) {
+      updateEmitterMovement(simulationDt, rt);
+      wisp.update(simulationDt, vp.camera);
+      renderSceneDepthWithoutParticles();
+      syncSoftParticleDepthTexture();
+    } else {
+      motionTestScene.update(simulationDt);
+      wisp.update(simulationDt, vp.camera);
+    }
     vp.renderer.render(vp.scene, vp.camera);
     rt.fpsGraph.end();
 

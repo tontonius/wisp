@@ -7,6 +7,9 @@ Wisp
   ├─ camera module
   │    └─ CameraEffectsSystem
   │         └─ CameraShakeController
+  ├─ motion module
+  │    └─ MotionEffectsSystem
+  │         └─ MotionController (per object)
   └─ particles module
        └─ ParticleManager
             └─ ParticleEffectLibrary
@@ -28,6 +31,23 @@ Wisp
 - Preset-driven particle authoring for gameplay and visual effects.
 - Exposes `ParticleManager`, `ParticleEffectLibrary`, and `ParticleSystem`.
 - Supports CPU/GPU backend selection under a shared authoring shape.
+
+### Motion module
+
+- Focused on additive transform decoration (presentation offsets).
+- Exposes `WispMotion` and `MotionEffectsSystem`.
+- Operates as a late update pass that never owns gameplay movement authority.
+
+Core loop:
+
+```txt
+remove last offset
+read user-authored base transform
+evaluate active effects
+apply new offset
+```
+
+This boundary is intentional: gameplay systems own truth transforms, while Motion only layers temporary visual offsets.
 
 ## Preset-Driven Authoring (Particles)
 

@@ -30,6 +30,10 @@ When adding or changing editor controls, prefer `editor/panels/particle-editor-p
 - Additional bottom-right `Debug` pane with a global on/off `Debug Gizmos` toggle (`wisp.particles.setDebug(...)`) for active and future systems.
 - The `Debug` pane has a `Camera` section with `Auto orbit` and `Speed (deg/s)` controls, using an orbit camera around scene center.
 - The `Scene` pane (docked left of `Layers`) includes `Ground Plane` visibility, `Ground Color`, `Background`, and a `Fog` subfolder with `Enabled`, `Color`, and `Near/Far` controls for preview-only scene tuning.
+- The `Scene` pane includes `Editor View` with `Particles` and `Motion Test` modes.
+- `Motion Test` is an isolated preview mode with a single cube driven by Wisp Motion effects (hover/breathe/pop loop) for quick tuning and visual checks.
+- `Particles` mode keeps existing particle preview behavior unchanged; switching modes avoids cross-interference by running the relevant update path only.
+- A dedicated `Motion` pane provides toggles for looped effects (`Hover`, `Breathe`, `Lean by velocity`, `Auto pop`) and one-shot action buttons (`Pop`, `Squash`, `Recoil`) for direct interaction testing.
 - The `Debug` pane has a `Movement` section with `Enabled` and `Mode`; `circleLinear` moves active emitters in a circular path to preview effects on moving objects.
 - The `Layers` pane supports multi-effect composition in one editor session: one folder per layer, opening/clicking a folder selects that layer for parameter editing, with `Name`, `Muted`, `Solo`, `Offset`, and `Emitter XYZ` controls plus in-folder `Clone`/`Delete` action buttons.
 - A `New effect` button appears below each layer folder and adds a fresh default particle effect layer.

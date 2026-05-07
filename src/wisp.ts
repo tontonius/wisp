@@ -1,8 +1,19 @@
 import * as THREE from "three";
 import { CameraEffectsSystem } from "./camera/system";
 import type { CameraEffectsOptions, CameraShakeImpulse, CameraShakeOptions } from "./camera/types";
+import { MotionEffectsSystem, MotionHandle } from "./motion/system";
 import type { ParticleSystem } from "./particles/system";
 import { ParticleManager } from "./particles/world";
+import type {
+  MotionBreatheOptions,
+  MotionHoverOptions,
+  MotionLeanByVelocityOptions,
+  MotionPopOptions,
+  MotionRecoilOptions,
+  MotionSquashOptions,
+  MotionVectorSource,
+  WispMotionOptions,
+} from "./motion/types";
 import type { ParticleDebugOptions, ParticleManagerOptions, ParticlePreset, ParticleSpawnOptions } from "./particles/types";
 
 /** High-level camera module exposed on `wisp.camera`. */
@@ -108,6 +119,75 @@ export class WispParticles {
   }
 }
 
+/** High-level motion module exposed on `wisp.motion`. */
+export class WispMotion {
+  private readonly system: MotionEffectsSystem;
+
+  constructor(system: MotionEffectsSystem) {
+    this.system = system;
+  }
+
+  /** Returns a fluent handle for additive motion effects on a target object. */
+  motion(target: THREE.Object3D): MotionHandle {
+    return this.system.motion(target);
+  }
+
+  /** Convenience wrapper for `motion(target).pop(options)`. */
+  pop(target: THREE.Object3D, options?: MotionPopOptions): this {
+    this.system.motion(target).pop(options);
+    return this;
+  }
+
+  /** Convenience wrapper for `motion(target).squash(options)`. */
+  squash(target: THREE.Object3D, options?: MotionSquashOptions): this {
+    this.system.motion(target).squash(options);
+    return this;
+  }
+
+  /** Convenience wrapper for `motion(target).recoil(direction, options)`. */
+  recoil(target: THREE.Object3D, direction: THREE.Vector3, options?: MotionRecoilOptions): this {
+    this.system.motion(target).recoil(direction, options);
+    return this;
+  }
+
+  /** Convenience wrapper for `motion(target).hover(options)`. */
+  hover(target: THREE.Object3D, options?: MotionHoverOptions): this {
+    this.system.motion(target).hover(options);
+    return this;
+  }
+
+  /** Convenience wrapper for `motion(target).breathe(options)`. */
+  breathe(target: THREE.Object3D, options?: MotionBreatheOptions): this {
+    this.system.motion(target).breathe(options);
+    return this;
+  }
+
+  /** Convenience wrapper for `motion(target).leanByVelocity(source, options)`. */
+  leanByVelocity(target: THREE.Object3D, source: MotionVectorSource, options?: MotionLeanByVelocityOptions): this {
+    this.system.motion(target).leanByVelocity(source, options);
+    return this;
+  }
+
+  /** Releases one controlled object and restores its baseline transform. */
+  release(target: THREE.Object3D): void {
+    this.system.release(target);
+  }
+
+  /** Advances all active motion controllers by `dt` seconds. */
+  update(dt: number): void {
+    this.system.update(dt);
+  }
+
+  /** Clears all active controllers and removes all applied offsets. */
+  clear(): void {
+    this.system.clear();
+  }
+
+  get size(): number {
+    return this.system.size;
+  }
+}
+
 /** Options for configuring `wisp.particles`. */
 export interface WispParticleOptions extends ParticleManagerOptions {
   /** Initial presets registered at construction time. */
@@ -124,6 +204,8 @@ export interface WispOptions {
   cameraEffects?: CameraEffectsOptions;
   /** Particle module options. If omitted, `wisp.particles` is undefined. */
   particles?: WispParticleOptions;
+  /** Motion module options. If omitted, `wisp.motion` is undefined. */
+  motion?: WispMotionOptions;
 }
 
 /**
@@ -136,6 +218,7 @@ export interface WispOptions {
 export class Wisp {
   readonly camera: WispCamera;
   readonly particles?: WispParticles;
+  readonly motion?: WispMotion;
   private readonly cameraSystem: CameraEffectsSystem;
   private readonly renderCamera: THREE.Camera;
 
@@ -149,6 +232,9 @@ export class Wisp {
     this.renderCamera = resolved.camera;
     this.cameraSystem = new CameraEffectsSystem(resolved.camera, resolved.cameraEffects?.shake);
     this.camera = new WispCamera(this.cameraSystem);
+    if (resolved.motion) {
+      this.motion = new WispMotion(new MotionEffectsSystem(resolved.motion));
+    }
     if (resolved.scene && resolved.particles) {
       const world = new ParticleManager(
         resolved.scene,
@@ -170,6 +256,7 @@ export class Wisp {
    */
   update(dt: number, camera?: THREE.Camera): void {
     this.camera.update(dt);
+    this.motion?.update(dt);
     if (this.particles) {
       this.particles.update(dt, camera ?? this.renderCamera);
     }
@@ -177,6 +264,7 @@ export class Wisp {
 
   /** Disposes module state and releases owned resources. */
   dispose(): void {
+    this.motion?.clear();
     this.particles?.clear();
     this.cameraSystem.dispose();
   }

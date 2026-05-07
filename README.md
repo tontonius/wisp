@@ -2,10 +2,11 @@
 
 Wisp is a modular game-feel effects engine for Three.js.
 
-Today, two core modules are implemented:
+Today, three core modules are implemented:
 
 - `particles`: a Unity-Shuriken-inspired foundation focused on game-ready ergonomics over exposing every possible low-level knob.
 - `camera`: trauma-based camera shake that layers onto existing camera rigs.
+- `motion`: additive visual transform effects (squash/recoil/hover/lean) layered after gameplay transform updates.
 
 ## Features
 
@@ -79,6 +80,8 @@ Module entry points:
 
 - [How To Add Trauma-Based Camera Shake](docs/how-to/add-camera-shake.md)
 - [Reference: Camera Effects](docs/reference/camera-effects.md)
+- [How To Add Motion Effects](docs/how-to/add-motion-effects.md)
+- [Reference: Motion Effects](docs/reference/motion-effects.md)
 - [Tutorial: First Particle Effect](docs/tutorials/first-particle-effect.md)
 - [Reference: Particle API](docs/reference/api.md)
 

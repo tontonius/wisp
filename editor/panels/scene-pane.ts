@@ -13,6 +13,17 @@ export function installScenePane(rt: PanelRuntime, host: HTMLDivElement): void {
 
   const scenePane = new Pane({ title: "Scene", expanded: false, container: host });
   rt.scenePane = scenePane;
+  scenePane
+    .addBinding(rt, "editorViewMode", {
+      label: "Editor View",
+      options: {
+        Particles: "particles",
+        "Motion Test": "motionTest",
+      },
+    })
+    .on("change", (ev) => {
+      rt.setEditorViewMode(ev.value);
+    });
   scenePane.addBinding(rt.sceneParams, "groundVisible", { label: "Ground Plane" }).on("change", () => {
     rt.floor.visible = rt.sceneParams.groundVisible;
   });

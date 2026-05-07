@@ -13,14 +13,17 @@ Current core modules:
 
 - `particles`: Unity/Shuriken-inspired particle authoring with CPU/GPU simulation backends.
 - `camera`: trauma-based camera shake designed to layer onto existing camera rigs.
+- `motion`: additive visual transform effects (squash, recoil, hover, velocity lean) that run as a post-transform layer.
 
 ## Start Here
 
 - [Reference: Public API](reference/api.md)
 - [Reference: Starter Kit](reference/starter-kit.md)
 - [Reference: Camera Effects](reference/camera-effects.md)
+- [Reference: Motion Effects](reference/motion-effects.md)
 - [Tutorial: First Particle Effect](tutorials/first-particle-effect.md)
 - [How To Add Trauma-Based Camera Shake](how-to/add-camera-shake.md)
+- [How To Add Motion Effects](how-to/add-motion-effects.md)
 - [How To Choose CPU, GPU, Or Auto](how-to/choose-a-backend.md)
 - [Explanation: Architecture](explanation/architecture.md)
 
@@ -37,6 +40,7 @@ Current core modules:
 - [Create A GPU Ambient Effect](how-to/create-a-gpu-ambient-effect.md)
 - [Use Texture Sheets](how-to/use-texture-sheets.md)
 - [Add Trauma-Based Camera Shake](how-to/add-camera-shake.md)
+- [Add Motion Effects](how-to/add-motion-effects.md)
 - [Debug Emitters](how-to/debug-emitters.md)
 
 ### Reference
@@ -44,6 +48,7 @@ Current core modules:
 - [Public API](reference/api.md)
 - [Starter Kit](reference/starter-kit.md)
 - [Camera Effects](reference/camera-effects.md)
+- [Motion Effects](reference/motion-effects.md)
 
 Particle module reference:
 

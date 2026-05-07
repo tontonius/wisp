@@ -4,6 +4,7 @@ import type { Pane } from "tweakpane";
 import type { ParticlePreset, ParticleSystem } from "../src";
 import type { Wisp } from "../src";
 import type { EditorLayer } from "./state/layers";
+import type { EditorViewMode } from "./state/editor-view-mode";
 import type { EditorParams } from "./state/params";
 
 /** Narrow facade passed into panel installers (avoids circular imports with types.ts). */
@@ -74,6 +75,7 @@ export type PanelRuntime = {
     movementMode: "circleLinear" | "stationary";
     movementSpeed: number;
   };
+  editorViewMode: EditorViewMode;
   cameraShakeParams: {
     enabled: boolean;
     onRespawn: boolean;
@@ -114,8 +116,24 @@ export type PanelRuntime = {
 
   scenePane: Pane;
   cameraPane: Pane;
+  motionPane: Pane;
   diagnosticsPane: Pane;
   debugPane: Pane;
+  motionParams: {
+    hoverEnabled: boolean;
+    breatheEnabled: boolean;
+    leanEnabled: boolean;
+    autoPopEnabled: boolean;
+  };
+  motionActions: {
+    setHoverEnabled: (enabled: boolean) => void;
+    setBreatheEnabled: (enabled: boolean) => void;
+    setLeanEnabled: (enabled: boolean) => void;
+    setAutoPopEnabled: (enabled: boolean) => void;
+    triggerPop: () => void;
+    triggerSquash: () => void;
+    triggerRecoil: () => void;
+  };
 
   fpsGraph: { begin: () => void; end: () => void };
 
@@ -129,6 +147,7 @@ export type PanelRuntime = {
   renderSceneDepthWithoutParticles: () => void;
   syncSoftParticleDepthTexture: () => void;
   resize: () => void;
+  setEditorViewMode: (mode: EditorViewMode) => void;
 
   selectLayerAndRefresh: (layerId: string) => void;
   rebuildLayersPaneFolders: () => void;
