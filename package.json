@@ -24,9 +24,6 @@
   "publishConfig": {
     "access": "public"
   },
-  "engines": {
-    "node": "22.x"
-  },
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "dev:editor": "vite --host 0.0.0.0 --open /editor/",
@@ -56,7 +53,7 @@
     "happy-dom": "^15.11.7",
     "tweakpane": "^4.0.5",
     "typescript": "latest",
-    "vite": "7.3.2",
+    "vite": "latest",
     "vitest": "^3.0.0"
   }
 }
