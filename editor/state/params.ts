@@ -37,6 +37,11 @@ export type EditorParams = {
   vortexOrbitalSpeed: number;
   vortexInward: number;
   vortexUpward: number;
+  pointAttractorEnabled: boolean;
+  pointAttractorCenter: { x: number; y: number; z: number };
+  pointAttractorStrength: number;
+  pointAttractorEpsilon: number;
+  pointAttractorStrengthOL: { x: number; y: number };
   noiseEnabled: boolean;
   noiseStrength: number;
   noiseFrequency: number;
@@ -135,6 +140,11 @@ export function createInitialEditorParams(): EditorParams {
     vortexOrbitalSpeed: 0,
     vortexInward: 0,
     vortexUpward: 0,
+    pointAttractorEnabled: false,
+    pointAttractorCenter: { x: 0, y: 0, z: 0 },
+    pointAttractorStrength: 4,
+    pointAttractorEpsilon: 0.0001,
+    pointAttractorStrengthOL: { x: 1, y: 1 },
     noiseEnabled: true,
     noiseStrength: 0,
     noiseFrequency: 1,

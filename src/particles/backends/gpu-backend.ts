@@ -38,6 +38,7 @@ export class GPUParticleBackend implements ParticleBackend {
   private sizeBySpeedCurveTexture: THREE.DataTexture;
   private colorBySpeedGradientTexture: THREE.DataTexture;
   private rotationBySpeedCurveTexture: THREE.DataTexture;
+  private pointAttractorStrengthCurveTexture: THREE.DataTexture;
   private dispersalAmountCurveTexture: THREE.DataTexture | null = null;
   private previousRenderTarget: THREE.WebGLRenderTarget | null = null;
   private previousXrEnabled = false;
@@ -57,6 +58,7 @@ export class GPUParticleBackend implements ParticleBackend {
     this.sizeBySpeedCurveTexture = makeCurveFloatTexture(preset.sizeBySpeed?.curve, 1);
     this.colorBySpeedGradientTexture = makeGradientTexture(preset.colorBySpeed?.gradient);
     this.rotationBySpeedCurveTexture = makeCurveFloatTexture(preset.rotationBySpeed?.angularVelocity, 0);
+    this.pointAttractorStrengthCurveTexture = makeCurveFloatTexture(preset.forces?.pointAttractor?.strengthOverLifetime, 1);
     if (isRendererDispersalEnabled(preset.renderer) && preset.renderer?.dispersal?.amount) {
       this.dispersalAmountCurveTexture = makeDispersalAmountCurveTexture(preset.renderer.dispersal.amount);
     }
@@ -229,6 +231,7 @@ export class GPUParticleBackend implements ParticleBackend {
     this.sizeBySpeedCurveTexture.dispose();
     this.colorBySpeedGradientTexture.dispose();
     this.rotationBySpeedCurveTexture.dispose();
+    this.pointAttractorStrengthCurveTexture.dispose();
     this.dispersalAmountCurveTexture?.dispose();
     this.rtA.forEach((rt) => rt.dispose());
     this.rtB.forEach((rt) => rt.dispose());
@@ -387,6 +390,12 @@ export class GPUParticleBackend implements ParticleBackend {
     u.uColorMax.value.copy(colorMax);
     u.uAcceleration.value.set(...(forces.acceleration ?? [0, 0, 0]));
     u.uDrag.value = forces.drag ?? 0;
+    const pointAttractor = forces.pointAttractor;
+    u.uPointAttractorEnabled.value = pointAttractor ? 1 : 0;
+    u.uPointAttractorCenter.value.set(...(pointAttractor?.center ?? [0, 0, 0]));
+    u.uPointAttractorStrength.value = pointAttractor?.strength ?? 0;
+    u.uPointAttractorEpsilon.value = pointAttractor?.epsilon ?? 1e-4;
+    u.uPointAttractorStrengthCurve.value = this.pointAttractorStrengthCurveTexture;
     const vortex = forces.vortex;
     const vortexAxis = tempVectorA.set(...(vortex?.axis ?? [0, 1, 0]));
     if (vortexAxis.lengthSq() < 1e-8) vortexAxis.set(0, 1, 0);
@@ -453,6 +462,11 @@ export class GPUParticleBackend implements ParticleBackend {
         uColorMax: { value: new THREE.Color("#ffffff") },
         uAcceleration: { value: new THREE.Vector3() },
         uDrag: { value: 0 },
+        uPointAttractorEnabled: { value: 0 },
+        uPointAttractorCenter: { value: new THREE.Vector3() },
+        uPointAttractorStrength: { value: 0 },
+        uPointAttractorEpsilon: { value: 1e-4 },
+        uPointAttractorStrengthCurve: { value: this.pointAttractorStrengthCurveTexture },
         uVortexEnabled: { value: 0 },
         uVortexCenter: { value: new THREE.Vector3() },
         uVortexAxis: { value: new THREE.Vector3(0, 1, 0) },
@@ -521,6 +535,11 @@ export class GPUParticleBackend implements ParticleBackend {
 
         uniform vec3 uAcceleration;
         uniform float uDrag;
+        uniform int uPointAttractorEnabled;
+        uniform vec3 uPointAttractorCenter;
+        uniform float uPointAttractorStrength;
+        uniform float uPointAttractorEpsilon;
+        uniform sampler2D uPointAttractorStrengthCurve;
         uniform int uVortexEnabled;
         uniform vec3 uVortexCenter;
         uniform vec3 uVortexAxis;
@@ -682,6 +701,19 @@ export class GPUParticleBackend implements ParticleBackend {
           }
 
           velocity += uAcceleration * uDeltaTime;
+
+          if (uPointAttractorEnabled == 1) {
+            float ageT = clamp(age / max(0.0001, life), 0.0, 1.0);
+            float paMul = texture2D(uPointAttractorStrengthCurve, vec2(ageT, 0.5)).r;
+            float paEff = uPointAttractorStrength * paMul;
+            if (abs(paEff) > 0.000001) {
+              vec3 toCenter = uPointAttractorCenter - pos;
+              float dist = length(toCenter);
+              if (dist > uPointAttractorEpsilon) {
+                velocity += (toCenter / dist) * paEff * uDeltaTime;
+              }
+            }
+          }
 
           if (uVortexEnabled == 1) {
             vec3 radial = pos - uVortexCenter;

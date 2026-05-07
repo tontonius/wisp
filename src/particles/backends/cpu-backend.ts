@@ -329,6 +329,9 @@ export class CPUParticleBackend implements ParticleBackend {
     const noiseOctaves = THREE.MathUtils.clamp(Math.floor(noise?.octaves ?? 2), 1, 4);
     const noiseLacunarity = Math.max(1, noise?.lacunarity ?? 2);
     const noisePersistence = THREE.MathUtils.clamp(noise?.persistence ?? 0.5, 0.05, 1);
+    const pointAttractor = forces.pointAttractor;
+    const paCenter = pointAttractor?.center ?? [0, 0, 0];
+    const paEps = pointAttractor?.epsilon ?? 1e-4;
 
     for (const particle of this.particles) {
       if (!particle.alive) continue;
@@ -342,6 +345,25 @@ export class CPUParticleBackend implements ParticleBackend {
       }
 
       particle.velocity.addScaledVector(acceleration, dt);
+
+      if (pointAttractor) {
+        const t = THREE.MathUtils.clamp(particle.age / particle.lifetime, 0, 1);
+        const mult = evaluateCurve(pointAttractor.strengthOverLifetime, t, 1);
+        const eff = (pointAttractor.strength ?? 0) * mult;
+        if (eff !== 0) {
+          const toCx = paCenter[0] - particle.position.x;
+          const toCy = paCenter[1] - particle.position.y;
+          const toCz = paCenter[2] - particle.position.z;
+          const distSq = toCx * toCx + toCy * toCy + toCz * toCz;
+          if (distSq > paEps * paEps) {
+            const dist = Math.sqrt(distSq);
+            const s = (eff * dt) / dist;
+            particle.velocity.x += toCx * s;
+            particle.velocity.y += toCy * s;
+            particle.velocity.z += toCz * s;
+          }
+        }
+      }
 
       if (vortexOrbital !== 0 || vortexInward !== 0 || vortexUpward !== 0) {
         const radial = tempVectorA.set(

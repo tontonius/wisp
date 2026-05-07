@@ -19,6 +19,28 @@ describe("collectParticlePresetIssues", () => {
     expect(result.errors).toEqual([]);
   });
 
+  it("passes with forces.pointAttractor", () => {
+    const preset = {
+      simulation: "cpu" as const,
+      maxParticles: 256,
+      emitter: { type: "point" as const },
+      emission: { rateOverTime: 10 },
+      start: { lifetime: 1, speed: 1, size: 1, color: "#ffffff", opacity: 1 },
+      renderer: { blendMode: "alpha" as const, align: "camera" as const },
+      forces: {
+        pointAttractor: {
+          strength: 3,
+          strengthOverLifetime: [
+            [0, 0],
+            [1, 1],
+          ],
+        },
+      },
+    };
+    const result = collectParticlePresetIssues(preset, {});
+    expect(result.errors).toEqual([]);
+  });
+
   it("reports errors for invalid maxParticles", () => {
     const preset = {
       simulation: "cpu" as const,

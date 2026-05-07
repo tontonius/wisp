@@ -81,6 +81,7 @@ Pass the same renderer you pass into `ParticleSystemOptions` so validation can w
 | `start.*` ranges | For each set `start` range field, values must be finite scalars or finite tuple endpoints. |
 | `start.lifetime` | Upper bound of the resolved range must be `> 0`. |
 | `forces.vortex` | When set: `center`/`axis` must be finite vec3 tuples; `orbitalSpeed`, `inward`, and `upward` must be finite numbers. |
+| `forces.pointAttractor` | When set: optional `center` must be a finite vec3; `strength` finite when set; `epsilon` finite and `> 0` when set; `strengthOverLifetime` follows curve rules. |
 | `forces.noise` | `strength`/`frequency` must be finite (`strength >= 0`, `frequency >= 0`); `scroll` must be a finite vec3; `octaves` integer in `[1,4]`; `lacunarity >= 1`; `persistence` in `(0,1]`. |
 | `colorBySpeed` | When set: object with finite `speedRange` `[min, max]` where `max >= min`, and non-empty `gradient` passing gradient rules. |
 | `sizeBySpeed` | When set: object with valid `speedRange`, and non-empty `curve` passing curve rules. |

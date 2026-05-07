@@ -57,7 +57,7 @@ type ParticlePreset = {
 | `emitter` | `EmitterShape` | `{ type: "point" }` | Spawn shape and direction. |
 | `emission` | Object | No emission | Continuous rate and/or scheduled bursts. |
 | `start` | Object | Individual defaults | Values sampled when each particle spawns. |
-| `forces` | Object | No force | Constant acceleration, drag, optional vortex column, and procedural noise; see [Forces](forces.md). |
+| `forces` | Object | No force | Constant acceleration, drag, optional point attractor, vortex column, and procedural noise; see [Forces](forces.md). |
 | `limitVelocityOverLifetime` | Object | `undefined` | CPU-only speed cap module by normalized age. |
 | `collision` | `CpuCollision` | `undefined` | CPU-only primitive collision (`plane`, `sphere`, or `box`) in local space; see [CPU backend](cpu-backend.md#collision-plane--sphere--box). |
 | `subEmitters` | `{ onBirth?: string; onDeath?: string; onCollision?: string }` | `undefined` | CPU-only child effect hooks. `onBirth` spawns on CPU particle spawn, `onDeath` on particle death, and `onCollision` on primitive collision (when spawned through a `ParticleManager`). |

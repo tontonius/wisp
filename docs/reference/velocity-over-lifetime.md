@@ -41,7 +41,7 @@ position += (storedVelocity + lifetimeLinearVelocity) * dt
 Important distinction:
 
 - `start.velocity` is sampled once and stored in particle velocity.
-- `forces.acceleration`, `forces.noise`, and `forces.drag` mutate stored velocity.
+- `forces.acceleration`, `forces.pointAttractor`, `forces.vortex`, `forces.noise`, and `forces.drag` mutate stored velocity.
 - `velocityOverLifetime.linear` is evaluated each frame and added to movement.
 
 This means `velocityOverLifetime` behaves like an authored velocity channel, not an accumulating acceleration.

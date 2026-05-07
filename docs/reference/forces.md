@@ -21,6 +21,12 @@ forces?: {
     lacunarity?: number;
     persistence?: number;
   };
+  pointAttractor?: {
+    center?: [number, number, number];
+    strength?: number;
+    strengthOverLifetime?: Array<[number, number]>;
+    epsilon?: number;
+  };
 };
 ```
 
@@ -53,6 +59,28 @@ velocity *= max(0, 1 - drag * dt)
 ```
 
 Higher values slow particles more quickly. Very high values can clamp velocity to zero in a single frame.
+
+## Point attractor
+
+```ts
+pointAttractor: {
+  center: [0, 0, 0],
+  strength: 6,
+  strengthOverLifetime: [[0, 0], [0.3, 1], [1, 1]],
+  epsilon: 1e-4,
+}
+```
+
+Pulls particle **velocity** toward a single point in **simulation space** (see `simulationSpace` on the preset). Each frame, acceleration is along `(center - position)` with constant magnitude `|strength|` before lifetime scaling—this is not inverse-square gravity.
+
+| Field | Default | Description |
+| --- | --- | --- |
+| `center` | `[0, 0, 0]` | Target position. |
+| `strength` | `0` | Radial acceleration magnitude (units/s²). Negative values push **away** from `center`. |
+| `strengthOverLifetime` | (unset) | Multiplies `strength`; evaluated at normalized age `age / lifetime`. If omitted, acts like a flat multiplier of `1`. |
+| `epsilon` | `1e-4` | No pull when distance to `center` is below this (avoids unstable `normalize` near the target). |
+
+Works on CPU and GPU. For a “spawn outward, then suck to the center” look, combine a spherical emitter, outward `start.velocity`, and a `strengthOverLifetime` curve that ramps from `0` to `1` over the first part of life.
 
 ## Vortex
 
@@ -180,11 +208,12 @@ Per update, the CPU backend applies:
 
 1. Age increment and death check.
 2. Constant acceleration.
-3. Vortex.
-4. Noise.
-5. Drag.
-6. Limit velocity over lifetime (if configured).
-7. Position integration using stored velocity plus lifetime velocity.
-8. Angular velocity.
+3. Point attractor (if configured).
+4. Vortex.
+5. Noise.
+6. Drag.
+7. Limit velocity over lifetime (if configured).
+8. Position integration using stored velocity plus lifetime velocity.
+9. Angular velocity.
 
 The GPU backend follows the same conceptual order inside the simulation shader.

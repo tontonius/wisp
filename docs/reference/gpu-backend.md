@@ -113,7 +113,7 @@ The shader:
 3. Initializes lifetime, velocity, color, size, rotation, angular velocity, opacity, and start frame.
 4. For existing live particles, increments age.
 5. Kills particles when age exceeds lifetime.
-6. Applies constant acceleration, vortex force (if configured), coherent FBM noise, and drag.
+6. Applies constant acceleration, point attractor (if configured), vortex force (if configured), coherent FBM noise, and drag.
 7. Samples linear velocity-over-lifetime.
 8. Integrates position and rotation (if `rotationBySpeed` is set, angular velocity is taken from its curve each step using current simulation speed).
 

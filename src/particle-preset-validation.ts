@@ -378,6 +378,22 @@ export function collectParticlePresetIssues(
     }
   }
 
+  const pointAttractor = preset.forces?.pointAttractor;
+  if (pointAttractor) {
+    if (pointAttractor.center !== undefined) {
+      errors.push(...validateFiniteVec3("forces.pointAttractor.center", pointAttractor.center));
+    }
+    if (pointAttractor.strength !== undefined && !isFiniteNumber(pointAttractor.strength)) {
+      errors.push("forces.pointAttractor.strength: must be a finite number when set.");
+    }
+    if (pointAttractor.epsilon !== undefined) {
+      if (!isFiniteNumber(pointAttractor.epsilon) || pointAttractor.epsilon <= 0) {
+        errors.push("forces.pointAttractor.epsilon: must be a finite number > 0 when set.");
+      }
+    }
+    errors.push(...validateCurve("forces.pointAttractor.strengthOverLifetime", pointAttractor.strengthOverLifetime));
+  }
+
   if (noise) {
     if (noise.strength !== undefined && (!isFiniteNumber(noise.strength) || noise.strength < 0)) {
       errors.push("forces.noise.strength: must be a finite number >= 0 when set.");

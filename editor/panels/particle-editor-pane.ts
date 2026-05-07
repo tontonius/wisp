@@ -154,6 +154,30 @@ forcesFolder.addBinding(rt.params, "acceleration", {
   y: { min: -50, max: 50, step: 0.01 },
   z: { min: -50, max: 50, step: 0.01 },
 });
+const pointAttractorEnabledBinding = forcesFolder.addBinding(rt.params, "pointAttractorEnabled", { label: "Point attractor" });
+const pointAttractorCenterBinding = forcesFolder.addBinding(rt.params, "pointAttractorCenter", {
+  label: "Attractor center",
+  x: { min: -20, max: 20, step: 0.01 },
+  y: { min: -20, max: 20, step: 0.01 },
+  z: { min: -20, max: 20, step: 0.01 },
+});
+const pointAttractorStrengthBinding = forcesFolder.addBinding(rt.params, "pointAttractorStrength", {
+  label: "Attractor strength",
+  min: -50,
+  max: 50,
+  step: 0.01,
+});
+const pointAttractorEpsilonBinding = forcesFolder.addBinding(rt.params, "pointAttractorEpsilon", {
+  label: "Attractor epsilon",
+  min: 1e-6,
+  max: 0.5,
+  step: 0.00001,
+});
+const pointAttractorStrengthOLBinding = forcesFolder.addBinding(rt.params, "pointAttractorStrengthOL", {
+  label: "Strength mul (age 0 → 1)",
+  x: { min: 0, max: 4, step: 0.01 },
+  y: { min: 0, max: 4, step: 0.01 },
+});
 const vortexEnabledBinding = forcesFolder.addBinding(rt.params, "vortexEnabled", { label: "Vortex Enabled" });
 const vortexCenterBinding = forcesFolder.addBinding(rt.params, "vortexCenter", {
   label: "Vortex center",
@@ -185,6 +209,12 @@ const noiseLacunarityBinding = forcesFolder.addBinding(rt.params, "noiseLacunari
 const noisePersistenceBinding = forcesFolder.addBinding(rt.params, "noisePersistence", { label: "Noise Persistence", min: 0, max: 2, step: 0.01 });
 
 function updateForcesVisibility(): void {
+  const pa = rt.params.pointAttractorEnabled;
+  pointAttractorCenterBinding.hidden = !pa;
+  pointAttractorStrengthBinding.hidden = !pa;
+  pointAttractorEpsilonBinding.hidden = !pa;
+  pointAttractorStrengthOLBinding.hidden = !pa;
+
   vortexCenterBinding.hidden = !rt.params.vortexEnabled;
   vortexAxisBinding.hidden = !rt.params.vortexEnabled;
   vortexOrbitalBinding.hidden = !rt.params.vortexEnabled;
@@ -198,6 +228,7 @@ function updateForcesVisibility(): void {
   noiseLacunarityBinding.hidden = !rt.params.noiseEnabled;
   noisePersistenceBinding.hidden = !rt.params.noiseEnabled;
 }
+pointAttractorEnabledBinding.on("change", () => updateForcesVisibility());
 vortexEnabledBinding.on("change", () => updateForcesVisibility());
 noiseEnabledBinding.on("change", () => updateForcesVisibility());
 

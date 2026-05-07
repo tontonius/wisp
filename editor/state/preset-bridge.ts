@@ -96,6 +96,21 @@ export function syncParamsFromPreset(ctx: PresetSyncApplyContext): void {
   params.vortexOrbitalSpeed = vortex?.orbitalSpeed ?? 0;
   params.vortexInward = vortex?.inward ?? 0;
   params.vortexUpward = vortex?.upward ?? 0;
+  const pa = workingPreset.forces?.pointAttractor;
+  params.pointAttractorEnabled = !!pa;
+  params.pointAttractorCenter = {
+    x: pa?.center?.[0] ?? 0,
+    y: pa?.center?.[1] ?? 0,
+    z: pa?.center?.[2] ?? 0,
+  };
+  params.pointAttractorStrength = pa?.strength ?? 0;
+  params.pointAttractorEpsilon = pa?.epsilon ?? 1e-4;
+  const paSol = pa?.strengthOverLifetime;
+  params.pointAttractorStrengthOL = {
+    x: paSol?.[0]?.[1] ?? 1,
+    y:
+      paSol && paSol.length > 0 ? (paSol[paSol.length - 1]?.[1] ?? 1) : 1,
+  };
   const noise = workingPreset.forces?.noise;
   params.noiseEnabled = !!noise;
   params.noiseStrength = workingPreset.forces?.noise?.strength ?? 0;
@@ -277,6 +292,23 @@ export function applyParamsToPreset(ctx: PresetSyncApplyContext): void {
     };
   } else {
     delete forces.vortex;
+  }
+  if (params.pointAttractorEnabled) {
+    const ox = params.pointAttractorStrengthOL.x;
+    const oy = params.pointAttractorStrengthOL.y;
+    forces.pointAttractor = {
+      center: [params.pointAttractorCenter.x, params.pointAttractorCenter.y, params.pointAttractorCenter.z],
+      strength: params.pointAttractorStrength,
+      epsilon: Math.max(1e-8, params.pointAttractorEpsilon),
+      ...(Math.abs(ox - 1) > 1e-6 || Math.abs(oy - 1) > 1e-6
+        ? { strengthOverLifetime: [
+            [0, ox],
+            [1, oy],
+          ] }
+        : {}),
+    };
+  } else {
+    delete forces.pointAttractor;
   }
   if (params.noiseEnabled) {
     forces.noise = {

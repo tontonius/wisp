@@ -243,6 +243,20 @@ export type ParticlePreset = {
       /** Amplitude multiplier per octave. */
       persistence?: number;
     };
+    /**
+     * Constant-magnitude radial acceleration toward a point (units/s² toward `center`).
+     * Effective strength is `strength × strengthOverLifetime(age/life)` when the curve is set.
+     */
+    pointAttractor?: {
+      /** Attractor position in simulation space. Default `[0, 0, 0]`. */
+      center?: Vec3Tuple;
+      /** Base radial acceleration magnitude before lifetime multiplier. Default `0`. */
+      strength?: number;
+      /** Multiplier curve vs normalized age `0..1`. Omitted or flat `1` applies full `strength` at all ages. */
+      strengthOverLifetime?: Curve;
+      /** Skip pull when closer than this distance to `center` (avoids unstable normalization). Default `1e-4`. */
+      epsilon?: number;
+    };
   };
 
   /**
