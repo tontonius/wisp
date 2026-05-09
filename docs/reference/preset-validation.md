@@ -40,17 +40,17 @@ Runs `collectParticlePresetIssues`, logs each **warning** once with `console.war
 ```ts
 function presetWouldUseGpu(
   preset: ParticlePreset,
-  renderer: THREE.WebGLRenderer | undefined
+  renderer: ParticleRenderer | undefined
 ): boolean;
 ```
 
-Matches the same rules as internal GPU selection (`simulation`, `auto` threshold, `gpu.forceCpuFallback`, and CPU-only modules like `collision` / `subEmitters` disabling GPU). Used for warning logic (for example `onParticleDeath` on GPU).
+Matches the same rules as internal GPU selection (`simulation`, `gpu.backend`, `auto` threshold, `gpu.forceCpuFallback`, and CPU-only modules like `collision` / `subEmitters` disabling GPU). Used for warning logic (for example `onParticleDeath` on GPU).
 
 ### `ParticlePresetValidationContext`
 
 ```ts
 type ParticlePresetValidationContext = {
-  renderer?: THREE.WebGLRenderer;
+  renderer?: ParticleRenderer;
 };
 ```
 
@@ -67,7 +67,7 @@ Pass the same renderer you pass into `ParticleSystemOptions` so validation can w
 | `renderer.textureSheet.animationMode` | If set, must be `"static"`, `"randomStart"`, `"overLifetime"`, or `"randomStartOverLifetime"`. |
 | `gpu.textureSize` | If set, integer `>= 1` and `textureSize² >= maxParticles` (using `maxParticles ?? 1024`). |
 | `gpu.maxSpawnPerFrame` | If set, integer `>= 1`. |
-| `renderer.type` | If set, must be `"billboard"` or `"stretchedBillboard"`. `simulation: "gpu"` + `"stretchedBillboard"` is invalid (CPU-only). |
+| `renderer.type` | If set, must be `"billboard"` or `"stretchedBillboard"`. |
 | `renderer.stretchFactor` | If set, must be finite and `>= 0`. |
 | `renderer.stretchMaxScale` | If set, must be finite and `>= 1`. |
 | `renderer.softParticles` | If set, must be a boolean. |

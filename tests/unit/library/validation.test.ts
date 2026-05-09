@@ -4,6 +4,7 @@ import {
   collectParticlePresetIssues,
   presetWouldUseGpu,
 } from "../../../src";
+import type { ParticlePreset, ParticleRenderer } from "../../../src";
 
 describe("collectParticlePresetIssues", () => {
   it("passes for a minimal valid preset", () => {
@@ -33,7 +34,7 @@ describe("collectParticlePresetIssues", () => {
           strengthOverLifetime: [
             [0, 0],
             [1, 1],
-          ],
+          ] as [number, number][],
         },
       },
     };
@@ -52,6 +53,30 @@ describe("collectParticlePresetIssues", () => {
     };
     const result = collectParticlePresetIssues(preset, {});
     expect(result.errors.some((e) => e.includes("maxParticles"))).toBe(true);
+  });
+
+  it("reports errors for invalid gpu.backend", () => {
+    const preset = {
+      simulation: "gpu" as const,
+      maxParticles: 4096,
+      gpu: { backend: "metal" },
+      emitter: { type: "point" as const },
+    };
+    const result = collectParticlePresetIssues(preset as unknown as ParticlePreset, {});
+    expect(result.errors).toContain('gpu.backend: must be "auto", "webgl", or "webgpu" when set.');
+  });
+
+  it("warns when a preset resolves to the experimental WebGPU backend", () => {
+    const preset = {
+      simulation: "gpu" as const,
+      maxParticles: 4096,
+      gpu: { backend: "webgpu" as const },
+      emitter: { type: "point" as const },
+    };
+    const renderer = { isWebGPURenderer: true } as const;
+    const result = collectParticlePresetIssues(preset, { renderer });
+    expect(result.errors).toEqual([]);
+    expect(result.warnings).toContain('gpu.backend "webgpu" is experimental; v0 renders TSL billboards with compute-updated motion through a narrow motion readback bridge, while CPU state is still mirrored for lifecycle bookkeeping and fallback.');
   });
 });
 
@@ -80,5 +105,18 @@ describe("presetWouldUseGpu", () => {
       renderer: { blendMode: "alpha" as const, align: "camera" as const },
     };
     expect(presetWouldUseGpu(preset, undefined)).toBe(false);
+  });
+
+  it("honors explicit WebGL/WebGPU backend mismatches", () => {
+    const preset = {
+      simulation: "gpu" as const,
+      maxParticles: 4096,
+      gpu: { backend: "webgpu" as const },
+      emitter: { type: "point" as const },
+    };
+    const webglRenderer = { isWebGLRenderer: true } as unknown as ParticleRenderer;
+    const webgpuRenderer = { isWebGPURenderer: true } as const;
+    expect(presetWouldUseGpu(preset, webglRenderer)).toBe(false);
+    expect(presetWouldUseGpu(preset, webgpuRenderer)).toBe(true);
   });
 });

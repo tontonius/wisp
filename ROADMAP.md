@@ -197,7 +197,7 @@ Best used for:
 - No trails/ribbons
 - No lights
 - No mesh emitters
-- No WebGPU compute backend yet
+- WebGPU compute is experimental and not yet at WebGL feature parity
 
 ### Transparency Sorting
 
@@ -831,8 +831,8 @@ Goal: add a modern compute-oriented GPU backend once the Three.js WebGPU stack i
 
 ### Features
 
-- [ ] WebGPU backend mode
-- [ ] WebGL/WebGPU backend selection in GPU settings
+- [x] WebGPU backend mode v0
+- [x] WebGL/WebGPU backend selection in GPU settings
 - [ ] WebGPU parity pass for core GPU features
 
 ### Potential API

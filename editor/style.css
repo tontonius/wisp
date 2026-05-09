@@ -208,3 +208,50 @@ body,
 .import-status-binding .tp-lblv_v {
   width: 100% !important;
 }
+#webgpu-smoke,
+#webgpu-tsl-spike {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #090a10;
+}
+
+#webgpu-smoke-canvas,
+#webgpu-tsl-spike-canvas {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+
+#webgpu-smoke-status,
+#webgpu-tsl-spike-status {
+  position: fixed;
+  left: 16px;
+  top: 16px;
+  display: grid;
+  gap: 4px;
+  min-width: 180px;
+  padding: 10px 12px;
+  border: 1px solid rgba(127, 213, 255, 0.32);
+  background: rgba(9, 10, 16, 0.82);
+  color: #f6f8ff;
+  font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  backdrop-filter: blur(8px);
+}
+
+#webgpu-smoke-status strong,
+#webgpu-tsl-spike-status strong {
+  font-size: 13px;
+}
+
+#webgpu-smoke[data-phase="ready"] #webgpu-smoke-status,
+#webgpu-tsl-spike[data-phase="ready"] #webgpu-tsl-spike-status {
+  border-color: rgba(130, 255, 190, 0.45);
+}
+
+#webgpu-smoke[data-phase="error"] #webgpu-smoke-status,
+#webgpu-smoke[data-phase="unsupported"] #webgpu-smoke-status,
+#webgpu-tsl-spike[data-phase="error"] #webgpu-tsl-spike-status,
+#webgpu-tsl-spike[data-phase="unsupported"] #webgpu-tsl-spike-status {
+  border-color: rgba(255, 126, 126, 0.5);
+}

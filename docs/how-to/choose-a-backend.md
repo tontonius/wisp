@@ -54,6 +54,17 @@ const wisp = new Wisp({
 });
 ```
 
+Choose the GPU implementation with `gpu.backend`:
+
+```ts
+const rain: ParticlePreset = {
+  simulation: "gpu",
+  gpu: { backend: "webgl" }, // "auto" by default
+};
+```
+
+`"auto"` resolves to the renderer-native backend: `WebGLRenderer` uses the WebGL render-target backend, while `WebGPURenderer` requests the experimental WebGPU backend. The WebGPU backend v0 renders TSL billboards with compute-updated motion through a narrow motion readback bridge, but still keeps a CPU mirror for lifecycle bookkeeping and fallback rendering, so keep production presets on `"webgl"` or CPU for now.
+
 ## Use Auto For Scalable Defaults
 
 ```ts
@@ -63,7 +74,7 @@ maxParticles: 5000,
 
 `auto` chooses GPU when:
 
-- A `THREE.WebGLRenderer` is available.
+- A compatible renderer is available.
 - `maxParticles >= 2048`.
 
 Otherwise it chooses CPU.
@@ -77,4 +88,3 @@ gpu: {
 ```
 
 This is useful for testing backend differences or temporarily disabling GPU simulation.
-

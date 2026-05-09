@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wisp WebGPU Smoke</title>
+  </head>
+  <body>
+    <div id="webgpu-smoke">
+      <canvas id="webgpu-smoke-canvas"></canvas>
+      <aside id="webgpu-smoke-status" aria-live="polite">
+        <strong>WebGPU Smoke</strong>
+        <span data-status="phase">booting</span>
+        <span data-status="backend">backend: unknown</span>
+        <span data-status="compute">compute: unknown</span>
+        <span data-status="motion">motion: unknown</span>
+        <span data-status="alive">alive: 0</span>
+        <span>orbit: drag / wheel</span>
+      </aside>
+    </div>
+    <script type="module" src="/editor/webgpu-smoke.ts"></script>
+  </body>
+</html>

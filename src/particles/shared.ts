@@ -221,36 +221,38 @@ function makeDefaultParticleTexture(): THREE.Texture {
   return texture;
 }
 
+function isInstanceOfGlobal<T>(value: unknown, ctor: { new (...args: any[]): T } | undefined): value is T {
+  return typeof ctor !== "undefined" && value instanceof ctor;
+}
+
 function textureImageToCanvasImageSource(image: unknown): CanvasImageSource | null {
-  if (
-    image instanceof HTMLImageElement ||
-    image instanceof HTMLCanvasElement ||
-    image instanceof OffscreenCanvas ||
-    image instanceof ImageBitmap ||
-    image instanceof SVGImageElement ||
-    image instanceof HTMLVideoElement ||
-    image instanceof VideoFrame
-  ) {
-    return image;
+  if (isInstanceOfGlobal(image, globalThis.HTMLImageElement)) return image;
+  if (isInstanceOfGlobal(image, globalThis.HTMLCanvasElement)) return image;
+  if (isInstanceOfGlobal(image, globalThis.OffscreenCanvas)) return image;
+  if (isInstanceOfGlobal(image, globalThis.ImageBitmap)) return image;
+  if (isInstanceOfGlobal(image, globalThis.SVGImageElement)) return image;
+  if (isInstanceOfGlobal(image, globalThis.HTMLVideoElement)) return image;
+  if (isInstanceOfGlobal(image, globalThis.VideoFrame)) {
+    return image as VideoFrame;
   }
   return null;
 }
 
 function createLuminanceKeyedTexture(source: CanvasImageSource, blackCutoff = 32): THREE.CanvasTexture {
   const width =
-    source instanceof HTMLImageElement
+    isInstanceOfGlobal(source, globalThis.HTMLImageElement)
       ? source.naturalWidth
-      : source instanceof SVGImageElement
+      : isInstanceOfGlobal(source, globalThis.SVGImageElement)
         ? source.width.baseVal.value
-        : source instanceof VideoFrame
+        : isInstanceOfGlobal(source, globalThis.VideoFrame)
           ? source.codedWidth
           : source.width;
   const height =
-    source instanceof HTMLImageElement
+    isInstanceOfGlobal(source, globalThis.HTMLImageElement)
       ? source.naturalHeight
-      : source instanceof SVGImageElement
+      : isInstanceOfGlobal(source, globalThis.SVGImageElement)
         ? source.height.baseVal.value
-        : source instanceof VideoFrame
+        : isInstanceOfGlobal(source, globalThis.VideoFrame)
           ? source.codedHeight
           : source.height;
 

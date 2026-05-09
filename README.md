@@ -21,6 +21,7 @@ Particle module:
 - Hybrid CPU/GPU simulation backend
 - CPU backend for precise gameplay-ish effects
 - GPU backend for large visual effects using WebGL render-target ping-pong simulation
+- Explicit GPU backend selection with `gpu.backend: "auto" | "webgl" | "webgpu"` (`"webgpu"` is an experimental v0 path)
 - Point, sphere, hemisphere, cone, and box emitters
 - Local-space or world-space simulation (`simulationSpace`)
 - Continuous emission and burst emission
@@ -327,7 +328,7 @@ The current gizmos show point, sphere, hemisphere, cone, and box emitter shapes.
 
 `auto` uses GPU when:
 
-- a `WebGLRenderer` is available
+- a compatible renderer is available
 - `maxParticles >= 2048`
 
 Otherwise it uses CPU.
@@ -374,7 +375,7 @@ velocityOverLifetime: {
 }
 ```
 
-### GPU backend supports
+### WebGL GPU backend supports
 
 - point / sphere / hemisphere / cone / box emitters
 - continuous emission
@@ -390,7 +391,7 @@ velocityOverLifetime: {
 - additive / alpha / multiply blending
 - camera-aligned and velocity-aligned billboards
 
-### GPU backend does not yet support
+### WebGL GPU backend does not yet support
 
 - collisions (CPU supports primitive colliders: `plane`, `sphere`, `box`; see [`docs/reference/cpu-backend.md`](docs/reference/cpu-backend.md))
 - sub-emitters
@@ -399,6 +400,7 @@ velocityOverLifetime: {
 - trails/ribbons
 - particle lights
 - CPU readback
+- WebGPU parity cleanup; `gpu.backend: "webgpu"` currently drives experimental TSL billboards, blend modes, `alphaFromLuminance`, and texture-sheet atlas UVs from storage-backed attributes when storage-buffer readback is available, but still keeps a CPU mirror for lifecycle bookkeeping/fallback.
 
 For smoke, additive magic, sparks, snow, embers, rain, fireflies, motes, portals, and general “make the GPU sweat prettily”, it is already useful.
 
@@ -477,6 +479,7 @@ system.isPlaying;
 system.isComplete;
 system.isDisposed;
 system.backendType; // "cpu" | "gpu"
+system.gpuBackendType; // "webgl" | "webgpu" | undefined
 ```
 
 ## Emitters

@@ -2,7 +2,7 @@ import * as THREE from "three";
 import type { ParticleBackend, ParticlePreset, Range, SimulationSpace, SoftParticleDepthTextureOptions, SpawnRequest } from "../types";
 import { DEFAULT_EMITTER, PARTICLE_DISPERSAL_GLSL, applyBlendMode, colorMinMax, getDispersalAmountCurvePlaceholder, getDispersalWhitePlaceholderTexture, getTextureSheetConfig, isRendererDispersalEnabled, makeCurveFloatTexture, makeCurveTexture, makeDispersalAmountCurveTexture, makeGradientTexture, makeVectorCurveTexture, randomRange, rangeMinMax, resolveRendererTexture, tempMatrixA, tempVectorA, tempVectorB, tempVectorC, vec3MinMax } from "../shared";
 
-export class GPUParticleBackend implements ParticleBackend {
+export class WebGLParticleBackend implements ParticleBackend {
   readonly object = new THREE.Object3D();
   readonly mesh: THREE.Mesh;
   readonly geometry: THREE.BufferGeometry;

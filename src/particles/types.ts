@@ -11,6 +11,10 @@ export type AlignMode = "camera" | "velocity";
 export type RendererType = "billboard" | "stretchedBillboard";
 export type SortMode = "none" | "distance" | "youngestFirst" | "oldestFirst";
 export type SimulationMode = "cpu" | "gpu" | "auto";
+export type GpuBackendPreference = "auto" | "webgl" | "webgpu";
+export type ResolvedGpuBackend = "webgl" | "webgpu";
+export type ParticleComputeMode = "none" | "unavailable" | "sidecar" | "authoritative";
+export type ParticleMotionMode = "none" | "cpu-mirror" | "motion-readback-bridge";
 export type SimulationSpace = "local" | "world";
 export type TextureSheetAnimationMode = "static" | "randomStart" | "overLifetime" | "randomStartOverLifetime";
 export type ParticleBounds = {
@@ -172,6 +176,13 @@ export type ParticlePreset = {
 
   /** GPU backend tuning and fallback controls. */
   gpu?: {
+    /**
+     * GPU implementation preference.
+     * - `"auto"` (default): pick the renderer-native GPU backend.
+     * - `"webgl"`: use the WebGL texture-simulation backend.
+     * - `"webgpu"`: request the experimental WebGPU backend.
+     */
+    backend?: GpuBackendPreference;
     /** Side length of simulation texture grid. Must satisfy `textureSize^2 >= maxParticles`. */
     textureSize?: number;
     /** Safety cap on how many particles can be spawned in a single frame. */
@@ -369,10 +380,21 @@ export type ParticlePreset = {
   };
 };
 
+/** Minimal WebGPU renderer surface used by particle backend selection without hard-coding a Three.js minor. */
+export type WebGPURendererLike = {
+  readonly isWebGPURenderer: true;
+  init?: () => Promise<unknown>;
+  compute?: (computeNodes: unknown, dispatchSize?: number | number[]) => Promise<void> | undefined;
+  getArrayBufferAsync?: (attribute: THREE.BufferAttribute, target?: ArrayBuffer | null, offset?: number, count?: number) => Promise<ArrayBuffer>;
+};
+
+/** Renderer surface accepted by particle systems. */
+export type ParticleRenderer = THREE.WebGLRenderer | WebGPURendererLike;
+
 /** Options used when constructing an individual `ParticleSystem`. */
 export type ParticleSystemOptions = {
   /** Renderer required for GPU simulation and shared soft-particle data setup. */
-  renderer?: THREE.WebGLRenderer;
+  renderer?: ParticleRenderer;
 };
 
 export type ParticlePoolingOptions = {
@@ -381,7 +403,7 @@ export type ParticlePoolingOptions = {
 };
 
 export type ParticleManagerOptions = {
-  renderer?: THREE.WebGLRenderer;
+  renderer?: ParticleRenderer;
   /**
    * When enabled, the particle manager returns completed systems to an inactive pool instead of disposing them.
    * Reuses GPU/CPU resources for the same registered effect name. See docs for renderer override rules.
@@ -478,6 +500,8 @@ export interface ParticleBackend {
   readonly isPlaying: boolean;
   readonly isComplete: boolean;
   readonly isDisposed: boolean;
+  readonly computeMode?: ParticleComputeMode;
+  readonly motionMode?: ParticleMotionMode;
   play(): void;
   pause(): void;
   stop(options?: { clear?: boolean }): void;

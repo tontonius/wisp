@@ -237,6 +237,9 @@ Readonly fields:
 | --- | --- | --- |
 | `preset` | `ParticlePreset` | Preset used to construct the system. |
 | `backendType` | `"cpu" | "gpu"` | Actual backend selected after fallback and `auto` resolution. |
+| `gpuBackendType` | `"webgl" | "webgpu" | undefined` | Resolved GPU implementation when `backendType` is `"gpu"`. |
+| `computeMode` | `"none" | "unavailable" | "sidecar" | "authoritative"` | Diagnostic compute status. WebGPU v0 reports `"authoritative"` when compute-updated storage buffers feed TSL rendering, `"sidecar"` when compute runs without authoritative rendering, and `"unavailable"` when compute is absent. |
+| `motionMode` | `"none" | "cpu-mirror" | "motion-readback-bridge"` | Diagnostic motion/render data status. WebGPU v0 reports `"motion-readback-bridge"` when position/velocity motion readback feeds TSL billboards, and `"cpu-mirror"` for fallback rendering. |
 
 Getters:
 
@@ -319,7 +322,7 @@ Methods:
 Spawn options (`ParticleSpawnOptions` plus optional `renderer`):
 
 ```ts
-ParticleSpawnOptions & { renderer?: THREE.WebGLRenderer }
+ParticleSpawnOptions & { renderer?: ParticleRenderer }
 ```
 
 Fields match `ParticleSpawnOptions` in the exported types table, plus:
@@ -373,7 +376,7 @@ Methods:
 
 ```ts
 {
-  renderer?: THREE.WebGLRenderer;
+  renderer?: ParticleRenderer;
   pooling?: boolean | { maxPerEffect?: number };
 }
 ```
@@ -421,14 +424,19 @@ Exported functions (see [Preset validation](preset-validation.md)):
 | `EmitterShape` | Point, sphere, hemisphere, cone, or box emitter config. |
 | `ParticleDebugOptions` | Emitter gizmo options. |
 | `ParticlePreset` | Full effect description. |
-| `ParticleSystemOptions` | `{ renderer?: THREE.WebGLRenderer }` |
-| `ParticleManagerOptions` | `{ renderer?: THREE.WebGLRenderer; pooling?: boolean \| { maxPerEffect?: number } }` |
+| `GpuBackendPreference` | `"auto" | "webgl" | "webgpu"` |
+| `ResolvedGpuBackend` | `"webgl" | "webgpu"` |
+| `ParticleComputeMode` | `"none" | "unavailable" | "sidecar" | "authoritative"` |
+| `ParticleMotionMode` | `"none" | "cpu-mirror" | "motion-readback-bridge"` |
+| `ParticleRenderer` | `THREE.WebGLRenderer` or a WebGPU renderer-like object with `isWebGPURenderer: true`. |
+| `ParticleSystemOptions` | `{ renderer?: ParticleRenderer }` |
+| `ParticleManagerOptions` | `{ renderer?: ParticleRenderer; pooling?: boolean \| { maxPerEffect?: number } }` |
 | `ParticlePoolingOptions` | `{ maxPerEffect?: number }` — cap inactive instances per effect when `pooling` is an object. |
 | `ParticleSpawnOptions` | Transform, parent, `autoPlay`, and `debug` fields shared by `ParticleEffectLibrary.spawn` / `ParticleManager.spawn` (manager merge also applies default `parent` and `debug`). |
 | `SoftParticleDepthTextureOptions` | `{ width?: number; height?: number }` — optional depth texture dimensions for soft-particle sampling. |
 | `ParticleSnapshot` | CPU particle-death snapshot. |
 | `ParticleLifecycleCallbacks` | Lifecycle callback object. |
-| `ParticlePresetValidationContext` | `{ renderer?: THREE.WebGLRenderer }` — optional context for validation. |
+| `ParticlePresetValidationContext` | `{ renderer?: ParticleRenderer }` — optional context for validation. |
 | `ParticlePresetValidationResult` | `{ errors: string[]; warnings: string[] }` — output of `collectParticlePresetIssues`. |
 | `CameraShakeImpulse` | `number | { trauma: number }` |
 | `CameraShakeMode` | `"rotationOnly" | "rotationAndTranslation"` |
@@ -478,4 +486,3 @@ wisp.particles?.spawn("explosion");
 See [Starter Kit](starter-kit.md) for details.
 
 Use `Wisp`/`wisp.particles` as the primary public runtime surface for effect management.
-

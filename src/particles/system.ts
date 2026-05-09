@@ -1,20 +1,11 @@
 import * as THREE from "three";
 import { assertValidParticlePreset } from "../particle-preset-validation";
-import type { Particle, ParticleBackend, ParticleDebugOptions, ParticlePreset, ParticleSpawnOptions, ParticleSystemOptions, SoftParticleDepthTextureOptions } from "./types";
+import type { Particle, ParticleBackend, ParticleComputeMode, ParticleDebugOptions, ParticleMotionMode, ParticlePreset, ParticleSpawnOptions, ParticleSystemOptions, ResolvedGpuBackend, SoftParticleDepthTextureOptions, WebGPURendererLike } from "./types";
 import { DEFAULT_EMITTER, makeEmitterGizmo, resolveDebugOptions } from "./shared";
 import { CPUParticleBackend } from "./backends/cpu-backend";
-import { GPUParticleBackend } from "./backends/gpu-backend";
-
-function shouldUseGpu(preset: ParticlePreset, options: ParticleSystemOptions): boolean {
-  if (preset.gpu?.forceCpuFallback) return false;
-  if (preset.collision) return false;
-  if (preset.subEmitters) return false;
-  if (preset.renderer?.type === "stretchedBillboard") return false;
-  if (preset.simulation === "cpu") return false;
-  if (preset.simulation === "gpu") return !!options.renderer;
-  if (preset.simulation === "auto") return !!options.renderer && (preset.maxParticles ?? 0) >= 2048;
-  return false;
-}
+import { WebGLParticleBackend } from "./backends/webgl-backend";
+import { WebGPUParticleBackend } from "./backends/webgpu-backend";
+import { isWebGLRenderer, isWebGPURenderer, selectParticleBackend } from "./renderer-capabilities";
 
 /**
  * Live particle effect instance backed by either CPU or GPU simulation.
@@ -24,6 +15,7 @@ function shouldUseGpu(preset: ParticlePreset, options: ParticleSystemOptions): b
 export class ParticleSystem extends THREE.Object3D {
   readonly preset: ParticlePreset;
   readonly backendType: "cpu" | "gpu";
+  readonly gpuBackendType?: ResolvedGpuBackend;
   private backend: ParticleBackend;
   private gizmo?: THREE.LineSegments;
   private completionNotified = false;
@@ -34,17 +26,26 @@ export class ParticleSystem extends THREE.Object3D {
 
     assertValidParticlePreset(preset, { renderer: options.renderer });
 
-    const useGpu = shouldUseGpu(preset, options);
-    this.backendType = useGpu ? "gpu" : "cpu";
-    this.backend = useGpu
-      ? new GPUParticleBackend(preset, options.renderer!)
-      : new CPUParticleBackend(preset, {
-          onParticleBirth: (particle) => this.notifyParticleBirth(particle),
-          onParticleDeath: (particle) => this.notifyParticleDeath(particle),
-          onParticleCollision: (particle) => this.notifyParticleCollision(particle),
-        });
+    const selection = selectParticleBackend(preset, options.renderer);
+    this.backendType = selection.simulation;
+    this.gpuBackendType = selection.simulation === "gpu" ? selection.backend : undefined;
+    this.backend = this.makeBackend(selection, options);
     (this as unknown as THREE.Object3D).add(this.backend.object);
     this.setDebug(preset.debug);
+  }
+
+  private makeBackend(selection: ReturnType<typeof selectParticleBackend>, options: ParticleSystemOptions): ParticleBackend {
+    if (selection.simulation === "gpu" && selection.backend === "webgl" && isWebGLRenderer(options.renderer)) {
+      return new WebGLParticleBackend(this.preset, options.renderer);
+    }
+    if (selection.simulation === "gpu" && selection.backend === "webgpu" && isWebGPURenderer(options.renderer)) {
+      return new WebGPUParticleBackend(this.preset, options.renderer as WebGPURendererLike);
+    }
+    return new CPUParticleBackend(this.preset, {
+      onParticleBirth: (particle) => this.notifyParticleBirth(particle),
+      onParticleDeath: (particle) => this.notifyParticleDeath(particle),
+      onParticleCollision: (particle) => this.notifyParticleCollision(particle),
+    });
   }
 
   /** Seconds elapsed since system start/restart. */
@@ -75,6 +76,16 @@ export class ParticleSystem extends THREE.Object3D {
   /** True once backend resources have been disposed. */
   get isDisposed(): boolean {
     return this.backend.isDisposed;
+  }
+
+  /** WebGPU compute status for diagnostics. Non-WebGPU backends return `"none"`. */
+  get computeMode(): ParticleComputeMode {
+    return this.backend.computeMode ?? "none";
+  }
+
+  /** WebGPU motion/render data status for diagnostics. Non-WebGPU backends return `"none"`. */
+  get motionMode(): ParticleMotionMode {
+    return this.backend.motionMode ?? "none";
   }
 
   /**

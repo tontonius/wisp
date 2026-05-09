@@ -1,12 +1,18 @@
 # GPU Backend Reference
 
-The GPU backend stores particle state in floating-point render targets and updates particles with fullscreen simulation passes.
+Wisp keeps the public simulation mode stable as `simulation: "gpu"` and selects a GPU implementation underneath it.
+
+Current implementations:
+
+- `gpu.backend: "webgl"`: supported WebGL render-target simulation backend.
+- `gpu.backend: "webgpu"`: experimental v0 backend for `WebGPURenderer`. It uses storage-buffer compute and TSL billboards when storage-buffer attribute support is available, with CPU-mirror lifecycle/fallback behavior while parity work continues.
+- `gpu.backend: "auto"`: default; resolves from the renderer type.
 
 ## Selection
 
 GPU is used when:
 
-- `simulation: "gpu"` and a `THREE.WebGLRenderer` is available.
+- `simulation: "gpu"` and a renderer compatible with the requested `gpu.backend` is available.
 - `simulation: "auto"`, a renderer is available, and `maxParticles >= 2048`.
 
 GPU is not used when:
@@ -15,6 +21,16 @@ GPU is not used when:
 - `simulation: "cpu"`.
 - `gpu.forceCpuFallback` is true.
 - `collision` is set (CPU-only; validation rejects `simulation: "gpu"` with collision).
+
+Backend resolution:
+
+| Renderer | `gpu.backend: "auto"` | `gpu.backend: "webgl"` | `gpu.backend: "webgpu"` |
+| --- | --- | --- | --- |
+| `THREE.WebGLRenderer` | WebGL GPU backend | WebGL GPU backend | CPU fallback |
+| `THREE.WebGPURenderer` | WebGPU v0 | CPU fallback | WebGPU v0 |
+| no renderer | CPU fallback | CPU fallback | CPU fallback |
+
+The WebGPU v0 backend emits a validation warning because it is still experimental. It is useful for renderer integration checks and visual smoke tests, but it is not production-parity with the WebGL GPU backend. See [WebGPU Backend](webgpu-backend.md) for the current supported field slice.
 
 ## Defaults
 
@@ -198,4 +214,3 @@ Soft particles note:
 
 - Supported as an opt-in render path (`renderer.softParticles` + `renderer.softness`) on the GPU backend.
 - Requires external scene depth texture wiring from your renderer/composer pipeline.
-

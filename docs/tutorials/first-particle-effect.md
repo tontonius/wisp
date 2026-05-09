@@ -148,5 +148,4 @@ simulation: "gpu",
 maxParticles: 4096,
 ```
 
-GPU systems require a `THREE.WebGLRenderer` in `Wisp` particle options (`particles.renderer`) or low-level `ParticleSystemOptions`/`ParticleManagerOptions`.
-
+GPU systems require a compatible renderer in `Wisp` particle options (`particles.renderer`) or low-level `ParticleSystemOptions`/`ParticleManagerOptions`. The supported production GPU path is currently the WebGL backend; the WebGPU selection is experimental v0 plumbing.

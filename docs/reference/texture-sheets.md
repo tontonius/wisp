@@ -102,8 +102,13 @@ CPU:
 
 - UVs are written into the CPU geometry each frame.
 
-GPU:
+WebGL GPU:
 
 - Frame selection happens in the render vertex shader.
 - Start frame is packed into the GPU `extra` render target.
 
+WebGPU:
+
+- Texture sheets are supported in the authoritative TSL billboard path.
+- The CPU lifecycle mirror selects the current frame from `animationMode`; TSL samples the atlas with a per-instance frame attribute.
+- `alphaFromLuminance` uses the shared runtime texture-keying step before the TSL material samples the atlas.

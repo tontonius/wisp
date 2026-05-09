@@ -1,10 +1,10 @@
-import type { WebGLRenderer } from "three";
-import type { Curve, Gradient, ParticlePreset, Range } from "./particles";
+import type { Curve, Gradient, ParticlePreset, ParticleRenderer, Range } from "./particles/types";
+import { selectParticleBackend } from "./particles/renderer-capabilities";
 
 /** Optional runtime context used to classify preset warnings/fallback behavior. */
 export type ParticlePresetValidationContext = {
   /** Renderer presence is used to classify GPU eligibility warnings. */
-  renderer?: WebGLRenderer;
+  renderer?: ParticleRenderer;
 };
 
 /** Structured validation output used by non-throwing validation paths. */
@@ -20,21 +20,15 @@ const RENDERER_TYPES = new Set(["billboard", "stretchedBillboard"]);
 const SORTING_MODES = new Set(["none", "distance", "youngestFirst", "oldestFirst"]);
 const SIMULATION_SPACES = new Set(["local", "world"]);
 const TEXTURE_SHEET_ANIMATION_MODES = new Set(["static", "randomStart", "overLifetime", "randomStartOverLifetime"]);
+const GPU_BACKENDS = new Set(["auto", "webgl", "webgpu"]);
 
 function isFiniteNumber(n: unknown): n is number {
   return typeof n === "number" && Number.isFinite(n);
 }
 
 /** Mirrors `shouldUseGpu` in `particles.ts` for warning classification only. */
-export function presetWouldUseGpu(preset: ParticlePreset, renderer: WebGLRenderer | undefined): boolean {
-  if (preset.gpu?.forceCpuFallback) return false;
-  if (preset.collision) return false;
-  if (preset.subEmitters) return false;
-  if (preset.renderer?.type === "stretchedBillboard") return false;
-  if (preset.simulation === "cpu") return false;
-  if (preset.simulation === "gpu") return !!renderer;
-  if (preset.simulation === "auto") return !!renderer && (preset.maxParticles ?? 0) >= 2048;
-  return false;
+export function presetWouldUseGpu(preset: ParticlePreset, renderer: ParticleRenderer | undefined): boolean {
+  return selectParticleBackend(preset, renderer).simulation === "gpu";
 }
 
 function rangeBounds(value: Range | undefined, fallback: number): [number, number] {
@@ -255,9 +249,6 @@ export function collectParticlePresetIssues(
   if (rendererType !== undefined && !RENDERER_TYPES.has(rendererType)) {
     errors.push('renderer.type: must be one of "billboard" or "stretchedBillboard" when set.');
   }
-  if (rendererType === "stretchedBillboard" && preset.simulation === "gpu") {
-    errors.push('renderer.type "stretchedBillboard" is CPU-only; use simulation "cpu" or "auto".');
-  }
   if (preset.renderer?.stretchFactor !== undefined) {
     if (!isFiniteNumber(preset.renderer.stretchFactor) || preset.renderer.stretchFactor < 0) {
       errors.push("renderer.stretchFactor: must be a finite number >= 0 when set.");
@@ -326,6 +317,10 @@ export function collectParticlePresetIssues(
   }
 
   const maxParticles = preset.maxParticles ?? 1024;
+
+  if (preset.gpu?.backend !== undefined && !GPU_BACKENDS.has(preset.gpu.backend)) {
+    errors.push('gpu.backend: must be "auto", "webgl", or "webgpu" when set.');
+  }
 
   if (preset.gpu?.textureSize !== undefined) {
     if (!Number.isInteger(preset.gpu.textureSize) || preset.gpu.textureSize < 1 || !isFiniteNumber(preset.gpu.textureSize)) {
@@ -530,10 +525,22 @@ export function collectParticlePresetIssues(
 
   errors.push(...validateFiniteRange("emission.rateOverTime", preset.emission?.rateOverTime));
 
+  const selection = selectParticleBackend(preset, renderer);
+
   if (preset.simulation === "gpu" && !renderer) {
     warnings.push(
-      "simulation is \"gpu\" but no WebGLRenderer was provided; falling back to CPU. Pass renderer in ParticleSystemOptions or WispParticleOptions."
+      'simulation is "gpu" but no renderer was provided; falling back to CPU. Pass renderer in ParticleSystemOptions or WispParticleOptions.'
     );
+  }
+
+  if (preset.simulation === "gpu" && renderer && selection.simulation === "cpu") {
+    warnings.push(
+      `simulation is "gpu" with gpu.backend "${preset.gpu?.backend ?? "auto"}", but the provided renderer cannot satisfy that backend; falling back to CPU.`
+    );
+  }
+
+  if (selection.simulation === "gpu" && selection.backend === "webgpu") {
+    warnings.push('gpu.backend "webgpu" is experimental; v0 renders TSL billboards with compute-updated motion through a narrow motion readback bridge, while CPU state is still mirrored for lifecycle bookkeeping and fallback.');
   }
 
   if (presetWouldUseGpu(preset, renderer) && preset.callbacks?.onParticleDeath) {

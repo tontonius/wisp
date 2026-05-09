@@ -14,7 +14,7 @@ import type {
   MotionVectorSource,
   WispMotionOptions,
 } from "./motion/types";
-import type { ParticleDebugOptions, ParticleManagerOptions, ParticlePreset, ParticleSpawnOptions } from "./particles/types";
+import type { ParticleDebugOptions, ParticleManagerOptions, ParticlePreset, ParticleRenderer, ParticleSpawnOptions } from "./particles/types";
 
 /** High-level camera module exposed on `wisp.camera`. */
 export class WispCamera {
@@ -88,7 +88,7 @@ export class WispParticles {
    *
    * Use `options.renderer` to override the default world renderer for this spawn.
    */
-  spawn(name: string, options?: ParticleSpawnOptions & { renderer?: THREE.WebGLRenderer }): ParticleSystem {
+  spawn(name: string, options?: ParticleSpawnOptions & { renderer?: ParticleRenderer }): ParticleSystem {
     return this.world.spawn(name, options);
   }
 

@@ -67,6 +67,7 @@ Particle module reference:
 - [Lifecycle And Callbacks](reference/lifecycle.md)
 - [CPU Backend](reference/cpu-backend.md)
 - [GPU Backend](reference/gpu-backend.md)
+- [WebGPU Backend](reference/webgpu-backend.md)
 ### Explanations
 
 - [Architecture](explanation/architecture.md)

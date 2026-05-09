@@ -1,12 +1,12 @@
 import * as THREE from "three";
-import type { ParticleDebugOptions, ParticleManagerOptions, ParticlePreset, ParticleSnapshot, ParticleSpawnOptions } from "./types";
+import type { ParticleDebugOptions, ParticleManagerOptions, ParticlePreset, ParticleRenderer, ParticleSnapshot, ParticleSpawnOptions } from "./types";
 import { ParticleSystem, configureSpawnedSystem } from "./system";
 
 /** Registry of named presets that can spawn `ParticleSystem` instances. */
 export class ParticleEffectLibrary {
   private presets = new Map<string, ParticlePreset>();
   private defaultParent?: THREE.Object3D;
-  private renderer?: THREE.WebGLRenderer;
+  private renderer?: ParticleRenderer;
 
   constructor(presets: Record<string, ParticlePreset> = {}, defaultParent?: THREE.Object3D, options: ParticleManagerOptions = {}) {
     this.defaultParent = defaultParent;
@@ -32,7 +32,7 @@ export class ParticleEffectLibrary {
    */
   spawn(
     name: string,
-    options: ParticleSpawnOptions & { renderer?: THREE.WebGLRenderer } = {}
+    options: ParticleSpawnOptions & { renderer?: ParticleRenderer } = {}
   ): ParticleSystem {
     const preset = this.presets.get(name);
     if (!preset) throw new Error(`Unknown particle effect "${name}".`);
@@ -119,7 +119,7 @@ export class ParticleManager {
     };
   }
 
-  private createManagedSystem(preset: ParticlePreset, renderer?: THREE.WebGLRenderer): ParticleSystem {
+  private createManagedSystem(preset: ParticlePreset, renderer?: ParticleRenderer): ParticleSystem {
     const managedPreset = this.createManagedPreset(preset);
     return new ParticleSystem(managedPreset, { renderer });
   }
@@ -189,7 +189,7 @@ export class ParticleManager {
 
   private spawnInternal(name: string, options: Parameters<ParticleEffectLibrary["spawn"]>[1] = {}, subEmitterDepth: number): ParticleSystem {
     const debug = options.debug ?? this.debug;
-    const merged: ParticleSpawnOptions & { renderer?: THREE.WebGLRenderer } = {
+    const merged: ParticleSpawnOptions & { renderer?: ParticleRenderer } = {
       parent: this.parent,
       renderer: this.options.renderer,
       ...options,

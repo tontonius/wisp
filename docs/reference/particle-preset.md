@@ -79,13 +79,25 @@ simulation?: "cpu" | "gpu" | "auto";
 Selection rules:
 
 - `simulation: "cpu"` always uses CPU.
-- `simulation: "gpu"` uses GPU only if a `THREE.WebGLRenderer` is available.
+- `simulation: "gpu"` uses GPU only if a compatible renderer is available.
 - `simulation: "gpu"` without a renderer logs a warning and falls back to CPU.
 - `simulation: "auto"` uses GPU when a renderer is available and `maxParticles >= 2048`.
+- `gpu.backend: "auto"` picks the renderer-native GPU backend (`"webgl"` for `WebGLRenderer`, `"webgpu"` for `WebGPURenderer`).
+- `gpu.backend: "webgl"` requires `WebGLRenderer`.
+- `gpu.backend: "webgpu"` is accepted as an experimental selection. In authoritative mode it renders TSL billboards with compute-updated motion through a narrow motion readback bridge and CPU lifecycle bookkeeping.
 - Omitted `simulation` currently uses CPU.
 - `gpu.forceCpuFallback: true` forces CPU.
 - `collision` set on the preset forces CPU (GPU does not implement collision).
 - `subEmitters` set on the preset forces CPU (GPU does not implement built-in sub-emitters).
+
+```ts
+gpu?: {
+  backend?: "auto" | "webgl" | "webgpu";
+  textureSize?: number;
+  maxSpawnPerFrame?: number;
+  forceCpuFallback?: boolean;
+}
+```
 
 ## Simulation Space
 
@@ -198,7 +210,7 @@ renderer?: {
 ```
 
 - `type` defaults to `"billboard"`.
-- `type: "stretchedBillboard"` is CPU-only and stretches quads along velocity.
+- `type: "stretchedBillboard"` stretches quads along velocity on CPU and the experimental WebGPU backend. Other GPU backends fall back to CPU for this renderer type.
 - `sorting` is CPU-only and defaults to `"distance"` (back-to-front by world-space camera depth). See [Renderer reference: Sorting](renderer.md#sorting).
 - `stretchFactor` controls speed-to-length scaling (default `0.35`).
 - `stretchMaxScale` clamps elongation (default `4`).
@@ -258,4 +270,3 @@ const fire: ParticlePreset = {
   },
 };
 ```
-

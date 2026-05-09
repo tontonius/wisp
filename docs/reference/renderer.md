@@ -46,12 +46,26 @@ renderer?: {
 | `blendMode` | `"alpha"` | Material blend mode. |
 | `align` | `"camera"` | Billboard orientation. |
 | `sorting` | `"distance"` | CPU-only draw order for alive particles (see [Sorting](#sorting)). |
+| `stretchFactor` | `0.35` | Speed-to-length scaling for `type: "stretchedBillboard"`. |
+| `stretchMaxScale` | `4` | Maximum length scale for `type: "stretchedBillboard"`. |
 | `depthWrite` | `false` | Whether particles write to the depth buffer. |
 | `depthTest` | `true` | Whether particles test against scene depth. |
 | `softParticles` | `false` | Enables depth-based edge fading when a scene depth texture is provided at runtime. |
 | `softness` | `1.5` | Fade strength for soft particles. Higher values fade more aggressively at intersections. |
 | `textureSheet` | `undefined` | Optional flipbook/atlas settings. |
 | `dispersal` | `undefined` | Optional spatial dissolve of alpha over lifetime (see [Dispersal](#dispersal)). |
+
+## Type
+
+```ts
+type: "billboard" | "stretchedBillboard"
+stretchFactor?: number
+stretchMaxScale?: number
+```
+
+`"billboard"` keeps symmetric quads and is the default.
+
+`"stretchedBillboard"` elongates each quad along particle velocity, scaled by speed with `stretchFactor` and clamped by `stretchMaxScale`. It is supported by the CPU backend and the experimental WebGPU backend. Other GPU backends fall back to CPU for this renderer type.
 
 ## Texture
 
@@ -187,6 +201,7 @@ Notes:
 
 - `renderer.softParticles` only enables shader logic; it does not create a depth texture for you.
 - Pass `null` to `setSoftParticleDepthTexture(null)` to disable depth-fade at runtime.
+- WebGPU supports soft particles in the authoritative TSL billboard path when a perspective-camera depth texture is provided.
 - For additive-only effects (sparks, glows), soft particles are often unnecessary.
 
 ## Dispersal
@@ -225,6 +240,7 @@ Notes:
 - Sampling uses the same UVs as the billboard (including texture sheet atlas UVs), so dissolve follows sprite space.
 - **Soft particles** run first; dispersal multiplies alpha afterward.
 - **Additive** blending still discards low alpha; holes can read as black against dark backgrounds—preview with your scene.
+- WebGPU supports dispersal in the authoritative TSL billboard path, including optional `dispersal.texture` map sampling.
 - Texture ownership matches the main renderer texture: the library does not dispose your `dispersal.texture` unless you pass `disposeTexture: true` on `ParticleSystem.dispose` (and it is not the same object as `renderer.texture`).
 
 ## Shader Behavior
@@ -250,4 +266,3 @@ GPU backend:
 ## Texture Sheets
 
 For atlas animation, see [Texture Sheets](texture-sheets.md).
-
