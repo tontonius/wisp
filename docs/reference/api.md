@@ -459,6 +459,13 @@ Exported functions (see [Preset validation](preset-validation.md)):
 | `StarterEffectName` | `"explosion" | "muzzleFlash" | "smokePuff" | "hitSparks" | "magicBurst" | "runSmoke" | "jumpSmokeRing"` |
 | `StarterKit` | `{ textures: StarterTexturePack; presets: Record<StarterEffectName, ParticlePreset> }` |
 
+## Secondary Entrypoints
+
+| Entrypoint | Purpose |
+| --- | --- |
+| `@tontonius/wisp` | Core CPU/WebGL library entrypoint. Does not eagerly import `three/webgpu` or `three/tsl`. |
+| `@tontonius/wisp/webgpu` | Registers and exports the experimental WebGPU backend. Import once before constructing WebGPU particle systems. |
+
 See the dedicated reference pages for exact option semantics.
 
 ## Starter Kit Helpers

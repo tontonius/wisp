@@ -213,11 +213,15 @@ Introduce/expand a renderer capability layer so public APIs do not hardcode one 
     - [x] Correct docs/plan to state that direct TSL billboard rendering is still pending after the first spike.
     - [x] Document current supported WebGPU preset fields separately from WebGL GPU fields.
     - [x] Keep unsupported feature caveats explicit.
-- [ ] Split or lazy-load WebGPU/TSL code so CPU/WebGL users do not pay the experimental TSL bundle cost.
-  - [ ] Measure current `dist/index.js` size impact from importing `three/tsl`.
-  - [ ] Choose one approach: dynamic import the WebGPU backend, secondary export, or accept size until `0.3.0` experimental.
-  - [ ] Verify CPU/WebGL import path does not eagerly pull TSL after the split.
-  - [ ] Document any async implications if backend loading becomes dynamic.
+- [x] Split or lazy-load WebGPU/TSL code so CPU/WebGL users do not pay the experimental TSL bundle cost.
+  - [x] Measure current build output from importing `three/tsl`.
+    - `dist/index.js` no longer imports `three/tsl` or `three/webgpu`; `dist/webgpu.js` owns those imports.
+    - The starter smoke atlas is generated procedurally so `dist/index.js` no longer embeds the old PNG as a base64 data URL.
+  - [x] Choose one approach: dynamic import the WebGPU backend, secondary export, or accept size until `0.3.0` experimental.
+    - Chose a secondary `@tontonius/wisp/webgpu` entrypoint that registers the WebGPU backend as a side effect.
+  - [x] Verify CPU/WebGL import path does not eagerly pull TSL after the split.
+  - [x] Document any async implications if backend loading becomes dynamic.
+    - No async backend loading was introduced; WebGPU users import the secondary entrypoint before constructing systems.
 - [ ] Port parity feature batches through `0.4.0` and `0.5.0`.
   - [ ] Batch 1: acceleration, drag, bounds hardening, `simulationSpace`.
   - [x] Batch 2: texture sheets, blend modes, `alphaFromLuminance`.
@@ -241,14 +245,22 @@ Introduce/expand a renderer capability layer so public APIs do not hardcode one 
     - [x] `renderer.align: "velocity"` in authoritative WebGPU TSL billboards and CPU-mirror fallback.
     - [x] `renderer.type: "stretchedBillboard"` with `stretchFactor` / `stretchMaxScale`.
     - [x] Smoke harness set to stretched velocity billboards for visual verification.
+  - [x] Batch 7: close small simulation parity gaps.
+    - [x] `limitVelocityOverLifetime.speed` and `dampen` in WebGPU compute and CPU-mirror fallback.
 - [ ] Add editor WebGPU mode after backend stabilization.
   - [x] Add renderer/backend selector in an internal editor/harness mode first.
     - Added editor `GPU Backend` control that writes `preset.gpu.backend`.
     - Diagnostics now split active systems into CPU, WebGL GPU, and WebGPU GPU counts.
     - Added opt-in WebGPU editor viewport with `?renderer=webgpu` / `?webgpu=1`; the default editor URL remains WebGL.
     - Suppressed empty internal particle-manager lifecycle callbacks so GPU warning output reflects user-authored callbacks instead of editor plumbing.
-  - [ ] Reuse the smoke harness status model for editor diagnostics.
-  - [ ] Validate representative presets in CPU/WebGL/WebGPU comparisons.
+  - [x] Reuse the smoke harness status model for editor diagnostics.
+    - Added selected-system backend, compute mode, motion mode, and alive count to Diagnostics.
+    - Added `window.__WISP_EDITOR_STATUS__` for browser-side smoke checks.
+    - Validation warning console output is now de-duplicated per session; full issue lists still flow through `collectParticlePresetIssues`.
+  - [x] Validate representative presets in CPU/WebGL/WebGPU comparisons.
+    - Added `compareParticlePresetBackends(preset)` helper for CPU/WebGL/WebGPU target checks without live renderer construction.
+    - Diagnostics now shows a backend matrix for the selected editor preset.
+    - Unit coverage includes WebGPU-ready smoke-style, stretched-billboard, and CPU-only collision comparison cases.
   - [ ] Do not change the editor default renderer until WebGPU is stable for day-to-day authoring.
 - [x] Keep docs and README roadmap/checklists updated for the backend selection/skeleton milestone.
   - Updated GPU/backend selection docs, API reference, preset validation docs, README, ROADMAP, and added `docs/reference/webgpu-backend.md`.

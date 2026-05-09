@@ -2,7 +2,7 @@ import * as THREE from "three";
 import type { ParticlePreset } from "./types";
 
 export const starterBillboardUrls = {
-  smokePuffsSheet4x4: new URL("../../demo/billboards/4x4_smoke_puffs.png", import.meta.url).href,
+  smokePuffsSheet4x4: "demo/billboards/4x4_smoke_puffs.png",
 } as const;
 
 export type StarterTexturePack = {
@@ -69,16 +69,58 @@ function makeSparkTexture(size = 128): THREE.Texture {
   return finalizeTexture(new THREE.CanvasTexture(canvas));
 }
 
+function seededRandom(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (state * 1664525 + 1013904223) >>> 0;
+    return state / 0xffffffff;
+  };
+}
+
+function makeSmokePuffsSheetTexture(cellSize = 128): THREE.Texture {
+  const columns = 4;
+  const rows = 4;
+  const canvas = document.createElement("canvas");
+  canvas.width = cellSize * columns;
+  canvas.height = cellSize * rows;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Could not create smoke-puff texture canvas context.");
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  for (let frame = 0; frame < columns * rows; frame++) {
+    const random = seededRandom(0x9e3779b9 + frame * 97);
+    const column = frame % columns;
+    const row = Math.floor(frame / columns);
+    const x = column * cellSize;
+    const y = row * cellSize;
+    const puffCount = 5 + Math.floor(random() * 5);
+
+    for (let i = 0; i < puffCount; i++) {
+      const cx = x + cellSize * (0.34 + random() * 0.32);
+      const cy = y + cellSize * (0.34 + random() * 0.32);
+      const radius = cellSize * (0.18 + random() * 0.24);
+      const alpha = 0.34 + random() * 0.32;
+      const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+      gradient.addColorStop(0, `rgba(255,255,255,${alpha})`);
+      gradient.addColorStop(0.55, `rgba(255,255,255,${alpha * 0.45})`);
+      gradient.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+    }
+  }
+
+  return finalizeTexture(new THREE.CanvasTexture(canvas));
+}
+
 export function createStarterTextures(options?: { loader?: THREE.TextureLoader; textureSize?: number }): StarterTexturePack {
-  const loader = options?.loader ?? new THREE.TextureLoader();
   const textureSize = options?.textureSize ?? 128;
 
-  const smokePuffsSheet4x4 = finalizeTexture(loader.load(starterBillboardUrls.smokePuffsSheet4x4));
   return {
     softDisc: makeSoftDiscTexture(textureSize),
     hardDisc: makeHardDiscTexture(textureSize),
     spark: makeSparkTexture(textureSize),
-    smokePuffsSheet4x4,
+    smokePuffsSheet4x4: makeSmokePuffsSheetTexture(textureSize),
   };
 }
 

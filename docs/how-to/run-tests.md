@@ -42,6 +42,12 @@ WISP_WEBGPU_E2E=1 npm run test:e2e -- webgpu-smoke
 
 This check validates the smoke harness status object, including `compute: authoritative` and `motion: motion-readback-bridge`. It does not use canvas screenshots.
 
+To verify the package split after a library build, confirm the core entrypoint does not import TSL/WebGPU subpaths or inline starter assets:
+
+```bash
+rg "data:image|base64|three/tsl|three/webgpu" dist/index.js
+```
+
 ## Run all tests
 
 ```bash

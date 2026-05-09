@@ -7,6 +7,8 @@ The WebGPU backend is an experimental migration target for Three.js `WebGPURende
 The backend selection API is available:
 
 ```ts
+import "@tontonius/wisp/webgpu";
+
 const preset: ParticlePreset = {
   simulation: "gpu",
   gpu: {
@@ -17,6 +19,9 @@ const preset: ParticlePreset = {
 
 Current behavior:
 
+- The core `@tontonius/wisp` entrypoint does not eagerly import `three/webgpu` or `three/tsl`.
+- Import `@tontonius/wisp/webgpu` once before creating WebGPU particle systems. This secondary entrypoint registers the experimental WebGPU backend.
+- If `gpu.backend: "webgpu"` resolves before the secondary entrypoint is imported, the system falls back to CPU and logs a warning.
 - `gpu.backend: "webgpu"` requires a renderer with `isWebGPURenderer: true`.
 - `gpu.backend: "auto"` resolves to WebGPU when a `WebGPURenderer` is passed.
 - The current WebGPU backend uses a TSL `MeshBasicNodeMaterial` path in authoritative WebGPU mode.
@@ -66,11 +71,18 @@ Currently supported:
 - Vortex force: `forces.vortex.center`, `axis`, `orbitalSpeed`, `inward`, and `upward`.
 - Noise force: `forces.noise.strength`, `frequency`, `scroll`, `octaves`, `lacunarity`, and `persistence`.
 - Velocity over lifetime: `velocityOverLifetime.linear`.
+- Limit velocity over lifetime: `limitVelocityOverLifetime.speed` and `dampen`.
 - Over lifetime: `size`, `opacity`, and `color`.
 - Speed-driven modules: `colorBySpeed`, `sizeBySpeed`, and `rotationBySpeed`.
 - Renderer: `texture`, `textureSheet`, `alphaFromLuminance`, `dispersal`, `softParticles`, `softness`, `blendMode`, `depthWrite`, `depthTest`, billboard rendering, `renderer.align: "velocity"`, and `renderer.type: "stretchedBillboard"` with `stretchFactor` / `stretchMaxScale`.
 
 Unsupported WebGPU fields currently fall back only when the selected backend is not WebGPU; they are not WebGPU parity features yet. Keep production effects that need those modules on CPU or `gpu.backend: "webgl"`.
+
+## Comparison Helper
+
+Use `compareParticlePresetBackends(preset)` to inspect how the same preset resolves under CPU, WebGL, and WebGPU targets without constructing a live renderer. This is the helper used by the editor diagnostics backend matrix.
+
+Each row includes the target, selected backend/fallback reason, validation errors/warnings, and compact `issueLabels` such as `experimental`, `sorting ignored`, or `fallback: collision`. It is intended for authoring tools and migration checks, not per-frame runtime use.
 
 ## Spawn Behavior
 
@@ -91,7 +103,6 @@ Renderer options:
 
 Simulation and force modules:
 
-- `limitVelocityOverLifetime`.
 - Collision.
 - Sub-emitters.
 - Mesh emitters.
@@ -105,15 +116,24 @@ Architecture gaps:
 - Fully GPU-owned motion rendering. V0 still uses a position/velocity motion readback bridge until storage-buffer-to-vertex sharing is proven reliable in the backend.
 - Removing the CPU mirror. It still feeds spawn metadata, start color/opacity, lifecycle bookkeeping, and fallback rendering.
 
-## Bundle Caveat
+## Bundle Split
 
-The experimental WebGPU backend imports Three.js TSL helpers for compute. That currently increases the library bundle even when consumers only use CPU or WebGL. Treat this as an experimental `0.3.0` tradeoff; before making WebGPU production-preferred, split or lazy-load the WebGPU backend so non-WebGPU users do not pay for TSL.
+The experimental WebGPU backend lives behind the secondary `@tontonius/wisp/webgpu` entrypoint. CPU and WebGL users can import the core package without eagerly importing `three/webgpu` or `three/tsl`.
+
+The current package emits:
+
+- `dist/index.js`: core CPU/WebGL entrypoint.
+- `dist/webgpu.js`: WebGPU registration entrypoint with the TSL backend implementation.
+
+`dist/index.js` should not contain `three/tsl` or `three/webgpu` imports after `npm run build`.
 
 ## Initialization Note
 
 Three.js `WebGPURenderer` setup is asynchronous in common app flows. Initialize the renderer before handing it to Wisp:
 
 ```ts
+import "@tontonius/wisp/webgpu";
+
 const renderer = new WebGPURenderer({ canvas });
 await renderer.init();
 

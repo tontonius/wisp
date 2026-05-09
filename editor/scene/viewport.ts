@@ -1,8 +1,9 @@
-import * as THREE from "three/webgpu";
+import * as THREE from "three";
+import { WebGPURenderer } from "three/webgpu";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { makeCheckerTexture } from "../lib/textures";
 
-export type ViewportRenderer = THREE.WebGLRenderer | THREE.WebGPURenderer;
+export type ViewportRenderer = THREE.WebGLRenderer | WebGPURenderer;
 export type ViewportRendererMode = "webgl" | "webgpu";
 
 export type ViewportBundle = {
@@ -39,7 +40,7 @@ async function createRenderer(canvas: HTMLCanvasElement): Promise<{
 }> {
   if (getRequestedRendererMode() === "webgpu") {
     if ("gpu" in navigator) {
-      const renderer = new THREE.WebGPURenderer({ canvas, antialias: true });
+      const renderer = new WebGPURenderer({ canvas, antialias: true });
       await renderer.init();
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       return { renderer, rendererMode: "webgpu" };

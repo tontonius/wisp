@@ -400,7 +400,7 @@ velocityOverLifetime: {
 - trails/ribbons
 - particle lights
 - CPU readback
-- WebGPU parity cleanup; `gpu.backend: "webgpu"` currently drives experimental TSL billboards, blend modes, `alphaFromLuminance`, and texture-sheet atlas UVs from storage-backed attributes when storage-buffer readback is available, but still keeps a CPU mirror for lifecycle bookkeeping/fallback.
+- WebGPU parity cleanup; `gpu.backend: "webgpu"` is registered through the secondary `@tontonius/wisp/webgpu` entrypoint and currently drives experimental TSL billboards, blend modes, `alphaFromLuminance`, and texture-sheet atlas UVs from storage-backed attributes when storage-buffer readback is available, but still keeps a CPU mirror for lifecycle bookkeeping/fallback.
 
 For smoke, additive magic, sparks, snow, embers, rain, fireflies, motes, portals, and general “make the GPU sweat prettily”, it is already useful.
 

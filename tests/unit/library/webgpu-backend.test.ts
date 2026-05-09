@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { describe, expect, it, vi } from "vitest";
+import "../../../src/webgpu";
 import { ParticleSystem } from "../../../src";
 import { resolveRendererTexture } from "../../../src/particles/shared";
 import type { ParticlePreset, ParticleRenderer } from "../../../src";
@@ -761,6 +762,52 @@ describe("WebGPUParticleBackend v0", () => {
     expect(backend.backend.computeNoiseOctavesUniform.value).toBe(4);
     expect(backend.backend.computeNoiseLacunarityUniform.value).toBe(2.5);
     expect(backend.backend.computeNoisePersistenceUniform.value).toBe(0.75);
+
+    system.dispose({ disposeTexture: true });
+    warn.mockRestore();
+  });
+
+  it("passes limitVelocityOverLifetime uniforms and curve into the WebGPU compute path", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const renderer = {
+      isWebGPURenderer: true,
+      compute: vi.fn(),
+      getArrayBufferAsync: vi.fn(() => Promise.resolve(new ArrayBuffer(0))),
+    } as unknown as ParticleRenderer;
+    const preset: ParticlePreset = {
+      simulation: "gpu",
+      gpu: { backend: "webgpu" },
+      maxParticles: 1,
+      duration: 1,
+      emitter: { type: "point" },
+      emission: { bursts: [{ time: 0, count: 1 }] },
+      start: { lifetime: 1, speed: 3, size: 1, color: "#ffffff" },
+      limitVelocityOverLifetime: {
+        speed: [[0, 2], [1, 1]],
+        dampen: 0.5,
+      },
+      renderer: { texture: makeTexture() },
+    };
+
+    const system = new ParticleSystem(preset, { renderer });
+    const backend = system as unknown as {
+      backend: {
+        computeVelocityLimitEnabledUniform: { value: number };
+        computeVelocityLimitDampenUniform: { value: number };
+        velocityLimitSpeedCurveTexture: THREE.DataTexture;
+      };
+    };
+    const camera = new THREE.PerspectiveCamera();
+    camera.position.set(0, 0, 5);
+    camera.lookAt(0, 0, 0);
+
+    system.play();
+    system.update(0.25, camera);
+
+    expect(system.computeMode).toBe("authoritative");
+    expect(backend.backend.computeVelocityLimitEnabledUniform.value).toBe(1);
+    expect(backend.backend.computeVelocityLimitDampenUniform.value).toBe(0.5);
+    expect(backend.backend.velocityLimitSpeedCurveTexture).toBeInstanceOf(THREE.DataTexture);
 
     system.dispose({ disposeTexture: true });
     warn.mockRestore();

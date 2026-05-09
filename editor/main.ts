@@ -1,4 +1,5 @@
 import "./style.css";
+import "../src/webgpu";
 import { startEditor } from "./start-editor.js";
 
 startEditor().catch((error) => {

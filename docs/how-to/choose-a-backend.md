@@ -63,7 +63,7 @@ const rain: ParticlePreset = {
 };
 ```
 
-`"auto"` resolves to the renderer-native backend: `WebGLRenderer` uses the WebGL render-target backend, while `WebGPURenderer` requests the experimental WebGPU backend. The WebGPU backend v0 renders TSL billboards with compute-updated motion through a narrow motion readback bridge, but still keeps a CPU mirror for lifecycle bookkeeping and fallback rendering, so keep production presets on `"webgl"` or CPU for now.
+`"auto"` resolves to the renderer-native backend: `WebGLRenderer` uses the WebGL render-target backend, while `WebGPURenderer` requests the experimental WebGPU backend. Import `@tontonius/wisp/webgpu` once before creating WebGPU systems; the core package does not eagerly import Three.js TSL. The WebGPU backend v0 renders TSL billboards with compute-updated motion through a narrow motion readback bridge, but still keeps a CPU mirror for lifecycle bookkeeping and fallback rendering, so keep production presets on `"webgl"` or CPU for now.
 
 ## Use Auto For Scalable Defaults
 

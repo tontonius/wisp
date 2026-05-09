@@ -5,7 +5,7 @@ Wisp keeps the public simulation mode stable as `simulation: "gpu"` and selects 
 Current implementations:
 
 - `gpu.backend: "webgl"`: supported WebGL render-target simulation backend.
-- `gpu.backend: "webgpu"`: experimental v0 backend for `WebGPURenderer`. It uses storage-buffer compute and TSL billboards when storage-buffer attribute support is available, with CPU-mirror lifecycle/fallback behavior while parity work continues.
+- `gpu.backend: "webgpu"`: experimental v0 backend for `WebGPURenderer`. It is registered by importing `@tontonius/wisp/webgpu` once, then uses storage-buffer compute and TSL billboards when storage-buffer attribute support is available, with CPU-mirror lifecycle/fallback behavior while parity work continues.
 - `gpu.backend: "auto"`: default; resolves from the renderer type.
 
 ## Selection
@@ -29,6 +29,8 @@ Backend resolution:
 | `THREE.WebGLRenderer` | WebGL GPU backend | WebGL GPU backend | CPU fallback |
 | `THREE.WebGPURenderer` | WebGPU v0 | CPU fallback | WebGPU v0 |
 | no renderer | CPU fallback | CPU fallback | CPU fallback |
+
+The WebGPU backend implementation is intentionally split out of the core entrypoint so CPU/WebGL users do not eagerly import Three.js TSL. If a preset resolves to WebGPU before `@tontonius/wisp/webgpu` has been imported, Wisp falls back to CPU and logs a warning.
 
 The WebGPU v0 backend emits a validation warning because it is still experimental. It is useful for renderer integration checks and visual smoke tests, but it is not production-parity with the WebGL GPU backend. See [WebGPU Backend](webgpu-backend.md) for the current supported field slice.
 
@@ -204,7 +206,7 @@ Current GPU backend does not support:
 - CPU particle death callbacks.
 - Collision.
 - Sub-emitters.
-- `limitVelocityOverLifetime`.
+- `limitVelocityOverLifetime` on the WebGL GPU backend. The experimental WebGPU backend supports it.
 - Transparent particle sorting (the GPU backend ignores `renderer.sorting`; rely on additive blending or `depthWrite: false` alpha).
 - Mesh emitters.
 - Trails/ribbons.

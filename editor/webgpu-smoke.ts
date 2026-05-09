@@ -1,5 +1,6 @@
 import * as THREE from "three/webgpu";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import "../src/webgpu";
 import { ParticleSystem } from "../src/particles/system";
 import type { ParticleComputeMode, ParticleMotionMode, ParticlePreset } from "../src/particles/types";
 import "./style.css";

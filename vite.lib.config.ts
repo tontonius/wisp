@@ -3,13 +3,17 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   build: {
+    assetsInlineLimit: 0,
     lib: {
-      entry: resolve(__dirname, "src/index.ts"),
+      entry: {
+        index: resolve(__dirname, "src/index.ts"),
+        webgpu: resolve(__dirname, "src/webgpu.ts"),
+      },
       formats: ["es"],
-      fileName: () => "index.js",
+      fileName: (_format, entryName) => `${entryName}.js`,
     },
     rollupOptions: {
-      external: ["three"],
+      external: [/^three(\/.*)?$/],
     },
   },
 });

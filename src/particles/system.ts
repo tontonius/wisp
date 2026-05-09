@@ -4,8 +4,8 @@ import type { Particle, ParticleBackend, ParticleComputeMode, ParticleDebugOptio
 import { DEFAULT_EMITTER, makeEmitterGizmo, resolveDebugOptions } from "./shared";
 import { CPUParticleBackend } from "./backends/cpu-backend";
 import { WebGLParticleBackend } from "./backends/webgl-backend";
-import { WebGPUParticleBackend } from "./backends/webgpu-backend";
 import { isWebGLRenderer, isWebGPURenderer, selectParticleBackend } from "./renderer-capabilities";
+import { createRegisteredWebGPUBackend } from "./webgpu-registry";
 
 /**
  * Live particle effect instance backed by either CPU or GPU simulation.
@@ -26,26 +26,40 @@ export class ParticleSystem extends THREE.Object3D {
 
     assertValidParticlePreset(preset, { renderer: options.renderer });
 
-    const selection = selectParticleBackend(preset, options.renderer);
-    this.backendType = selection.simulation;
-    this.gpuBackendType = selection.simulation === "gpu" ? selection.backend : undefined;
-    this.backend = this.makeBackend(selection, options);
+    const backendResult = this.makeBackend(selectParticleBackend(preset, options.renderer), options);
+    this.backendType = backendResult.backendType;
+    this.gpuBackendType = backendResult.gpuBackendType;
+    this.backend = backendResult.backend;
     (this as unknown as THREE.Object3D).add(this.backend.object);
     this.setDebug(preset.debug);
   }
 
-  private makeBackend(selection: ReturnType<typeof selectParticleBackend>, options: ParticleSystemOptions): ParticleBackend {
+  private makeBackend(
+    selection: ReturnType<typeof selectParticleBackend>,
+    options: ParticleSystemOptions
+  ): { backend: ParticleBackend; backendType: "cpu" | "gpu"; gpuBackendType?: ResolvedGpuBackend } {
     if (selection.simulation === "gpu" && selection.backend === "webgl" && isWebGLRenderer(options.renderer)) {
-      return new WebGLParticleBackend(this.preset, options.renderer);
+      return {
+        backend: new WebGLParticleBackend(this.preset, options.renderer),
+        backendType: "gpu",
+        gpuBackendType: "webgl",
+      };
     }
     if (selection.simulation === "gpu" && selection.backend === "webgpu" && isWebGPURenderer(options.renderer)) {
-      return new WebGPUParticleBackend(this.preset, options.renderer as WebGPURendererLike);
+      const backend = createRegisteredWebGPUBackend(this.preset, options.renderer as WebGPURendererLike);
+      if (backend) return { backend, backendType: "gpu", gpuBackendType: "webgpu" };
+      console.warn(
+        'gpu.backend "webgpu" was selected, but the WebGPU backend is not registered. Import "@tontonius/wisp/webgpu" once before creating WebGPU particle systems.'
+      );
     }
-    return new CPUParticleBackend(this.preset, {
-      onParticleBirth: (particle) => this.notifyParticleBirth(particle),
-      onParticleDeath: (particle) => this.notifyParticleDeath(particle),
-      onParticleCollision: (particle) => this.notifyParticleCollision(particle),
-    });
+    return {
+      backend: new CPUParticleBackend(this.preset, {
+        onParticleBirth: (particle) => this.notifyParticleBirth(particle),
+        onParticleDeath: (particle) => this.notifyParticleDeath(particle),
+        onParticleCollision: (particle) => this.notifyParticleCollision(particle),
+      }),
+      backendType: "cpu",
+    };
   }
 
   /** Seconds elapsed since system start/restart. */

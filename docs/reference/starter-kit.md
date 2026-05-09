@@ -25,7 +25,7 @@ import {
 - `runSmoke`
 - `jumpSmokeRing`
 
-`explosion` is authored to use the bundled `4x4_smoke_puffs.png` atlas by default.
+`explosion` is authored to use the generated `smokePuffsSheet4x4` atlas by default.
 
 ## Included Textures
 
@@ -34,9 +34,9 @@ import {
 - `softDisc` (generated radial falloff)
 - `hardDisc` (generated hard circular disc)
 - `spark` (generated streak/spark strip)
-- `smokePuffsSheet4x4` (bundled billboard atlas)
+- `smokePuffsSheet4x4` (generated 4x4 smoke billboard atlas)
 
-The billboard file URL is also exposed directly:
+The legacy billboard file path is also exposed directly for apps that still want to load the old demo atlas themselves:
 
 ```ts
 starterBillboardUrls.smokePuffsSheet4x4;
@@ -71,5 +71,5 @@ wisp.particles?.spawn("explosion", { position: [0, 0.6, 0] });
 ## Notes
 
 - Starter textures use `THREE.SRGBColorSpace`.
-- The smoke atlas is loaded through `THREE.TextureLoader`.
+- The starter smoke atlas is generated with canvas so the core library entrypoint does not inline a PNG payload.
 - `magicBurst` requests GPU simulation; if no renderer is provided, runtime falls back to CPU using normal library fallback rules.
