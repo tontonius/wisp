@@ -3,6 +3,7 @@ import { defaultGradientStops } from "../../demo/tweakpane-gradient-plugin/index
 export type EditorParams = {
   simulationSpace: "local" | "world";
   simulation: "auto" | "cpu" | "gpu";
+  gpuBackend: "auto" | "webgl" | "webgpu";
   maxParticles: number;
   duration: number;
   loop: boolean;
@@ -106,6 +107,7 @@ export function createInitialEditorParams(): EditorParams {
   return {
     simulationSpace: "local",
     simulation: "auto",
+    gpuBackend: "auto",
     maxParticles: 256,
     duration: 1,
     loop: true,

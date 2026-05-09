@@ -16,3 +16,4 @@ Both editor surfaces map controls to standard Wisp preset fields (for example `s
 
 Editor preview may use runtime-only helpers such as `wisp.particles.setDebug(...)`, and CPU-only constraints still apply to features like `subEmitters`.
 
+The standalone `editor/` app defaults to a WebGL viewport. For internal WebGPU validation, open it with `?renderer=webgpu` (or `?webgpu=1`) and use the Diagnostics pane to confirm the viewport renderer and resolved particle backend.

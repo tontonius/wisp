@@ -99,6 +99,7 @@ export class ParticleManager {
 
   private createManagedPreset(basePreset: ParticlePreset): ParticlePreset {
     const originalCallbacks = basePreset.callbacks;
+    if (!originalCallbacks && !basePreset.subEmitters) return basePreset;
     return {
       ...basePreset,
       callbacks: {

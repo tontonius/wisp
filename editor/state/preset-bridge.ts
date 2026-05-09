@@ -31,6 +31,7 @@ export function syncParamsFromPreset(ctx: PresetSyncApplyContext): void {
   const firstBurst = emission.bursts?.[0];
 
   params.simulation = (workingPreset.simulation ?? "auto") as "auto" | "cpu" | "gpu";
+  params.gpuBackend = (workingPreset.gpu?.backend ?? "auto") as "auto" | "webgl" | "webgpu";
   params.simulationSpace = (workingPreset.simulationSpace ?? "local") as "local" | "world";
   params.maxParticles = workingPreset.maxParticles ?? 256;
   params.duration = workingPreset.duration ?? 1;
@@ -235,6 +236,10 @@ export function applyParamsToPreset(ctx: PresetSyncApplyContext): void {
   const overLifetime = (workingPreset.overLifetime ??= {});
 
   workingPreset.simulation = params.simulation;
+  workingPreset.gpu = {
+    ...(workingPreset.gpu ?? {}),
+    backend: params.gpuBackend,
+  };
   workingPreset.simulationSpace = params.simulationSpace;
   workingPreset.maxParticles = Math.max(1, Math.round(params.maxParticles));
   workingPreset.duration = Math.max(0.01, params.duration);

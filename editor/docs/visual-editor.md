@@ -45,6 +45,9 @@ When adding or changing editor controls, prefer `editor/panels/particle-editor-p
 - The `Camera FX` pane includes `Camera shake` controls (`Enabled`, `On respawn`, `Trigger trauma`, decay/power/noise, mode, rotation/translation limits), plus `Shake camera`, `Reset shake`, and live trauma graph preview.
 - The `Debug` pane includes `Playback Speed` (`0..2`) to time-scale simulation `dt` for previewing effects in slow motion or faster-than-real-time.
 - Main editor uses API-mapped folders (for example `Particle System`, `Emission`, `Emitter`, `Start`, `Forces`, `Renderer`, and `Over Lifetime`).
+- The `Particle System` folder includes a `GPU Backend` selector (`auto`, `webgl`, `webgpu`) that writes `preset.gpu.backend`. The editor still uses its current viewport renderer; use Diagnostics to confirm which backend actually resolved.
+- Add `?renderer=webgpu` (or `?webgpu=1`) to the editor URL to boot the viewport with Three.js `WebGPURenderer`. The default editor URL continues to use WebGL.
+- Diagnostics runtime stats split active systems into CPU, WebGL GPU, and WebGPU GPU counts.
 - The `Start` folder includes start rotation controls (`start.rotation` and `start.angularVelocity`) as min/max ranges in radians and radians/sec.
 - The `Start` folder also exposes `start.velocity` as `Velocity Min`/`Velocity Max` (Vec3) for directional launch offsets beyond scalar `start.speed`.
 - `Renderer` is organized by intent-first subfolders (`Render Style`, `Compositing`, `Depth`, `Texture Processing`, `Texture Sheet`) with conditional controls for stretched billboards, soft particles, luminance alpha keying, and texture-sheet animation.

@@ -16,8 +16,12 @@ export function installDiagnosticsPane(rt: PanelRuntime, host: HTMLDivElement): 
   rt.fpsGraph = fpsGraph;
   const runtimeFolder = diagnosticsPane.addFolder({ title: "Runtime Stats", expanded: false });
   runtimeFolder.addBinding(rt.runtimeStats, "systems", { readonly: true, label: "Systems" });
+  runtimeFolder.addBinding(rt.runtimeStats, "rendererMode", { readonly: true, label: "Viewport" });
   runtimeFolder.addBinding(rt.runtimeStats, "cpuSystems", { readonly: true, label: "CPU Systems" });
   runtimeFolder.addBinding(rt.runtimeStats, "gpuSystems", { readonly: true, label: "GPU Systems" });
+  runtimeFolder.addBinding(rt.runtimeStats, "webglSystems", { readonly: true, label: "WebGL GPU" });
+  runtimeFolder.addBinding(rt.runtimeStats, "webgpuSystems", { readonly: true, label: "WebGPU GPU" });
+  runtimeFolder.addBinding(rt.runtimeStats, "backendSummary", { readonly: true, label: "Backends" });
   runtimeFolder.addBinding(rt.runtimeStats, "aliveTotal", { readonly: true, label: "Alive Total" });
   runtimeFolder.addBinding(rt.runtimeStats, "maxTotal", { readonly: true, label: "Max Total" });
   runtimeFolder.addBinding(rt.runtimeStats, "busiest", { readonly: true, label: "Busiest" });

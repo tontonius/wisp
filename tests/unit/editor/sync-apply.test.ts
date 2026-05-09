@@ -26,6 +26,7 @@ describe("syncParamsFromPreset / applyParamsToPreset", () => {
 
     const workingPreset = clonePreset({
       simulation: "cpu",
+      gpu: { backend: "webgpu" },
       simulationSpace: "local",
       maxParticles: 128,
       duration: 2,
@@ -72,7 +73,9 @@ describe("syncParamsFromPreset / applyParamsToPreset", () => {
     };
 
     syncParamsFromPreset(ctx);
+    expect(params.gpuBackend).toBe("webgpu");
     applyParamsToPreset(ctx);
+    expect(workingPreset.gpu?.backend).toBe("webgpu");
     syncParamsFromPreset(ctx);
     const stable = stableStringify(workingPreset);
     applyParamsToPreset(ctx);

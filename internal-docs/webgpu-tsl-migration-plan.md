@@ -242,7 +242,11 @@ Introduce/expand a renderer capability layer so public APIs do not hardcode one 
     - [x] `renderer.type: "stretchedBillboard"` with `stretchFactor` / `stretchMaxScale`.
     - [x] Smoke harness set to stretched velocity billboards for visual verification.
 - [ ] Add editor WebGPU mode after backend stabilization.
-  - [ ] Add renderer/backend selector in an internal editor/harness mode first.
+  - [x] Add renderer/backend selector in an internal editor/harness mode first.
+    - Added editor `GPU Backend` control that writes `preset.gpu.backend`.
+    - Diagnostics now split active systems into CPU, WebGL GPU, and WebGPU GPU counts.
+    - Added opt-in WebGPU editor viewport with `?renderer=webgpu` / `?webgpu=1`; the default editor URL remains WebGL.
+    - Suppressed empty internal particle-manager lifecycle callbacks so GPU warning output reflects user-authored callbacks instead of editor plumbing.
   - [ ] Reuse the smoke harness status model for editor diagnostics.
   - [ ] Validate representative presets in CPU/WebGL/WebGPU comparisons.
   - [ ] Do not change the editor default renderer until WebGPU is stable for day-to-day authoring.

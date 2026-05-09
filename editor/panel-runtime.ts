@@ -6,18 +6,21 @@ import type { Wisp } from "../src";
 import type { EditorLayer } from "./state/layers";
 import type { EditorViewMode } from "./state/editor-view-mode";
 import type { EditorParams } from "./state/params";
+import type { ViewportRenderer, ViewportRendererMode } from "./scene/viewport";
 
 /** Narrow facade passed into panel installers (avoids circular imports with types.ts). */
 export type PanelRuntime = {
   canvas: HTMLCanvasElement;
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
-  renderer: THREE.WebGLRenderer;
+  renderer: ViewportRenderer;
+  rendererMode: ViewportRendererMode;
+  rendererNotice?: string;
   orbitControls: OrbitControls;
   wisp: Wisp;
 
-  sceneDepthTarget: THREE.WebGLRenderTarget;
-  createSceneDepthTarget: () => THREE.WebGLRenderTarget;
+  sceneDepthTarget: THREE.RenderTarget;
+  createSceneDepthTarget: () => THREE.RenderTarget;
 
   floor: THREE.Mesh;
   floorMaterial: THREE.MeshStandardMaterial;
@@ -59,10 +62,14 @@ export type PanelRuntime = {
     systems: number;
     cpuSystems: number;
     gpuSystems: number;
+    webglSystems: number;
+    webgpuSystems: number;
+    rendererMode: ViewportRendererMode;
     aliveTotal: number;
     maxTotal: number;
     busiest: string;
     busiestAlive: number;
+    backendSummary: string;
   };
 
   globalDebugParams: {

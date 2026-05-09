@@ -36,7 +36,7 @@ import {
 } from "./state/layers.js";
 import { EditorViewState, type EditorViewMode } from "./state/editor-view-mode.js";
 
-export function startEditor(): void {
+export async function startEditor(): Promise<void> {
   const app = document.querySelector<HTMLDivElement>("#app");
   if (!app) throw new Error("Missing #app root.");
   app.innerHTML = `
@@ -62,7 +62,8 @@ export function startEditor(): void {
   const diagnosticsPaneHost = document.querySelector<HTMLDivElement>("#pane-diagnostics")!;
   const debugPaneHost = document.querySelector<HTMLDivElement>("#pane-debug")!;
 
-  const vp = createViewport(canvas);
+  const vp = await createViewport(canvas);
+  if (vp.rendererNotice) console.warn(`[Editor] ${vp.rendererNotice}`);
   let sceneDepthTarget = vp.createSceneDepthTarget();
 
   const softDisc = makeSoftDiscTexture();
@@ -71,6 +72,7 @@ export function startEditor(): void {
 
   const defaultPresetTemplate: ParticlePreset = {
     simulation: "auto",
+    gpu: { backend: "auto" },
     simulationSpace: "local",
     maxParticles: 512,
     duration: 1.5,
@@ -126,10 +128,14 @@ export function startEditor(): void {
     systems: 0,
     cpuSystems: 0,
     gpuSystems: 0,
+    webglSystems: 0,
+    webgpuSystems: 0,
+    rendererMode: vp.rendererMode,
     aliveTotal: 0,
     maxTotal: 0,
     busiest: "none",
     busiestAlive: 0,
+    backendSummary: "none",
   };
 
   const globalDebugParams = {
@@ -314,6 +320,8 @@ export function startEditor(): void {
     let systems = 0;
     let cpuSystems = 0;
     let gpuSystems = 0;
+    let webglSystems = 0;
+    let webgpuSystems = 0;
     let aliveTotal = 0;
     let maxTotal = 0;
     let busiest = "none";
@@ -321,8 +329,13 @@ export function startEditor(): void {
 
     for (const system of wisp.particles.systems) {
       systems++;
-      if (system.backendType === "gpu") gpuSystems++;
-      else cpuSystems++;
+      if (system.backendType === "gpu") {
+        gpuSystems++;
+        if (system.gpuBackendType === "webgpu") webgpuSystems++;
+        else if (system.gpuBackendType === "webgl") webglSystems++;
+      } else {
+        cpuSystems++;
+      }
       const alive = system.aliveCount;
       const max = system.preset.maxParticles ?? (system.backendType === "gpu" ? 1024 : 256);
       aliveTotal += alive;
@@ -336,10 +349,13 @@ export function startEditor(): void {
     runtimeStats.systems = systems;
     runtimeStats.cpuSystems = cpuSystems;
     runtimeStats.gpuSystems = gpuSystems;
+    runtimeStats.webglSystems = webglSystems;
+    runtimeStats.webgpuSystems = webgpuSystems;
     runtimeStats.aliveTotal = aliveTotal;
     runtimeStats.maxTotal = maxTotal;
     runtimeStats.busiest = busiest;
     runtimeStats.busiestAlive = busiestAlive;
+    runtimeStats.backendSummary = `cpu ${cpuSystems} | webgl ${webglSystems} | webgpu ${webgpuSystems}`;
   }
 
   function renderSceneDepthWithoutParticles(): void {
@@ -400,6 +416,8 @@ export function startEditor(): void {
     scene: vp.scene,
     camera: vp.camera,
     renderer: vp.renderer,
+    rendererMode: vp.rendererMode,
+    rendererNotice: vp.rendererNotice,
     orbitControls: vp.orbitControls,
     wisp,
     sceneDepthTarget,

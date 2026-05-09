@@ -17,6 +17,7 @@ pane.registerPlugin(tweakpaneGradientPluginBundle);
 
 const systemFolder = pane.addFolder({ title: "Particle System", expanded: false });
 systemFolder.addBinding(rt.params, "simulation", { label: "Simulation", options: { auto: "auto", cpu: "cpu", gpu: "gpu" } });
+systemFolder.addBinding(rt.params, "gpuBackend", { label: "GPU Backend", options: { auto: "auto", webgl: "webgl", webgpu: "webgpu" } });
 systemFolder.addBinding(rt.params, "simulationSpace", { label: "Simulation Space", options: { local: "local", world: "world" } });
 systemFolder.addBinding(rt.params, "maxParticles", { label: "Max Particles", min: 1, max: 50000, step: 1 });
 systemFolder.addBinding(rt.params, "duration", { label: "Duration", min: 0.01, max: 60, step: 0.01 });

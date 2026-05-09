@@ -1,11 +1,16 @@
-import * as THREE from "three";
+import * as THREE from "three/webgpu";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { makeCheckerTexture } from "../lib/textures";
+
+export type ViewportRenderer = THREE.WebGLRenderer | THREE.WebGPURenderer;
+export type ViewportRendererMode = "webgl" | "webgpu";
 
 export type ViewportBundle = {
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
-  renderer: THREE.WebGLRenderer;
+  renderer: ViewportRenderer;
+  rendererMode: ViewportRendererMode;
+  rendererNotice?: string;
   orbitControls: OrbitControls;
   orbitTarget: THREE.Vector3;
   floor: THREE.Mesh;
@@ -19,10 +24,38 @@ export type ViewportBundle = {
     fogColor: string;
     fogNearFar: { x: number; y: number };
   };
-  createSceneDepthTarget: () => THREE.WebGLRenderTarget;
+  createSceneDepthTarget: () => THREE.RenderTarget;
 };
 
-export function createViewport(canvas: HTMLCanvasElement): ViewportBundle {
+function getRequestedRendererMode(): ViewportRendererMode {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("renderer") === "webgpu" || params.get("webgpu") === "1" ? "webgpu" : "webgl";
+}
+
+async function createRenderer(canvas: HTMLCanvasElement): Promise<{
+  renderer: ViewportRenderer;
+  rendererMode: ViewportRendererMode;
+  rendererNotice?: string;
+}> {
+  if (getRequestedRendererMode() === "webgpu") {
+    if ("gpu" in navigator) {
+      const renderer = new THREE.WebGPURenderer({ canvas, antialias: true });
+      await renderer.init();
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      return { renderer, rendererMode: "webgpu" };
+    }
+    return {
+      renderer: new THREE.WebGLRenderer({ canvas, antialias: true }),
+      rendererMode: "webgl",
+      rendererNotice: "WebGPU requested but navigator.gpu is unavailable; using WebGL.",
+    };
+  }
+
+  return { renderer: new THREE.WebGLRenderer({ canvas, antialias: true }), rendererMode: "webgl" };
+}
+
+export async function createViewport(canvas: HTMLCanvasElement): Promise<ViewportBundle> {
+  const { renderer, rendererMode, rendererNotice } = await createRenderer(canvas);
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#2e2f33");
   const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
@@ -32,7 +65,6 @@ export function createViewport(canvas: HTMLCanvasElement): ViewportBundle {
   const orbitOffsetTemp = new THREE.Vector3();
   camera.position.copy(orbitTarget).add(orbitOffsetTemp.setFromSpherical(orbit));
   camera.lookAt(orbitTarget);
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   const orbitControls = new OrbitControls(camera, renderer.domElement);
@@ -89,12 +121,12 @@ export function createViewport(canvas: HTMLCanvasElement): ViewportBundle {
     fogNearFar: { x: 3, y: 18 },
   };
 
-  function createSceneDepthTarget(): THREE.WebGLRenderTarget {
+  function createSceneDepthTarget(): THREE.RenderTarget {
     const size = renderer.getSize(new THREE.Vector2());
     const pixelRatio = renderer.getPixelRatio();
     const width = Math.max(1, Math.floor(size.x * pixelRatio));
     const height = Math.max(1, Math.floor(size.y * pixelRatio));
-    const target = new THREE.WebGLRenderTarget(width, height, {
+    const target = new THREE.RenderTarget(width, height, {
       depthBuffer: true,
       stencilBuffer: false,
     });
@@ -106,6 +138,8 @@ export function createViewport(canvas: HTMLCanvasElement): ViewportBundle {
     scene,
     camera,
     renderer,
+    rendererMode,
+    rendererNotice,
     orbitControls,
     orbitTarget,
     floor,
