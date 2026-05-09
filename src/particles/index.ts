@@ -1,4 +1,5 @@
 export * from "./types";
+export * from "./backend-compatibility";
 export * from "./system";
 export * from "./world";
 export * from "./starter-kit";

@@ -58,7 +58,7 @@ type ParticlePreset = {
 | `emission` | Object | No emission | Continuous rate and/or scheduled bursts. |
 | `start` | Object | Individual defaults | Values sampled when each particle spawns. |
 | `forces` | Object | No force | Constant acceleration, drag, optional point attractor, vortex column, and procedural noise; see [Forces](forces.md). |
-| `limitVelocityOverLifetime` | Object | `undefined` | CPU-only speed cap module by normalized age. |
+| `limitVelocityOverLifetime` | Object | `undefined` | Speed cap module by normalized age. |
 | `collision` | `CpuCollision` | `undefined` | CPU-only primitive collision (`plane`, `sphere`, or `box`) in local space; see [CPU backend](cpu-backend.md#collision-plane--sphere--box). |
 | `subEmitters` | `{ onBirth?: string; onDeath?: string; onCollision?: string }` | `undefined` | CPU-only child effect hooks. `onBirth` spawns on CPU particle spawn, `onDeath` on particle death, and `onCollision` on primitive collision (when spawned through a `ParticleManager`). |
 | `velocityOverLifetime` | `VelocityOverLifetime` | No lifetime velocity | Per-age linear velocity channel. |
@@ -171,7 +171,7 @@ limitVelocityOverLifetime?: {
 }
 ```
 
-- CPU-only in the current release.
+- Supported by CPU and WebGPU. The WebGL GPU backend does not currently apply this module.
 - `speed` is a max-speed curve sampled by normalized age (`0..1`).
 - `dampen` is blend strength toward the capped velocity (`0..1`, default `1`).
 - For a constant cap, use a flat curve such as `[[0, 4], [1, 4]]`.

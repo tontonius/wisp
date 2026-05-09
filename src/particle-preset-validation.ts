@@ -21,6 +21,7 @@ const SORTING_MODES = new Set(["none", "distance", "youngestFirst", "oldestFirst
 const SIMULATION_SPACES = new Set(["local", "world"]);
 const TEXTURE_SHEET_ANIMATION_MODES = new Set(["static", "randomStart", "overLifetime", "randomStartOverLifetime"]);
 const GPU_BACKENDS = new Set(["auto", "webgl", "webgpu"]);
+const loggedPresetWarnings = new Set<string>();
 
 function isFiniteNumber(n: unknown): n is number {
   return typeof n === "number" && Number.isFinite(n);
@@ -571,9 +572,6 @@ export function collectParticlePresetIssues(
   if (presetWouldUseGpu(preset, renderer) && sorting !== undefined && sorting !== "none") {
     warnings.push('renderer.sorting is CPU-only; the GPU backend ignores it. Use simulation "cpu" or "auto" with a CPU configuration for sorted particles.');
   }
-  if (presetWouldUseGpu(preset, renderer) && preset.limitVelocityOverLifetime?.speed) {
-    warnings.push('limitVelocityOverLifetime is CPU-only for now; the GPU backend ignores it. Use simulation "cpu" or "auto" with a CPU configuration.');
-  }
   if (presetWouldUseGpu(preset, renderer) && preset.inheritVelocity?.factor !== undefined) {
     warnings.push('inheritVelocity is CPU-only for now; the GPU backend ignores it. Use simulation "cpu" or "auto" with a CPU configuration.');
   }
@@ -591,10 +589,9 @@ export function collectParticlePresetIssues(
  */
 export function assertValidParticlePreset(preset: ParticlePreset, context: ParticlePresetValidationContext = {}): void {
   const { errors, warnings } = collectParticlePresetIssues(preset, context);
-  const seenWarn = new Set<string>();
   for (const w of warnings) {
-    if (seenWarn.has(w)) continue;
-    seenWarn.add(w);
+    if (loggedPresetWarnings.has(w)) continue;
+    loggedPresetWarnings.add(w);
     console.warn(`[ParticlePreset] ${w}`);
   }
   if (errors.length === 0) return;

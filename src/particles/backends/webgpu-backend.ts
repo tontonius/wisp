@@ -103,6 +103,7 @@ export class WebGPUParticleBackend implements ParticleBackend {
   private renderStateData: Float32Array;
   private renderFrameData: Float32Array;
   private pointAttractorStrengthCurveTexture: THREE.DataTexture;
+  private velocityLimitSpeedCurveTexture: THREE.DataTexture;
   private dispersalAmountCurveTexture: THREE.DataTexture | null = null;
   private softParticleDepthPlaceholder: THREE.DataTexture;
   private softParticleDepthNode?: any;
@@ -132,6 +133,8 @@ export class WebGPUParticleBackend implements ParticleBackend {
   private computeNoiseOctavesUniform = uniform(2);
   private computeNoiseLacunarityUniform = uniform(2);
   private computeNoisePersistenceUniform = uniform(0.5);
+  private computeVelocityLimitEnabledUniform = uniform(0);
+  private computeVelocityLimitDampenUniform = uniform(1);
   private tslCameraRightUniform = uniform(new THREE.Vector3(1, 0, 0));
   private tslCameraUpUniform = uniform(new THREE.Vector3(0, 1, 0));
   private tslCameraForwardUniform = uniform(new THREE.Vector3(0, 0, 1));
@@ -171,6 +174,7 @@ export class WebGPUParticleBackend implements ParticleBackend {
     this.renderStateData = new Float32Array(this.maxParticles * 4);
     this.renderFrameData = new Float32Array(this.maxParticles * 4);
     this.pointAttractorStrengthCurveTexture = makeCurveFloatTexture(preset.forces?.pointAttractor?.strengthOverLifetime, 1);
+    this.velocityLimitSpeedCurveTexture = makeCurveFloatTexture(preset.limitVelocityOverLifetime?.speed, 1);
     this.softParticleDepthPlaceholder = this.makeSoftParticleDepthPlaceholder();
     if (isRendererDispersalEnabled(preset.renderer)) {
       this.dispersalAmountCurveTexture = makeDispersalAmountCurveTexture(preset.renderer?.dispersal?.amount);
@@ -315,6 +319,7 @@ export class WebGPUParticleBackend implements ParticleBackend {
     this.geometry.dispose();
     this.material.dispose();
     this.pointAttractorStrengthCurveTexture.dispose();
+    this.velocityLimitSpeedCurveTexture.dispose();
     this.dispersalAmountCurveTexture?.dispose();
     this.softParticleDepthPlaceholder.dispose();
     if (disposeTexture && this.texture) this.texture.dispose();
@@ -552,6 +557,9 @@ export class WebGPUParticleBackend implements ParticleBackend {
     const noiseOctaves = this.computeNoiseOctavesUniform;
     const noiseLacunarity = this.computeNoiseLacunarityUniform;
     const noisePersistence = this.computeNoisePersistenceUniform;
+    const velocityLimitEnabled = this.computeVelocityLimitEnabledUniform;
+    const velocityLimitDampen = this.computeVelocityLimitDampenUniform;
+    const velocityLimitSpeedCurve = this.velocityLimitSpeedCurveTexture;
 
     return Fn(() => {
       const index = instanceIndex;
@@ -619,6 +627,18 @@ export class WebGPUParticleBackend implements ParticleBackend {
           vl.x.assign(vl.x.mul(dragFactor));
           vl.y.assign(vl.y.mul(dragFactor));
           vl.z.assign(vl.z.mul(dragFactor));
+
+          If(velocityLimitEnabled.greaterThan(0.5), () => {
+            const ageT = pa.w.div(max(float(0.0001), vl.w)).clamp(0, 1).toVar();
+            const maxSpeed = max(float(0), texture(velocityLimitSpeedCurve, vec2(ageT, 0.5)).r).toVar();
+            const speed = vl.xyz.length().toVar();
+            If(speed.greaterThan(maxSpeed), () => {
+              const capScale = maxSpeed.div(max(speed, float(0.000001))).toVar();
+              vl.x.assign(mix(vl.x, vl.x.mul(capScale), velocityLimitDampen));
+              vl.y.assign(mix(vl.y, vl.y.mul(capScale), velocityLimitDampen));
+              vl.z.assign(mix(vl.z, vl.z.mul(capScale), velocityLimitDampen));
+            });
+          });
 
           pa.x.addAssign(vl.x.mul(dt));
           pa.y.addAssign(vl.y.mul(dt));
@@ -720,6 +740,9 @@ export class WebGPUParticleBackend implements ParticleBackend {
     this.computeNoiseOctavesUniform.value = THREE.MathUtils.clamp(Math.floor(noise?.octaves ?? 2), 1, 4);
     this.computeNoiseLacunarityUniform.value = Math.max(1, noise?.lacunarity ?? 2);
     this.computeNoisePersistenceUniform.value = THREE.MathUtils.clamp(noise?.persistence ?? 0.5, 0.05, 1);
+    const velocityLimit = this.preset.limitVelocityOverLifetime;
+    this.computeVelocityLimitEnabledUniform.value = velocityLimit?.speed ? 1 : 0;
+    this.computeVelocityLimitDampenUniform.value = THREE.MathUtils.clamp(velocityLimit?.dampen ?? 1, 0, 1);
     const computeResult = this.renderer.compute(this.computeNode, this.maxParticles);
     if (this.authoritativeReadbackAvailable) {
       void Promise.resolve(computeResult).then(() => this.requestMotionReadback());
@@ -836,6 +859,16 @@ export class WebGPUParticleBackend implements ParticleBackend {
       if (drag > 0) particle.velocity.multiplyScalar(Math.max(0, 1 - drag * dt));
 
       const t = THREE.MathUtils.clamp(particle.age / particle.lifetime, 0, 1);
+      const velocityLimit = this.preset.limitVelocityOverLifetime;
+      if (velocityLimit?.speed) {
+        const maxSpeed = Math.max(0, evaluateCurve(velocityLimit.speed, t, Number.POSITIVE_INFINITY));
+        const speedSq = particle.velocity.lengthSq();
+        if (Number.isFinite(maxSpeed) && speedSq > maxSpeed * maxSpeed) {
+          const speed = Math.sqrt(speedSq);
+          const cappedVelocity = tempVectorD.copy(particle.velocity).multiplyScalar(maxSpeed / Math.max(speed, 1e-6));
+          particle.velocity.lerp(cappedVelocity, THREE.MathUtils.clamp(velocityLimit.dampen ?? 1, 0, 1));
+        }
+      }
       const linearVelocity = tempVectorB.set(
         evaluateCurve(lifetimeVelocity?.linear?.x, t, 0),
         evaluateCurve(lifetimeVelocity?.linear?.y, t, 0),

@@ -56,6 +56,8 @@ type ParticlePresetValidationContext = {
 
 Pass the same renderer you pass into `ParticleSystemOptions` so validation can warn about `simulation: "gpu"` without a renderer and about GPU + `onParticleDeath`.
 
+`assertValidParticlePreset` logs each distinct warning message once per browser/session. Use `collectParticlePresetIssues` for full, repeatable issue lists in editor UI and tests.
+
 ## Errors (throw)
 
 | Area | Rule |
@@ -106,7 +108,6 @@ Pass the same renderer you pass into `ParticleSystemOptions` so validation can w
 | Resolved GPU path and `subEmitters.onCollision` set | Built-in sub-emitters are CPU-only; they will not run on GPU. |
 | `simulation: "auto"`, `collision` set, renderer present, and `maxParticles >= 2048` | Auto would pick GPU at that capacity, but collision forces CPU. |
 | Resolved GPU path and `renderer.sorting` set to anything other than `"none"` | Sorting is CPU-only; the GPU backend ignores it. |
-| Resolved GPU path and `limitVelocityOverLifetime.speed` set | Limit-velocity-over-lifetime is CPU-only for now; the GPU backend ignores it. |
 | Resolved GPU path and `inheritVelocity` set | Inherit-velocity is CPU-only for now; the GPU backend ignores it. |
 | Resolved GPU path and `lifetimeByEmitterSpeed` set | Lifetime-by-emitter-speed is CPU-only for now; the GPU backend ignores it. |
 

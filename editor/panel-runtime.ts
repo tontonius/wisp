@@ -65,6 +65,13 @@ export type PanelRuntime = {
     webglSystems: number;
     webgpuSystems: number;
     rendererMode: ViewportRendererMode;
+    selectedBackend: string;
+    selectedGpuBackend: string;
+    selectedComputeMode: string;
+    selectedMotionMode: string;
+    selectedAlive: number;
+    validationSummary: string;
+    backendMatrix: string;
     aliveTotal: number;
     maxTotal: number;
     busiest: string;

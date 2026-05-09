@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   assertValidParticlePreset,
   collectParticlePresetIssues,
@@ -91,6 +91,23 @@ describe("assertValidParticlePreset", () => {
       renderer: { blendMode: "alpha" as const, align: "camera" as const },
     };
     expect(() => assertValidParticlePreset(preset)).toThrow();
+  });
+
+  it("logs each warning message once per session", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const preset = {
+      simulation: "gpu" as const,
+      maxParticles: 4096,
+      gpu: { backend: "webgpu" as const },
+      emitter: { type: "point" as const },
+    };
+    const renderer = { isWebGPURenderer: true } as const;
+
+    assertValidParticlePreset(preset, { renderer });
+    assertValidParticlePreset(preset, { renderer });
+
+    expect(warn.mock.calls.filter(([message]) => String(message).includes('gpu.backend "webgpu" is experimental'))).toHaveLength(1);
+    warn.mockRestore();
   });
 });
 

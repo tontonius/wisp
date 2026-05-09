@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { collectParticlePresetIssues, Wisp } from "../src";
+import { collectParticlePresetIssues, compareParticlePresetBackends, Wisp } from "../src";
 import type { ParticlePreset, ParticleSystem } from "../src";
 import { installLayersPane } from "./panels/layers-pane.js";
 import { installParticleEditorPane } from "./panels/particle-editor-pane.js";
@@ -35,6 +35,29 @@ import {
   type EditorLayer,
 } from "./state/layers.js";
 import { EditorViewState, type EditorViewMode } from "./state/editor-view-mode.js";
+
+type EditorStatus = {
+  phase: "booting" | "ready";
+  viewportRenderer: "webgl" | "webgpu";
+  systems: number;
+  cpuSystems: number;
+  webglSystems: number;
+  webgpuSystems: number;
+  selectedBackend: string;
+  selectedGpuBackend: string;
+  selectedComputeMode: string;
+  selectedMotionMode: string;
+  selectedAlive: number;
+  validationSummary: string;
+  backendMatrix: string;
+  diagnostics: string;
+};
+
+declare global {
+  interface Window {
+    __WISP_EDITOR_STATUS__?: EditorStatus;
+  }
+}
 
 export async function startEditor(): Promise<void> {
   const app = document.querySelector<HTMLDivElement>("#app");
@@ -131,6 +154,13 @@ export async function startEditor(): Promise<void> {
     webglSystems: 0,
     webgpuSystems: 0,
     rendererMode: vp.rendererMode,
+    selectedBackend: "none",
+    selectedGpuBackend: "none",
+    selectedComputeMode: "none",
+    selectedMotionMode: "none",
+    selectedAlive: 0,
+    validationSummary: "not checked",
+    backendMatrix: "not checked",
     aliveTotal: 0,
     maxTotal: 0,
     busiest: "none",
@@ -209,6 +239,34 @@ export async function startEditor(): Promise<void> {
   });
   const motionParams = motionTestScene.getParams();
 
+  function publishEditorStatus(): void {
+    window.__WISP_EDITOR_STATUS__ = {
+      phase: "ready",
+      viewportRenderer: vp.rendererMode,
+      systems: runtimeStats.systems,
+      cpuSystems: runtimeStats.cpuSystems,
+      webglSystems: runtimeStats.webglSystems,
+      webgpuSystems: runtimeStats.webgpuSystems,
+      selectedBackend: runtimeStats.selectedBackend,
+      selectedGpuBackend: runtimeStats.selectedGpuBackend,
+      selectedComputeMode: runtimeStats.selectedComputeMode,
+      selectedMotionMode: runtimeStats.selectedMotionMode,
+      selectedAlive: runtimeStats.selectedAlive,
+      validationSummary: runtimeStats.validationSummary,
+      backendMatrix: runtimeStats.backendMatrix,
+      diagnostics: params.diagnostics,
+    };
+  }
+
+  function formatBackendMatrix(preset: ParticlePreset): string {
+    return compareParticlePresetBackends(preset)
+      .map((row) => {
+        const selected = row.selection.simulation === "gpu" ? `gpu/${row.selection.backend}` : `cpu/${row.selection.reason ?? "selected"}`;
+        return `${row.target}: ${selected}${row.issueLabels.length > 0 ? ` (${row.issueLabels.join(", ")})` : ""}`;
+      })
+      .join("\n");
+  }
+
   function refreshExportJson(): void {
     params.exportJson = JSON.stringify(buildExportEffectsPayload(layers), createSafePresetSerializer(), 2);
   }
@@ -236,6 +294,8 @@ export async function startEditor(): Promise<void> {
 
   function refreshDiagnostics(): void {
     const issues = collectParticlePresetIssues(workingPreset, { renderer: vp.renderer });
+    runtimeStats.validationSummary = `${issues.errors.length} errors | ${issues.warnings.length} warnings`;
+    runtimeStats.backendMatrix = formatBackendMatrix(workingPreset);
     if (issues.errors.length === 0 && issues.warnings.length === 0) {
       params.diagnostics = "No validation issues.";
     } else {
@@ -243,6 +303,7 @@ export async function startEditor(): Promise<void> {
         .slice(0, 10)
         .join(" | ");
     }
+    publishEditorStatus();
   }
 
   function getSelectedLayer(): EditorLayer | undefined {
@@ -356,6 +417,13 @@ export async function startEditor(): Promise<void> {
     runtimeStats.busiest = busiest;
     runtimeStats.busiestAlive = busiestAlive;
     runtimeStats.backendSummary = `cpu ${cpuSystems} | webgl ${webglSystems} | webgpu ${webgpuSystems}`;
+    const selectedSystem = activeSystemsByLayerId.get(selectedLayerId);
+    runtimeStats.selectedBackend = selectedSystem?.backendType ?? "none";
+    runtimeStats.selectedGpuBackend = selectedSystem?.gpuBackendType ?? "none";
+    runtimeStats.selectedComputeMode = selectedSystem?.computeMode ?? "none";
+    runtimeStats.selectedMotionMode = selectedSystem?.motionMode ?? "none";
+    runtimeStats.selectedAlive = selectedSystem?.aliveCount ?? 0;
+    publishEditorStatus();
   }
 
   function renderSceneDepthWithoutParticles(): void {

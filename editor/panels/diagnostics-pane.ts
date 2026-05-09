@@ -22,10 +22,17 @@ export function installDiagnosticsPane(rt: PanelRuntime, host: HTMLDivElement): 
   runtimeFolder.addBinding(rt.runtimeStats, "webglSystems", { readonly: true, label: "WebGL GPU" });
   runtimeFolder.addBinding(rt.runtimeStats, "webgpuSystems", { readonly: true, label: "WebGPU GPU" });
   runtimeFolder.addBinding(rt.runtimeStats, "backendSummary", { readonly: true, label: "Backends" });
+  runtimeFolder.addBinding(rt.runtimeStats, "selectedBackend", { readonly: true, label: "Selected" });
+  runtimeFolder.addBinding(rt.runtimeStats, "selectedGpuBackend", { readonly: true, label: "Selected GPU" });
+  runtimeFolder.addBinding(rt.runtimeStats, "selectedComputeMode", { readonly: true, label: "Compute" });
+  runtimeFolder.addBinding(rt.runtimeStats, "selectedMotionMode", { readonly: true, label: "Motion" });
+  runtimeFolder.addBinding(rt.runtimeStats, "selectedAlive", { readonly: true, label: "Selected Alive" });
   runtimeFolder.addBinding(rt.runtimeStats, "aliveTotal", { readonly: true, label: "Alive Total" });
   runtimeFolder.addBinding(rt.runtimeStats, "maxTotal", { readonly: true, label: "Max Total" });
   runtimeFolder.addBinding(rt.runtimeStats, "busiest", { readonly: true, label: "Busiest" });
   runtimeFolder.addBinding(rt.runtimeStats, "busiestAlive", { readonly: true, label: "Busiest Alive" });
   const validationFolder = diagnosticsPane.addFolder({ title: "Validation", expanded: false });
+  validationFolder.addBinding(rt.runtimeStats, "validationSummary", { readonly: true, label: "Summary" });
+  validationFolder.addBinding(rt.runtimeStats, "backendMatrix", { readonly: true, label: "Backend Matrix", multiline: true, rows: 3 });
   validationFolder.addBinding(rt.params, "diagnostics", { label: "Diagnostics", multiline: true, rows: 4, readonly: true });
 }
