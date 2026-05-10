@@ -177,6 +177,13 @@ function sampleEmitter(shape: EmitterShape = DEFAULT_EMITTER): { position: THREE
       const distance = shape.emitFrom === "shell" ? radius : radius * Math.cbrt(Math.random());
       return { position: direction.clone().multiplyScalar(distance), direction };
     }
+    case "disc": {
+      const radius = shape.radius ?? 1;
+      const angle = Math.random() * Math.PI * 2;
+      const distance = shape.emitFrom === "shell" ? radius : radius * Math.sqrt(Math.random());
+      const position = new THREE.Vector3(Math.cos(angle) * distance, 0, Math.sin(angle) * distance);
+      return { position, direction: new THREE.Vector3(0, 1, 0) };
+    }
     case "cone": {
       const radius = shape.radius ?? 0.1;
       const angle = THREE.MathUtils.degToRad(shape.angle ?? 25);
@@ -397,6 +404,14 @@ function makeEmitterGizmo(
       addCircle(points, radius, segments, "xz");
       addArc(points, radius, Math.floor(segments / 2), "xy");
       addArc(points, radius, Math.floor(segments / 2), "yz");
+    } else if (shape.type === "disc") {
+      const radius = shape.radius ?? 1;
+      addCircle(points, radius, segments, "xz");
+      if (shape.emitFrom !== "shell") {
+        const marker = radius * 0.2;
+        addLine(points, new THREE.Vector3(-marker, 0, 0), new THREE.Vector3(marker, 0, 0));
+        addLine(points, new THREE.Vector3(0, 0, -marker), new THREE.Vector3(0, 0, marker));
+      }
     } else if (shape.type === "cone") {
       const radius = shape.radius ?? 0.1;
       const length = shape.length ?? 1;
@@ -506,6 +521,7 @@ function makeParticleMaterial(options: NonNullable<ParticlePreset["renderer"]> =
       uDispersalUseMap: { value: dispersalMap ? 1 : 0 },
       uDispersalMap: { value: dispersalMap ?? getDispersalWhitePlaceholderTexture() },
       uDispersalAmountCurve: { value: getDispersalAmountCurvePlaceholder() },
+      uIntensity: { value: options.intensity ?? 1 },
     },
     vertexShader: `
       attribute vec4 particleColor;
@@ -539,6 +555,7 @@ function makeParticleMaterial(options: NonNullable<ParticlePreset["renderer"]> =
       uniform int uDispersalUseMap;
       uniform sampler2D uDispersalMap;
       uniform sampler2D uDispersalAmountCurve;
+      uniform float uIntensity;
       varying vec2 vUv;
       varying vec4 vColor;
       varying float vAgeT;
@@ -575,6 +592,7 @@ function makeParticleMaterial(options: NonNullable<ParticlePreset["renderer"]> =
           float m = dispersalMask(n, amount, uDispersalEdge);
           outColor.a *= mix(1.0, m, clamp(uDispersalStrength, 0.0, 1.0));
         }
+        outColor.rgb *= max(0.0, uIntensity);
         if (outColor.a < 0.001) discard;
         gl_FragColor = outColor;
       }

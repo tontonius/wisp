@@ -38,7 +38,7 @@ Current behavior:
 
 Implemented:
 
-- Point, sphere, hemisphere, cone, and box emitter sampling.
+- Point, sphere, hemisphere, disc, cone, and box emitter sampling.
 - Continuous emission and scheduled bursts.
 - `emit(count)`.
 - Predictable wrapping spawn cursor semantics matching the WebGL GPU backend.
@@ -63,7 +63,7 @@ The WebGPU backend intentionally supports a smaller field slice than the WebGL b
 Currently supported:
 
 - Top-level lifecycle: `name`, `simulation`, `gpu.backend`, `gpu.maxSpawnPerFrame`, `maxParticles`, `duration`, `loop`, `prewarm`, `autoDispose`, `simulationSpace`, and `bounds`.
-- Emitters: point, sphere, hemisphere, cone, and box emitter options.
+- Emitters: point, sphere, hemisphere, disc, cone, and box emitter options.
 - Emission: `rateOverTime` and scheduled `bursts`.
 - Start values: `lifetime`, `speed`, `velocity`, `size`, `opacity`, `color`, `rotation`, and `angularVelocity`.
 - Forces: constant `acceleration` and `drag`.
@@ -74,7 +74,7 @@ Currently supported:
 - Limit velocity over lifetime: `limitVelocityOverLifetime.speed` and `dampen`.
 - Over lifetime: `size`, `opacity`, and `color`.
 - Speed-driven modules: `colorBySpeed`, `sizeBySpeed`, and `rotationBySpeed`.
-- Renderer: `texture`, `textureSheet`, `alphaFromLuminance`, `dispersal`, `softParticles`, `softness`, `blendMode`, `depthWrite`, `depthTest`, billboard rendering, `renderer.align: "velocity"`, and `renderer.type: "stretchedBillboard"` with `stretchFactor` / `stretchMaxScale`.
+- Renderer: `texture`, `textureSheet`, `alphaFromLuminance`, `dispersal`, `softParticles`, `softness`, `blendMode`, `intensity`, `depthWrite`, `depthTest`, billboard rendering, `renderer.align: "velocity"`, and `renderer.type: "stretchedBillboard"` with `stretchFactor` / `stretchMaxScale`.
 
 Unsupported WebGPU fields currently fall back only when the selected backend is not WebGPU; they are not WebGPU parity features yet. Keep production effects that need those modules on CPU or `gpu.backend: "webgl"`.
 

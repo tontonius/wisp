@@ -8,7 +8,7 @@ export type EditorParams = {
   duration: number;
   loop: boolean;
   prewarm: boolean;
-  emitterType: "point" | "sphere" | "hemisphere" | "cone" | "box";
+  emitterType: "point" | "sphere" | "hemisphere" | "disc" | "cone" | "box";
   emitterBoxSize: { x: number; y: number; z: number };
   emitterRadius: number;
   emitterEmitFrom: "volume" | "shell";
@@ -56,6 +56,7 @@ export type EditorParams = {
   velocityLinearZ: { x: number; y: number };
   rendererType: "billboard" | "stretchedBillboard";
   rendererBlendMode: "alpha" | "additive" | "multiply";
+  rendererIntensity: number;
   rendererAlign: "camera" | "velocity";
   rendererSorting: "none" | "distance" | "youngestFirst" | "oldestFirst";
   rendererTexture: "softDisc" | "hardDisc" | "spark";
@@ -160,6 +161,7 @@ export function createInitialEditorParams(): EditorParams {
     velocityLinearZ: { x: 0, y: 0 },
     rendererType: "billboard",
     rendererBlendMode: "alpha",
+    rendererIntensity: 1,
     rendererAlign: "camera",
     rendererSorting: "distance",
     rendererTexture: "hardDisc",

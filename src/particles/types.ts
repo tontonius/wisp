@@ -69,6 +69,7 @@ export type EmitterShape =
   | { type: "point" }
   | { type: "sphere"; radius?: number; emitFrom?: "volume" | "shell" }
   | { type: "hemisphere"; radius?: number; emitFrom?: "volume" | "shell" }
+  | { type: "disc"; radius?: number; emitFrom?: "volume" | "shell" }
   | { type: "cone"; radius?: number; angle?: number; length?: number }
   | { type: "box"; size?: Vec3Tuple };
 
@@ -344,6 +345,12 @@ export type ParticlePreset = {
     };
     /** Material blending mode. */
     blendMode?: BlendMode;
+    /**
+     * RGB intensity multiplier for particle contribution.
+     * Useful for HDR/tone-mapped scenes to tune additive energy without rewriting gradients.
+     * Default `1`.
+     */
+    intensity?: number;
     /** Billboard alignment to camera-facing or velocity-facing. */
     align?: AlignMode;
     /** Only used by `renderer.type: "stretchedBillboard"`. Multiplies elongation by particle speed. Default `0.35`. */

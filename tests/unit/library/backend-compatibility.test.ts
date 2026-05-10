@@ -34,6 +34,7 @@ describe("compareParticlePresetBackends", () => {
         texture: makeTexture(),
         textureSheet: { columns: 2, rows: 2, animationMode: "randomStart" },
         blendMode: "alpha",
+        intensity: 2,
         sorting: "none",
         softParticles: true,
         dispersal: { amount: [[0, 0], [1, 1]] },
@@ -74,6 +75,22 @@ describe("compareParticlePresetBackends", () => {
     expect(webgl?.selection).toMatchObject({ simulation: "cpu", reason: "stretchedBillboard" });
     expect(webgl?.issueLabels).toContain("fallback: stretched billboard");
     expect(webgpu?.selection).toMatchObject({ simulation: "gpu", backend: "webgpu" });
+  });
+
+  it("keeps disc emitter available on both GPU targets", () => {
+    const preset: ParticlePreset = {
+      simulation: "gpu",
+      gpu: { backend: "auto" },
+      maxParticles: 512,
+      emitter: { type: "disc", radius: 0.3, emitFrom: "volume" },
+      emission: { rateOverTime: 20 },
+      start: { lifetime: 1, speed: 1, size: 1, color: "#fff" },
+      renderer: { texture: makeTexture(), sorting: "none" },
+    };
+
+    const rows = compareParticlePresetBackends(preset);
+    expect(rows.find((row) => row.target === "webgl")?.errors).toEqual([]);
+    expect(rows.find((row) => row.target === "webgpu")?.errors).toEqual([]);
   });
 
   it("keeps unsupported CPU-only modules visible in comparison rows", () => {

@@ -352,7 +352,8 @@ export class WebGLParticleBackend implements ParticleBackend {
     const [velocityMin, velocityMax] = vec3MinMax(start.velocity, [0, 0, 0]);
     const [colorMin, colorMax] = colorMinMax(start.color);
 
-    const emitterType = emitter.type === "sphere" ? 1 : emitter.type === "hemisphere" ? 2 : emitter.type === "cone" ? 3 : emitter.type === "box" ? 4 : 0;
+    const emitterType =
+      emitter.type === "sphere" ? 1 : emitter.type === "hemisphere" ? 2 : emitter.type === "cone" ? 3 : emitter.type === "box" ? 4 : emitter.type === "disc" ? 5 : 0;
     const emitterRadius = "radius" in emitter ? emitter.radius ?? 1 : 0;
     const emitterShell = "emitFrom" in emitter && emitter.emitFrom === "shell" ? 1 : 0;
     const emitterAngle = emitter.type === "cone" ? THREE.MathUtils.degToRad(emitter.angle ?? 25) : 0;
@@ -630,6 +631,13 @@ export class WebGLParticleBackend implements ParticleBackend {
             return (vec3(rand(index, 8.0), rand(index, 9.0), rand(index, 10.0)) - 0.5) * uEmitterSize;
           }
 
+          if (uEmitterType == 5) {
+            float a = rand(index, 8.0) * 6.28318530718;
+            float d = uEmitterShell == 1 ? uEmitterRadius : uEmitterRadius * sqrt(rand(index, 9.0));
+            direction = vec3(0.0, 1.0, 0.0);
+            return vec3(cos(a) * d, 0.0, sin(a) * d);
+          }
+
           direction = randomUnitVector(index);
           return vec3(0.0);
         }
@@ -853,6 +861,7 @@ export class WebGLParticleBackend implements ParticleBackend {
         uDispersalUseMap: { value: dispersalMap ? 1 : 0 },
         uDispersalMap: { value: dispersalMap ?? getDispersalWhitePlaceholderTexture() },
         uDispersalAmountCurve: { value: getDispersalAmountCurvePlaceholder() },
+        uIntensity: { value: this.preset.renderer?.intensity ?? 1 },
       },
       vertexShader: `
         precision highp float;
@@ -964,6 +973,7 @@ export class WebGLParticleBackend implements ParticleBackend {
         uniform int uDispersalUseMap;
         uniform sampler2D uDispersalMap;
         uniform sampler2D uDispersalAmountCurve;
+        uniform float uIntensity;
         varying vec2 vUv;
         varying vec4 vColor;
         varying float vAgeT;
@@ -1000,6 +1010,7 @@ export class WebGLParticleBackend implements ParticleBackend {
             float m = dispersalMask(n, amount, uDispersalEdge);
             outColor.a *= mix(1.0, m, clamp(uDispersalStrength, 0.0, 1.0));
           }
+          outColor.rgb *= max(0.0, uIntensity);
           if (outColor.a < 0.001) discard;
           gl_FragColor = outColor;
         }

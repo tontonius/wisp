@@ -22,7 +22,7 @@ Particle module:
 - CPU backend for precise gameplay-ish effects
 - GPU backend for large visual effects using WebGL render-target ping-pong simulation
 - Explicit GPU backend selection with `gpu.backend: "auto" | "webgl" | "webgpu"` (`"webgpu"` is an experimental v0 path)
-- Point, sphere, hemisphere, cone, and box emitters
+- Point, sphere, hemisphere, disc, cone, and box emitters
 - Local-space or world-space simulation (`simulationSpace`)
 - Continuous emission and burst emission
 - Optional emitter-motion modules (`inheritVelocity`, `lifetimeByEmitterSpeed`)
@@ -32,6 +32,7 @@ Particle module:
 - Billboard quad renderer
 - Camera-aligned and velocity-aligned particles
 - Alpha, additive, and multiply blending
+- Renderer RGB intensity control for HDR/additive tuning (`renderer.intensity`)
 - Texture support
 - Texture-sheet / flipbook UV support
 - JSON-style presets
@@ -164,6 +165,7 @@ const explosion: ParticlePreset = {
 
   renderer: {
     blendMode: "additive",
+    intensity: 1.5,
     depthWrite: false,
   },
 };
@@ -248,6 +250,7 @@ const magicStorm: ParticlePreset = {
 
   renderer: {
     blendMode: "additive",
+    intensity: 2.2,
     depthWrite: false,
   },
 };
@@ -322,7 +325,7 @@ system.setDebug(true);
 particles.setDebug({ enabled: true, color: "#78d7ff" });
 ```
 
-The current gizmos show point, sphere, hemisphere, cone, and box emitter shapes. Cone gizmos include the base radius, length, angle spread, and forward spawn direction.
+The current gizmos show point, sphere, hemisphere, disc, cone, and box emitter shapes. Cone gizmos include the base radius, length, angle spread, and forward spawn direction.
 
 ## `simulation: "auto"`
 
@@ -377,7 +380,7 @@ velocityOverLifetime: {
 
 ### WebGL GPU backend supports
 
-- point / sphere / hemisphere / cone / box emitters
+- point / sphere / hemisphere / disc / cone / box emitters
 - continuous emission
 - burst emission via `emit(count)` or preset bursts
 - lifetime / speed / size / opacity / colour ranges
@@ -523,6 +526,18 @@ emitter: {
 }
 ```
 
+### Disc
+
+Disc emits from a flat XZ circle and points along local +Y.
+
+```ts
+emitter: {
+  type: "disc",
+  radius: 1,
+  emitFrom: "volume", // or "shell"
+}
+```
+
 ### Box
 
 ```ts
@@ -555,6 +570,7 @@ renderer: {
   texture,
   alphaFromLuminance: { enabled: true, blackCutoff: 32 },
   blendMode: "alpha",    // "additive" | "multiply"
+  intensity: 1.0,        // scales RGB contribution, useful for HDR glow balancing
   align: "camera",       // "velocity"
   depthWrite: false,
 }

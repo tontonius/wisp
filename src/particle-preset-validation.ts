@@ -15,7 +15,7 @@ export type ParticlePresetValidationResult = {
   warnings: string[];
 };
 
-const EMITTER_TYPES = new Set(["point", "sphere", "hemisphere", "cone", "box"]);
+const EMITTER_TYPES = new Set(["point", "sphere", "hemisphere", "cone", "box", "disc"]);
 const RENDERER_TYPES = new Set(["billboard", "stretchedBillboard"]);
 const SORTING_MODES = new Set(["none", "distance", "youngestFirst", "oldestFirst"]);
 const SIMULATION_SPACES = new Set(["local", "world"]);
@@ -266,6 +266,11 @@ export function collectParticlePresetIssues(
   if (preset.renderer?.softness !== undefined) {
     if (!isFiniteNumber(preset.renderer.softness) || preset.renderer.softness <= 0) {
       errors.push("renderer.softness: must be a finite number > 0 when set.");
+    }
+  }
+  if (preset.renderer?.intensity !== undefined) {
+    if (!isFiniteNumber(preset.renderer.intensity) || preset.renderer.intensity <= 0) {
+      errors.push("renderer.intensity: must be a finite number > 0 when set.");
     }
   }
   const sorting = preset.renderer?.sorting;

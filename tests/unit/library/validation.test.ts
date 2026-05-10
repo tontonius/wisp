@@ -20,6 +20,19 @@ describe("collectParticlePresetIssues", () => {
     expect(result.errors).toEqual([]);
   });
 
+  it("accepts renderer.intensity when positive", () => {
+    const preset = {
+      simulation: "cpu" as const,
+      maxParticles: 256,
+      emitter: { type: "point" as const },
+      emission: { rateOverTime: 10 },
+      start: { lifetime: 1, speed: 1, size: 1, color: "#ffffff", opacity: 1 },
+      renderer: { blendMode: "additive" as const, align: "camera" as const, intensity: 2.5 },
+    };
+    const result = collectParticlePresetIssues(preset, {});
+    expect(result.errors).toEqual([]);
+  });
+
   it("passes with forces.pointAttractor", () => {
     const preset = {
       simulation: "cpu" as const,
@@ -37,6 +50,19 @@ describe("collectParticlePresetIssues", () => {
           ] as [number, number][],
         },
       },
+    };
+    const result = collectParticlePresetIssues(preset, {});
+    expect(result.errors).toEqual([]);
+  });
+
+  it("accepts disc emitter presets", () => {
+    const preset = {
+      simulation: "cpu" as const,
+      maxParticles: 256,
+      emitter: { type: "disc" as const, radius: 0.5, emitFrom: "shell" as const },
+      emission: { rateOverTime: 10 },
+      start: { lifetime: 1, speed: 1, size: 1, color: "#ffffff", opacity: 1 },
+      renderer: { blendMode: "alpha" as const, align: "camera" as const },
     };
     const result = collectParticlePresetIssues(preset, {});
     expect(result.errors).toEqual([]);
@@ -64,6 +90,19 @@ describe("collectParticlePresetIssues", () => {
     };
     const result = collectParticlePresetIssues(preset as unknown as ParticlePreset, {});
     expect(result.errors).toContain('gpu.backend: must be "auto", "webgl", or "webgpu" when set.');
+  });
+
+  it("reports errors for invalid renderer.intensity", () => {
+    const preset = {
+      simulation: "cpu" as const,
+      maxParticles: 256,
+      emitter: { type: "point" as const },
+      emission: { rateOverTime: 10 },
+      start: { lifetime: 1, speed: 1, size: 1, color: "#ffffff", opacity: 1 },
+      renderer: { blendMode: "additive" as const, align: "camera" as const, intensity: 0 },
+    };
+    const result = collectParticlePresetIssues(preset, {});
+    expect(result.errors).toContain("renderer.intensity: must be a finite number > 0 when set.");
   });
 
   it("warns when a preset resolves to the experimental WebGPU backend", () => {

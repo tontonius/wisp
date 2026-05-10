@@ -55,7 +55,7 @@ emissionModeBinding.on("change", () => updateEmissionVisibility());
 const emitterFolder = pane.addFolder({ title: "Emitter", expanded: false });
 const emitterTypeBinding = emitterFolder.addBinding(rt.params, "emitterType", {
   label: "Type",
-  options: { point: "point", sphere: "sphere", hemisphere: "hemisphere", cone: "cone", box: "box" },
+  options: { point: "point", sphere: "sphere", hemisphere: "hemisphere", disc: "disc", cone: "cone", box: "box" },
 });
 const emitterEmitFromBinding = emitterFolder.addBinding(rt.params, "emitterEmitFrom", {
   label: "Emit From",
@@ -79,7 +79,7 @@ const emitterBoxSizeBinding = emitterFolder.addBinding(rt.params, "emitterBoxSiz
 function updateEmitterVisibility(): void {
   const type = rt.params.emitterType;
   const isPoint = type === "point";
-  const isSphereLike = type === "sphere" || type === "hemisphere";
+  const isSphereLike = type === "sphere" || type === "hemisphere" || type === "disc";
   const isCone = type === "cone";
   const isBox = type === "box";
 
@@ -395,6 +395,12 @@ const rendererCompositingFolder = rendererFolder.addFolder({ title: "Compositing
 rendererCompositingFolder.addBinding(rt.params, "rendererBlendMode", {
   label: "Blend",
   options: { alpha: "alpha", additive: "additive", multiply: "multiply" },
+});
+rendererCompositingFolder.addBinding(rt.params, "rendererIntensity", {
+  label: "Intensity",
+  min: 0.01,
+  max: 16,
+  step: 0.01,
 });
 rendererCompositingFolder.addBinding(rt.params, "rendererAlign", { label: "Align", options: { camera: "camera", velocity: "velocity" } });
 rendererCompositingFolder.addBinding(rt.params, "rendererSorting", {

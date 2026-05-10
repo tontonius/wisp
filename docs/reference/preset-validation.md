@@ -64,7 +64,7 @@ Pass the same renderer you pass into `ParticleSystemOptions` so validation can w
 | --- | --- |
 | `maxParticles` | If set, must be an integer `>= 1`. |
 | `duration` | If set, must be finite and `>= 0`. |
-| `emitter.type` | If `emitter` is set, `type` must be `point`, `sphere`, `hemisphere`, `cone`, or `box`. |
+| `emitter.type` | If `emitter` is set, `type` must be `point`, `sphere`, `hemisphere`, `disc`, `cone`, or `box`. |
 | `renderer.textureSheet` | If set, `columns` and `rows` must be integers `>= 1` (invalid values are no longer silently clamped for authoring). |
 | `renderer.textureSheet.animationMode` | If set, must be `"static"`, `"randomStart"`, `"overLifetime"`, or `"randomStartOverLifetime"`. |
 | `gpu.textureSize` | If set, integer `>= 1` and `textureSize² >= maxParticles` (using `maxParticles ?? 1024`). |
@@ -74,6 +74,7 @@ Pass the same renderer you pass into `ParticleSystemOptions` so validation can w
 | `renderer.stretchMaxScale` | If set, must be finite and `>= 1`. |
 | `renderer.softParticles` | If set, must be a boolean. |
 | `renderer.softness` | If set, must be finite and `> 0`. |
+| `renderer.intensity` | If set, must be finite and `> 0`. |
 | `renderer.sorting` | If set, must be `"none"`, `"distance"`, `"youngestFirst"`, or `"oldestFirst"`. |
 | `renderer.dispersal` | If set, must be an object; `enabled` must be a boolean when set; `strength` in `[0, 1]`; `noiseScale` finite and `> 0`; `edgeSoftness` finite and `> 0`; `scroll` a finite `[x, y]` tuple; `amount` a valid `Curve` when set. |
 | `limitVelocityOverLifetime.speed` | If set, must be a valid `Curve` (finite keyframe times/values, non-decreasing times). |

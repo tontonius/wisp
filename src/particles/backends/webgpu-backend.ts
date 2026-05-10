@@ -928,6 +928,7 @@ export class WebGPUParticleBackend implements ParticleBackend {
     const velocityAligned = this.preset.renderer?.align === "velocity" || rendererType === "stretchedBillboard";
     const stretchFactor = this.preset.renderer?.stretchFactor ?? 0.35;
     const stretchMaxScale = Math.max(1, this.preset.renderer?.stretchMaxScale ?? 4);
+    const intensity = Math.max(0, this.preset.renderer?.intensity ?? 1);
 
     let instance = 0;
     for (let slot = 0; slot < this.maxParticles; slot++) {
@@ -957,6 +958,7 @@ export class WebGPUParticleBackend implements ParticleBackend {
         evaluateGradient(cbs.gradient, speedToParam(speed, cbs.speedRange), tempColorA);
         finalColor.multiply(tempColorA);
       }
+      finalColor.multiplyScalar(intensity);
 
       const position = this.authoritativeReadbackAvailable
         ? tempVectorD.set(this.positionAgeData[offset + 0], this.positionAgeData[offset + 1], this.positionAgeData[offset + 2])
@@ -1010,6 +1012,7 @@ export class WebGPUParticleBackend implements ParticleBackend {
   private updateTslInstanceColors(): void {
     const over = this.preset.overLifetime ?? {};
     const dispersal = this.preset.renderer?.dispersal;
+    const intensity = Math.max(0, this.preset.renderer?.intensity ?? 1);
     if (this.dispersalAmountCurveTexture) {
       this.dispersalStrengthUniform.value = dispersal?.strength ?? 1;
       this.dispersalNoiseScaleUniform.value = dispersal?.noiseScale ?? 6;
@@ -1070,6 +1073,7 @@ export class WebGPUParticleBackend implements ParticleBackend {
         evaluateGradient(cbs.gradient, speedToParam(speed, cbs.speedRange), tempColorA);
         finalColor.multiply(tempColorA);
       }
+      finalColor.multiplyScalar(intensity);
       const renderRotation = particle.rotation;
       const renderFrame = this.getTextureSheetFrame(particle, t);
       const renderSeed = (particle.randomSeed * 0.1031) % 1;

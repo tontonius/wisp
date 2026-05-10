@@ -7,6 +7,7 @@ type EmitterShape =
   | { type: "point" }
   | { type: "sphere"; radius?: number; emitFrom?: "volume" | "shell" }
   | { type: "hemisphere"; radius?: number; emitFrom?: "volume" | "shell" }
+  | { type: "disc"; radius?: number; emitFrom?: "volume" | "shell" }
   | { type: "cone"; radius?: number; angle?: number; length?: number }
   | { type: "box"; size?: Vec3Tuple };
 ```
@@ -119,6 +120,34 @@ Good for:
 - Jets.
 - Fire plumes.
 - Directed bursts.
+
+## Disc
+
+```ts
+emitter: {
+  type: "disc",
+  radius: 1,
+  emitFrom: "volume",
+}
+```
+
+Fields:
+
+| Field | Default | Description |
+| --- | --- | --- |
+| `radius` | `1` | Disc radius on the local XZ plane. |
+| `emitFrom` | `"volume"` | `"volume"` samples across disc area; `"shell"` samples only the rim. |
+
+Behavior:
+
+- The disc lies in local XZ at `y = 0`.
+- Direction is fixed to local `+Y`.
+
+Good for:
+
+- Fountain bases.
+- Ground auras.
+- Upward plumes from circular emitters.
 
 ## Box
 

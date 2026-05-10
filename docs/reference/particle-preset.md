@@ -70,6 +70,8 @@ type ParticlePreset = {
 | `overLifetime` | Object | Multipliers/color default to neutral values | Size, opacity, and color curves. |
 | `renderer` | Object | Default soft particle material | Type, texture, blend, alignment, depth, stretch settings, and texture sheet settings. |
 
+`EmitterShape` supports `point`, `sphere`, `hemisphere`, `disc`, `cone`, and `box`. See [Emitters reference](emitters.md) for field-level details.
+
 ## Simulation Selection
 
 ```ts
@@ -200,6 +202,7 @@ lifetimeByEmitterSpeed?: {
 renderer?: {
   type?: "billboard" | "stretchedBillboard";
   align?: "camera" | "velocity";
+  intensity?: number;
   sorting?: "none" | "distance" | "youngestFirst" | "oldestFirst";
   stretchFactor?: number;
   stretchMaxScale?: number;
@@ -212,6 +215,7 @@ renderer?: {
 - `type` defaults to `"billboard"`.
 - `type: "stretchedBillboard"` stretches quads along velocity on CPU and the experimental WebGPU backend. Other GPU backends fall back to CPU for this renderer type.
 - `sorting` is CPU-only and defaults to `"distance"` (back-to-front by world-space camera depth). See [Renderer reference: Sorting](renderer.md#sorting).
+- `intensity` scales particle RGB contribution (default `1`, must be `> 0` when set). This is useful for tuning additive/HDR glow without rewriting color gradients.
 - `stretchFactor` controls speed-to-length scaling (default `0.35`).
 - `stretchMaxScale` clamps elongation (default `4`).
 - `softParticles` enables depth-fade at geometry intersections when you provide a scene depth texture through `system.setSoftParticleDepthTexture(...)`.
@@ -266,6 +270,7 @@ const fire: ParticlePreset = {
   },
   renderer: {
     blendMode: "additive",
+    intensity: 1.6,
     depthWrite: false,
   },
 };

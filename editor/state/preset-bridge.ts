@@ -131,6 +131,7 @@ export function syncParamsFromPreset(ctx: PresetSyncApplyContext): void {
   params.velocityLinearZ = { x: linear?.z?.[0]?.[1] ?? 0, y: linear?.z?.[linear.z.length - 1]?.[1] ?? 0 };
   params.rendererType = (workingPreset.renderer?.type ?? "billboard") as "billboard" | "stretchedBillboard";
   params.rendererBlendMode = (workingPreset.renderer?.blendMode ?? "alpha") as "alpha" | "additive" | "multiply";
+  params.rendererIntensity = workingPreset.renderer?.intensity ?? 1;
   params.rendererAlign = (workingPreset.renderer?.align ?? "camera") as "camera" | "velocity";
   params.rendererSorting = (workingPreset.renderer?.sorting ?? "distance") as "none" | "distance" | "youngestFirst" | "oldestFirst";
   const rendererTexture = workingPreset.renderer?.texture;
@@ -246,7 +247,7 @@ export function applyParamsToPreset(ctx: PresetSyncApplyContext): void {
   workingPreset.loop = params.loop;
   workingPreset.prewarm = params.prewarm;
   emitter.type = params.emitterType;
-  if (emitter.type === "sphere" || emitter.type === "hemisphere") {
+  if (emitter.type === "sphere" || emitter.type === "hemisphere" || emitter.type === "disc") {
     (emitter as { emitFrom?: "volume" | "shell" }).emitFrom = params.emitterEmitFrom;
   }
   (emitter as { radius?: number }).radius = Math.max(0, params.emitterRadius);
@@ -330,6 +331,7 @@ export function applyParamsToPreset(ctx: PresetSyncApplyContext): void {
   }
   rendererConfig.type = params.rendererType;
   rendererConfig.blendMode = params.rendererBlendMode;
+  rendererConfig.intensity = Math.max(0.001, params.rendererIntensity);
   rendererConfig.align = params.rendererAlign;
   rendererConfig.sorting = params.rendererSorting;
   rendererConfig.texture = ctx.customRendererTexture.value
