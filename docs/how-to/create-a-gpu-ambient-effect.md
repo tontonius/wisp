@@ -33,8 +33,8 @@ const snowGpu: ParticlePreset = {
     color: ["#ffffff", "#cce9ff"],
     opacity: [0.45, 0.9],
     velocity: [[-0.45, -0.85, -0.25], [0.45, -1.8, 0.25]],
-    rotation: [0, Math.PI * 2],
-    angularVelocity: [-0.8, 0.8],
+    rotation: [0, 360],
+    angularVelocity: [-46, 46],
   },
   forces: {
     acceleration: [0, -0.08, 0],

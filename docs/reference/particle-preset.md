@@ -252,8 +252,8 @@ const fire: ParticlePreset = {
     color: ["#fff4ad", "#ff6a22"],
     opacity: [0.5, 0.95],
     velocity: [[-0.18, 0.8, -0.18], [0.18, 2.15, 0.18]],
-    rotation: [0, Math.PI * 2],
-    angularVelocity: [-2.4, 2.4],
+    rotation: [0, 360],
+    angularVelocity: [-138, 138],
   },
   forces: {
     acceleration: [0, 1.15, 0],

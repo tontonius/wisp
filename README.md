@@ -138,8 +138,8 @@ const explosion: ParticlePreset = {
     size: [0.05, 0.25],
     color: ["#fff4ba", "#ff4b16"],
     opacity: [0.6, 1],
-    rotation: [0, Math.PI * 2],
-    angularVelocity: [-4, 4],
+    rotation: [0, 360],
+    angularVelocity: [-229, 229],
   },
 
   forces: {
@@ -448,7 +448,7 @@ Most `start` values accept either a scalar or an interval:
 ```ts
 start: {
   rotation: Math.PI * 0.25,
-  angularVelocity: [-2, 2],
+  angularVelocity: [-115, 115],
 }
 ```
 

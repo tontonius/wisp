@@ -140,8 +140,8 @@ export function createStarterPresets(textures: StarterTexturePack): Record<Start
         color: ["#fff4c5", "#ff6e2a"],
         opacity: [0.65, 1],
         velocity: [[-1.4, 0.5, -1.4], [1.4, 2.8, 1.4]],
-        rotation: [0, Math.PI * 2],
-        angularVelocity: [-2.5, 2.5],
+        rotation: [0, 360],
+        angularVelocity: [-143, 143],
       },
       forces: { acceleration: [0, -1.4, 0], drag: 1.7, noise: { strength: 0.35, frequency: 4.8 } },
       overLifetime: {
@@ -169,7 +169,7 @@ export function createStarterPresets(textures: StarterTexturePack): Record<Start
         color: ["#fff7cc", "#ff8a22"],
         opacity: 1,
         rotation: 0,
-        angularVelocity: [-18, 18],
+        angularVelocity: [-1031, 1031],
       },
       forces: { drag: 10 },
       overLifetime: {
@@ -191,8 +191,8 @@ export function createStarterPresets(textures: StarterTexturePack): Record<Start
         color: ["#778090", "#c8c8c8"],
         opacity: [0.2, 0.55],
         velocity: [[-0.25, 0.5, -0.25], [0.25, 1.45, 0.25]],
-        rotation: [0, Math.PI * 2],
-        angularVelocity: [-1.5, 1.5],
+        rotation: [0, 360],
+        angularVelocity: [-86, 86],
       },
       forces: { acceleration: [0, 0.25, 0], drag: 1.35, noise: { strength: 0.5, frequency: 4 } },
       overLifetime: {
@@ -236,8 +236,8 @@ export function createStarterPresets(textures: StarterTexturePack): Record<Start
         color: ["#d6f0ff", "#b193ff"],
         opacity: [0.45, 0.92],
         velocity: [[-0.8, 0.3, -0.8], [0.8, 2.0, 0.8]],
-        rotation: [0, Math.PI * 2],
-        angularVelocity: [-4, 4],
+        rotation: [0, 360],
+        angularVelocity: [-229, 229],
       },
       forces: { drag: 1.8, noise: { strength: 0.35, frequency: 7 } },
       overLifetime: {
@@ -261,7 +261,7 @@ export function createStarterPresets(textures: StarterTexturePack): Record<Start
         color: ["#ffffff", "#ffffff"],
         velocity: [0, 0, 0],
         opacity: [1, 1],
-        rotation: [Math.PI, Math.PI],
+        rotation: [180, 180],
         // overLifetime.rotation is not part of ParticlePreset; keep spin fixed at spawn orientation.
         angularVelocity: 0,
       },
@@ -323,8 +323,8 @@ export function createStarterPresets(textures: StarterTexturePack): Record<Start
         color: "#ffffff",
         opacity: [1, 1],
         velocity: [[-0.15, 0, -0.15], [0.15, 0, 0.15]],
-        rotation: [0, Math.PI * 2],
-        angularVelocity: [-1.3, 1.3],
+        rotation: [0, 360],
+        angularVelocity: [-75, 75],
       },
       forces: {
         acceleration: [0, 2.95, 0],

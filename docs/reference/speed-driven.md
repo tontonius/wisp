@@ -49,7 +49,7 @@ rotationBySpeed?: {
 };
 ```
 
-Each frame, **replaces** the per-particle angular velocity sampled at spawn (`start.angularVelocity`) with the curve value at `t` (radians per second). Spin still integrates as `rotation += angularVelocity * dt`.
+Each frame, **replaces** the per-particle angular velocity sampled at spawn (`start.angularVelocity`) with the curve value at `t` (degrees per second). Spin still integrates as `rotation += angularVelocity * dt` (internally in radians after conversion).
 
 ## GPU notes
 

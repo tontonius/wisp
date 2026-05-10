@@ -167,7 +167,7 @@ async function boot(): Promise<void> {
       opacity: [0.7, 1],
       color: ["#7fd5ff", "#fff1ba"],
       velocity: [[-0.18, 0.15, -0.18], [0.18, 0.45, 0.18]],
-      angularVelocity: [-1.2, 1.2],
+      angularVelocity: [-69, 69],
     },
     forces: {
       acceleration: [0, -0.1, 0],
@@ -196,7 +196,7 @@ async function boot(): Promise<void> {
     },
     rotationBySpeed: {
       speedRange: [0.4, 2.2],
-      angularVelocity: [[0, -0.25], [0.7, 0.4], [1, 1.1]],
+      angularVelocity: [[0, -14.3], [0.7, 22.9], [1, 63]],
     },
     overLifetime: {
       size: [[0, 0.45], [0.25, 1.1], [1, 0.25]],

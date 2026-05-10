@@ -63,8 +63,8 @@ start: {
   size: [0.05, 0.18],
   color: ["#ffffff", "#ff9f1c"],
   opacity: [0.6, 1],
-  rotation: [0, Math.PI * 2],
-  angularVelocity: [-4, 4],
+  rotation: [0, 360],
+  angularVelocity: [-229, 229],
 }
 ```
 

@@ -53,6 +53,7 @@ export interface MotionSquashOptions {
 export interface MotionRecoilOptions {
   duration?: number;
   distance?: number;
+  /** Maximum recoil rotation in degrees. */
   rotation?: number;
 }
 
@@ -64,6 +65,7 @@ export interface MotionHoverOptions {
 
 /** Options for velocity-driven lean. */
 export interface MotionLeanByVelocityOptions {
+  /** Maximum lean angle in degrees. */
   maxAngle?: number;
   response?: number;
 }

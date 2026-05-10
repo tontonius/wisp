@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import type { ParticleBackend, ParticlePreset, Range, SimulationSpace, SoftParticleDepthTextureOptions, SpawnRequest } from "../types";
-import { DEFAULT_EMITTER, PARTICLE_DISPERSAL_GLSL, applyBlendMode, colorMinMax, getDispersalAmountCurvePlaceholder, getDispersalWhitePlaceholderTexture, getTextureSheetConfig, isRendererDispersalEnabled, makeCurveFloatTexture, makeCurveTexture, makeDispersalAmountCurveTexture, makeGradientTexture, makeVectorCurveTexture, randomRange, rangeMinMax, resolveRendererTexture, tempMatrixA, tempVectorA, tempVectorB, tempVectorC, vec3MinMax } from "../shared";
+import { DEFAULT_EMITTER, PARTICLE_DISPERSAL_GLSL, applyBlendMode, colorMinMax, curveDegToRad, getDispersalAmountCurvePlaceholder, getDispersalWhitePlaceholderTexture, getTextureSheetConfig, isRendererDispersalEnabled, makeCurveFloatTexture, makeCurveTexture, makeDispersalAmountCurveTexture, makeGradientTexture, makeVectorCurveTexture, randomRange, rangeDegToRad, rangeMinMax, resolveRendererTexture, tempMatrixA, tempVectorA, tempVectorB, tempVectorC, vec3MinMax } from "../shared";
 
 export class WebGLParticleBackend implements ParticleBackend {
   readonly object = new THREE.Object3D();
@@ -57,7 +57,7 @@ export class WebGLParticleBackend implements ParticleBackend {
     this.lifetimeVelocityTexture = makeVectorCurveTexture(preset.velocityOverLifetime);
     this.sizeBySpeedCurveTexture = makeCurveFloatTexture(preset.sizeBySpeed?.curve, 1);
     this.colorBySpeedGradientTexture = makeGradientTexture(preset.colorBySpeed?.gradient);
-    this.rotationBySpeedCurveTexture = makeCurveFloatTexture(preset.rotationBySpeed?.angularVelocity, 0);
+    this.rotationBySpeedCurveTexture = makeCurveFloatTexture(curveDegToRad(preset.rotationBySpeed?.angularVelocity), 0);
     this.pointAttractorStrengthCurveTexture = makeCurveFloatTexture(preset.forces?.pointAttractor?.strengthOverLifetime, 1);
     if (isRendererDispersalEnabled(preset.renderer) && preset.renderer?.dispersal?.amount) {
       this.dispersalAmountCurveTexture = makeDispersalAmountCurveTexture(preset.renderer.dispersal.amount);
@@ -347,8 +347,8 @@ export class WebGLParticleBackend implements ParticleBackend {
     const [speedMin, speedMax] = rangeMinMax(start.speed, 1);
     const [sizeMin, sizeMax] = rangeMinMax(start.size, 0.2);
     const [opacityMin, opacityMax] = rangeMinMax(start.opacity, 1);
-    const [rotationMin, rotationMax] = rangeMinMax(start.rotation, 0);
-    const [angularMin, angularMax] = rangeMinMax(start.angularVelocity, 0);
+    const [rotationMin, rotationMax] = rangeDegToRad(start.rotation, 0);
+    const [angularMin, angularMax] = rangeDegToRad(start.angularVelocity, 0);
     const [velocityMin, velocityMax] = vec3MinMax(start.velocity, [0, 0, 0]);
     const [colorMin, colorMax] = colorMinMax(start.color);
 

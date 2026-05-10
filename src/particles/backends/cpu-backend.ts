@@ -265,8 +265,8 @@ export class CPUParticleBackend implements ParticleBackend {
     particle.startSize = randomRange(start.size ?? 0.2);
     particle.startOpacity = randomRange(start.opacity ?? 1);
     particle.startColor.copy(randomColor(start.color ?? "#ffffff"));
-    particle.rotation = randomRange(start.rotation ?? 0);
-    particle.angularVelocity = randomRange(start.angularVelocity ?? 0);
+    particle.rotation = THREE.MathUtils.degToRad(randomRange(start.rotation ?? 0));
+    particle.angularVelocity = THREE.MathUtils.degToRad(randomRange(start.angularVelocity ?? 0));
     particle.randomSeed = Math.random() * 1000;
 
     const sheet = getTextureSheetConfig(this.preset);
@@ -573,7 +573,7 @@ export class CPUParticleBackend implements ParticleBackend {
       let angularVel = particle.angularVelocity;
       const rbs = this.preset.rotationBySpeed;
       if (rbs?.angularVelocity && rbs.speedRange) {
-        angularVel = evaluateCurve(rbs.angularVelocity, speedToParam(simSpeed, rbs.speedRange), 0);
+        angularVel = THREE.MathUtils.degToRad(evaluateCurve(rbs.angularVelocity, speedToParam(simSpeed, rbs.speedRange), 0));
       }
       particle.rotation += angularVel * dt;
     }

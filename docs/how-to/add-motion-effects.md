@@ -29,14 +29,14 @@ scene.add(actorRoot);
 const fx = wisp.motion?.motion(actorVisual);
 
 fx?.hover({ amplitude: 0.1, frequency: 1.4 });
-fx?.leanByVelocity(() => velocity);
+fx?.leanByVelocity(() => velocity, { maxAngle: 20 });
 ```
 
 Trigger one-shots from gameplay events:
 
 ```ts
 fx?.squash({ amount: 0.2 });
-fx?.recoil(hitDirection, { distance: 0.2 });
+fx?.recoil(hitDirection, { distance: 0.2, rotation: 12 });
 ```
 
 ## 4) Keep update order late

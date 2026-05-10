@@ -65,7 +65,7 @@ const fx = wisp.motion?.motion(mesh);
 fx?.pop();
 fx?.recoil(new THREE.Vector3(0, 0, 1));
 fx?.hover({ amplitude: 0.08, frequency: 1.6 });
-fx?.leanByVelocity(() => velocity);
+fx?.leanByVelocity(() => velocity, { maxAngle: 20 });
 ```
 
 Supported v1 decorator effects:
@@ -76,6 +76,11 @@ Supported v1 decorator effects:
 - `hover(options?)`
 - `breathe(options?)`
 - `leanByVelocity(source, options?)`
+
+Angle option units:
+
+- `recoil(..., { rotation })` uses degrees.
+- `leanByVelocity(..., { maxAngle })` uses degrees.
 
 Movement-authoring APIs like `moveTo`/`followPath` are intentionally out of scope for this module.
 

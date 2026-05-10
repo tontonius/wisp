@@ -113,14 +113,14 @@ startFolder.addBinding(rt.params, "opacityRange", {
   y: { min: 0, max: 1, step: 0.01 },
 });
 startFolder.addBinding(rt.params, "startRotationRange", {
-  label: "Rotation (rad)",
-  x: { min: -6.283, max: 6.283, step: 0.001 },
-  y: { min: -6.283, max: 6.283, step: 0.001 },
+  label: "Rotation (deg)",
+  x: { min: -360, max: 360, step: 0.1 },
+  y: { min: -360, max: 360, step: 0.1 },
 });
 startFolder.addBinding(rt.params, "startAngularVelocityRange", {
-  label: "Angular Vel (rad/s)",
-  x: { min: -20, max: 20, step: 0.01 },
-  y: { min: -20, max: 20, step: 0.01 },
+  label: "Angular Vel (deg/s)",
+  x: { min: -1200, max: 1200, step: 1 },
+  y: { min: -1200, max: 1200, step: 1 },
 });
 startFolder.addBinding(rt.params, "startVelocityMin", {
   label: "Velocity Min",
@@ -326,9 +326,9 @@ const rotationBySpeedRangeBinding = rotationBySpeedFolder.addBinding(rt.params, 
   y: { min: 0, max: 100, step: 0.01 },
 });
 const rotationBySpeedAngularBinding = rotationBySpeedFolder.addBinding(rt.params, "rotationBySpeedAngular", {
-  label: "Angular Velocity",
-  x: { min: -20, max: 20, step: 0.01 },
-  y: { min: -20, max: 20, step: 0.01 },
+  label: "Angular Velocity (deg/s)",
+  x: { min: -1200, max: 1200, step: 1 },
+  y: { min: -1200, max: 1200, step: 1 },
 });
 
 function updateLifetimeModifierVisibility(): void {

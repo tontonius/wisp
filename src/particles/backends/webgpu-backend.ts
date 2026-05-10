@@ -517,8 +517,8 @@ export class WebGPUParticleBackend implements ParticleBackend {
     particle.startSize = randomRange(start.size ?? 0.2);
     particle.startOpacity = randomRange(start.opacity ?? 1);
     particle.startColor.copy(randomColor(start.color ?? "#ffffff"));
-    particle.rotation = randomRange(start.rotation ?? 0);
-    particle.angularVelocity = randomRange(start.angularVelocity ?? 0);
+    particle.rotation = THREE.MathUtils.degToRad(randomRange(start.rotation ?? 0));
+    particle.angularVelocity = THREE.MathUtils.degToRad(randomRange(start.angularVelocity ?? 0));
     particle.randomSeed = Math.random() * 1000;
     particle.startFrame = this.textureSheetConfig?.randomFrame ? Math.floor(Math.random() * this.textureSheetConfig.totalFrames) : 0;
 
@@ -1125,7 +1125,7 @@ export class WebGPUParticleBackend implements ParticleBackend {
     const rbs = this.preset.rotationBySpeed;
     if (!rbs?.angularVelocity || !rbs.speedRange) return particle.angularVelocity;
     const speed = slot >= 0 ? this.getParticleSpeed(slot, particle) : particle.velocity.length();
-    return evaluateCurve(rbs.angularVelocity, speedToParam(speed, rbs.speedRange), 0);
+    return THREE.MathUtils.degToRad(evaluateCurve(rbs.angularVelocity, speedToParam(speed, rbs.speedRange), 0));
   }
 
   private getTextureSheetFrame(particle: Particle, t: number): number {

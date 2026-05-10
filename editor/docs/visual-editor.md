@@ -50,7 +50,7 @@ When adding or changing editor controls, prefer `editor/panels/particle-editor-p
 - Diagnostics runtime stats split active systems into CPU, WebGL GPU, and WebGPU GPU counts, and expose the selected layer's resolved backend, compute mode, motion mode, and alive count.
 - The editor publishes the same status data for smoke testing as `window.__WISP_EDITOR_STATUS__`.
 - Diagnostics also includes a backend matrix for the selected preset, showing how the same authoring data resolves under CPU, WebGL, and WebGPU targets with compact issue labels.
-- The `Start` folder includes start rotation controls (`start.rotation` and `start.angularVelocity`) as min/max ranges in radians and radians/sec.
+- The `Start` folder includes start rotation controls (`start.rotation` and `start.angularVelocity`) as min/max ranges in degrees and degrees/sec.
 - The `Start` folder also exposes `start.velocity` as `Velocity Min`/`Velocity Max` (Vec3) for directional launch offsets beyond scalar `start.speed`.
 - `Renderer` is organized by intent-first subfolders (`Render Style`, `Compositing`, `Depth`, `Texture Processing`, `Texture Sheet`) with conditional controls for stretched billboards, soft particles, luminance alpha keying, and texture-sheet animation.
 - `Renderer > Texture Sheet` supports drag-and-drop (and click-to-browse) for custom atlas textures, including a live sheet preview and a `Clear Sheet Texture` action.

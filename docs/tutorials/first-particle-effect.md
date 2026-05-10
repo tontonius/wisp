@@ -63,8 +63,8 @@ const sparkleBurst: ParticlePreset = {
     size: [0.05, 0.16],
     color: ["#ffffff", "#7df9ff"],
     opacity: [0.65, 1],
-    rotation: [0, Math.PI * 2],
-    angularVelocity: [-6, 6],
+    rotation: [0, 360],
+    angularVelocity: [-344, 344],
   },
 
   forces: {

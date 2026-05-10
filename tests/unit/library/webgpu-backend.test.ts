@@ -540,7 +540,7 @@ describe("WebGPUParticleBackend v0", () => {
       start: { lifetime: 1, speed: 0, velocity: [2, 0, 0], size: 1, rotation: 0, angularVelocity: 0, color: "#ffffff" },
       rotationBySpeed: {
         speedRange: [0, 2],
-        angularVelocity: [[0, 0], [1, 4]],
+        angularVelocity: [[0, 0], [1, 229]],
       },
       renderer: { texture: makeTexture() },
     };

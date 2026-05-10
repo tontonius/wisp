@@ -23,7 +23,7 @@ describe("MotionEffectsSystem", () => {
     const motion = new MotionEffectsSystem();
     motion.motion(target).hover({ amplitude: 0.1, frequency: 1 }).pop({ strength: 0.2 }).recoil(new THREE.Vector3(0, 0, 1), {
       distance: 0.2,
-      rotation: 0.3,
+      rotation: 17,
       duration: 0.2,
     });
 

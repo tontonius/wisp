@@ -48,7 +48,7 @@ export type SizeBySpeed = {
   curve: Curve;
 };
 
-/** Replaces per-frame angular velocity from `start.angularVelocity` when set. Sampled by speed parameter `t` (rad/s). */
+/** Replaces per-frame angular velocity from `start.angularVelocity` when set. Sampled by speed parameter `t` (deg/s). */
 export type RotationBySpeed = {
   speedRange: SpeedRemapRange;
   angularVelocity: Curve;
@@ -211,9 +211,9 @@ export type ParticlePreset = {
     speed?: Range;
     /** Initial uniform billboard size in world units. Default `1`. */
     size?: Range;
-    /** Initial billboard rotation in radians. */
+    /** Initial billboard rotation in degrees. */
     rotation?: Range;
-    /** Initial spin velocity in radians/second. */
+    /** Initial spin velocity in degrees/second. */
     angularVelocity?: Range;
     /** Constant color or random color sampled between two endpoints. */
     color?: THREE.ColorRepresentation | [THREE.ColorRepresentation, THREE.ColorRepresentation];
@@ -305,7 +305,7 @@ export type ParticlePreset = {
   sizeBySpeed?: SizeBySpeed;
 
   /**
-   * Drive spin rate from current speed (rad/s). When set, replaces the spawned `start.angularVelocity` each frame. CPU and GPU.
+   * Drive spin rate from current speed (deg/s). When set, replaces the spawned `start.angularVelocity` each frame. CPU and GPU.
    */
   rotationBySpeed?: RotationBySpeed;
 

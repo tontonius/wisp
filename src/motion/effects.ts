@@ -96,7 +96,7 @@ class RecoilEffect implements MotionEffectInstance {
     }
     this.duration = Math.max(0.001, options.duration ?? 0.16);
     this.distance = Math.max(0, options.distance ?? 0.2);
-    this.maxRotation = Math.max(0, options.rotation ?? 0.2);
+    this.maxRotation = THREE.MathUtils.degToRad(Math.max(0, options.rotation ?? 11.5));
   }
 
   update(context: MotionUpdateContext) {
@@ -175,7 +175,7 @@ class LeanByVelocityEffect implements MotionEffectInstance {
   constructor(id: number, source: MotionVectorSource, options: MotionLeanByVelocityOptions = {}) {
     this.id = id;
     this.source = source;
-    this.maxAngle = Math.max(0, options.maxAngle ?? 0.35);
+    this.maxAngle = THREE.MathUtils.degToRad(Math.max(0, options.maxAngle ?? 20));
     this.response = Math.max(0.001, options.response ?? 10);
   }
 

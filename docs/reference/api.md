@@ -447,10 +447,10 @@ Exported functions (see [Preset validation](preset-validation.md)):
 | `MotionControllerOptions` | `{ maxDt?: number }` |
 | `MotionPopOptions` | One-shot pop tuning `{ duration?, strength? }` |
 | `MotionSquashOptions` | One-shot squash tuning `{ duration?, amount? }` |
-| `MotionRecoilOptions` | Recoil tuning `{ duration?, distance?, rotation? }` |
+| `MotionRecoilOptions` | Recoil tuning `{ duration?, distance?, rotation? }` (`rotation` in degrees) |
 | `MotionHoverOptions` | Hover tuning `{ amplitude?, frequency? }` |
 | `MotionBreatheOptions` | Breathe tuning `{ amplitude?, frequency? }` |
-| `MotionLeanByVelocityOptions` | Lean tuning `{ maxAngle?, response? }` |
+| `MotionLeanByVelocityOptions` | Lean tuning `{ maxAngle?, response? }` (`maxAngle` in degrees) |
 | `MotionVectorSource` | `() => THREE.Vector3 | [number, number, number]` |
 | `WispMotionOptions` | Motion module options (currently `MotionControllerOptions`). |
 | `WispParticleOptions` | `ParticleManagerOptions & { presets?: Record<string, ParticlePreset> }` |

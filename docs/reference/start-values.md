@@ -23,7 +23,7 @@ start?: {
 | `speed` | `1` | Units per second along emitter direction. |
 | `size` | `0.2` | Billboard world size. |
 | `rotation` | `0` | Radians. |
-| `angularVelocity` | `0` | Radians per second. |
+| `angularVelocity` | `0` | Degrees per second. |
 | `color` | `"#ffffff"` | Start color. |
 | `opacity` | `1` | Start alpha. |
 | `velocity` | `[0, 0, 0]` | Extra start velocity vector. |
@@ -67,11 +67,11 @@ sampledStartSize * sizeCurve(age / lifetime)
 ## Rotation And Angular Velocity
 
 ```ts
-rotation: [0, Math.PI * 2],
-angularVelocity: [-8, 8],
+rotation: [0, 360],
+angularVelocity: [-460, 460],
 ```
 
-Rotation is stored per particle in radians. Angular velocity is added every update.
+Rotation is stored per particle in radians internally. User-facing preset values are in degrees, and angular velocity is added every update after conversion.
 
 ## Color
 

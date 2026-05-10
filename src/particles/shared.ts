@@ -21,6 +21,16 @@ function rangeMinMax(value: Range | undefined, fallback: number): [number, numbe
   return Array.isArray(value) ? value : [value, value];
 }
 
+function rangeDegToRad(value: Range | undefined, fallbackDeg: number): [number, number] {
+  const [minDeg, maxDeg] = rangeMinMax(value, fallbackDeg);
+  return [THREE.MathUtils.degToRad(minDeg), THREE.MathUtils.degToRad(maxDeg)];
+}
+
+function curveDegToRad(curve: Curve | undefined): Curve | undefined {
+  if (!curve) return undefined;
+  return curve.map(([time, value]) => [time, THREE.MathUtils.degToRad(value)]);
+}
+
 function vec3MinMax(value: Vec3Range | undefined, fallback: Vec3Tuple = [0, 0, 0]): [Vec3Tuple, Vec3Tuple] {
   if (!value) return [fallback, fallback];
   if (Array.isArray(value[0])) return value as [Vec3Tuple, Vec3Tuple];
@@ -755,12 +765,14 @@ export {
   makeVectorCurveTexture,
   randomColor,
   randomRange,
+  rangeDegToRad,
   randomVec3,
   rangeMinMax,
   resolveRendererTexture,
   resolveDebugOptions,
   sampleEmitter,
   speedToParam,
+  curveDegToRad,
   tempColorA,
   tempColorB,
   tempMatrixA,
