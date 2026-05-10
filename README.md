@@ -92,26 +92,41 @@ Module entry points:
 ```ts
 import * as THREE from "three";
 import { Wisp, type ParticlePreset } from "@tontonius/wisp";
-import { createStarterTextures } from "@tontonius/wisp/starter/textures";
-import { createExplosionPreset } from "@tontonius/wisp/starter/effects/explosion";
 
 const scene = new THREE.Scene();
 const renderer = new THREE.WebGLRenderer();
-const starterTextures = createStarterTextures();
-const presets = {
-  explosion: createExplosionPreset(starterTextures),
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
+
+const sparkBurst: ParticlePreset = {
+  simulation: "cpu",
+  maxParticles: 160,
+  duration: 0.25,
+  emission: {
+    bursts: [{ time: 0, count: [80, 120] }],
+  },
+  start: {
+    lifetime: [0.4, 1.1],
+    speed: [2, 7],
+    size: [0.05, 0.25],
+    color: ["#fff4ba", "#ff4b16"],
+    opacity: [0.6, 1],
+  },
+  renderer: {
+    blendMode: "additive",
+    depthWrite: false,
+  },
 };
 
 const wisp = new Wisp({
   scene,
   camera,
   particles: {
-    presets,
+    presets: { sparkBurst },
     renderer,
   },
 });
 
-wisp.particles?.spawn("explosion", { position: [0, 0, 0] });
+wisp.particles?.spawn("sparkBurst", { position: [0, 0, 0] });
 ```
 
 Custom preset path:

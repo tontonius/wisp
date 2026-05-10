@@ -16,46 +16,6 @@
     "./webgpu": {
       "types": "./dist/webgpu.d.ts",
       "import": "./dist/webgpu.js"
-    },
-    "./starter": {
-      "types": "./dist/starter/index.d.ts",
-      "import": "./dist/starter.js"
-    },
-    "./starter/textures": {
-      "types": "./dist/starter/textures/index.d.ts",
-      "import": "./dist/starter/textures.js"
-    },
-    "./starter/effects": {
-      "types": "./dist/starter/effects/index.d.ts",
-      "import": "./dist/starter/effects.js"
-    },
-    "./starter/effects/explosion": {
-      "types": "./dist/starter/effects/explosion.d.ts",
-      "import": "./dist/starter/effects/explosion.js"
-    },
-    "./starter/effects/muzzle-flash": {
-      "types": "./dist/starter/effects/muzzle-flash.d.ts",
-      "import": "./dist/starter/effects/muzzle-flash.js"
-    },
-    "./starter/effects/smoke-puff": {
-      "types": "./dist/starter/effects/smoke-puff.d.ts",
-      "import": "./dist/starter/effects/smoke-puff.js"
-    },
-    "./starter/effects/hit-sparks": {
-      "types": "./dist/starter/effects/hit-sparks.d.ts",
-      "import": "./dist/starter/effects/hit-sparks.js"
-    },
-    "./starter/effects/magic-burst": {
-      "types": "./dist/starter/effects/magic-burst.d.ts",
-      "import": "./dist/starter/effects/magic-burst.js"
-    },
-    "./starter/effects/run-smoke": {
-      "types": "./dist/starter/effects/run-smoke.d.ts",
-      "import": "./dist/starter/effects/run-smoke.js"
-    },
-    "./starter/effects/jump-smoke-ring": {
-      "types": "./dist/starter/effects/jump-smoke-ring.d.ts",
-      "import": "./dist/starter/effects/jump-smoke-ring.js"
     }
   },
   "files": [

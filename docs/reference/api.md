@@ -4,8 +4,8 @@ All public exports come from the package root (`@tontonius/wisp`), backed by `sr
 
 ```ts
 export * from "./particles";
-export * from "./starter";
 export * from "./camera";
+export * from "./motion";
 export * from "./wisp";
 ```
 
@@ -14,7 +14,6 @@ Wisp currently exposes three core areas:
 - camera effects (`Wisp`, `WispCamera`, `CameraEffectsSystem`, `CameraShakeController`)
 - motion effects (`WispMotion`, `MotionEffectsSystem`, `MotionController`)
 - particles (`ParticleManager`, `ParticleEffectLibrary`, `ParticleSystem`, and particle types/utilities)
-- starter content (`createStarterTextures`, `starterTextureUrls`, per-effect starter modules)
 
 ## IntelliSense Contract
 
@@ -456,8 +455,6 @@ Exported functions (see [Preset validation](preset-validation.md)):
 | `WispMotionOptions` | Motion module options (currently `MotionControllerOptions`). |
 | `WispParticleOptions` | `ParticleManagerOptions & { presets?: Record<string, ParticlePreset> }` |
 | `WispOptions` | `{ scene?: THREE.Object3D; camera: THREE.Camera; cameraEffects?: CameraEffectsOptions; motion?: WispMotionOptions; particles?: WispParticleOptions }` |
-| `StarterTexturePack` | `{ softDisc; hardDisc; spark; smokePuffsSheet2x2 }` as `THREE.Texture` values. |
-| `StarterEffectName` | `"explosion" | "muzzleFlash" | "smokePuff" | "hitSparks" | "magicBurst" | "runSmoke" | "jumpSmokeRing"` |
 
 ## Secondary Entrypoints
 
@@ -467,21 +464,5 @@ Exported functions (see [Preset validation](preset-validation.md)):
 | `@tontonius/wisp/webgpu` | Registers and exports the experimental WebGPU backend. Import once before constructing WebGPU particle systems. |
 
 See the dedicated reference pages for exact option semantics.
-
-## Starter Modules
-
-Use starter subpath exports for modular imports:
-
-```ts
-import { createStarterTextures } from "@tontonius/wisp/starter/textures";
-import { createExplosionPreset } from "@tontonius/wisp/starter/effects/explosion";
-
-const starterTextures = createStarterTextures();
-const presets = {
-  explosion: createExplosionPreset(starterTextures),
-};
-```
-
-See [Starter Kit](starter-kit.md) for details.
 
 Use `Wisp`/`wisp.particles` as the primary public runtime surface for effect management.

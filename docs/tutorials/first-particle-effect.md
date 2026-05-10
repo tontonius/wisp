@@ -1,14 +1,12 @@
 # First Particle Effect
 
-This tutorial shows the fastest path first (starter presets), then a custom preset path.
+This tutorial walks through building and spawning your first custom particle preset.
 
 ## 1. Create A Three.js Scene
 
 ```ts
 import * as THREE from "three";
 import { Wisp, type ParticlePreset } from "@tontonius/wisp";
-import { createStarterTextures } from "@tontonius/wisp/starter/textures";
-import { createExplosionPreset } from "@tontonius/wisp/starter/effects/explosion";
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -20,31 +18,7 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 ```
 
-## 2. Fast Path: Starter Explosion
-
-```ts
-const starterTextures = createStarterTextures();
-const presets = {
-  explosion: createExplosionPreset(starterTextures),
-};
-
-const wisp = new Wisp({
-  scene,
-  camera,
-  particles: {
-    presets,
-    renderer,
-  },
-});
-
-wisp.particles!.spawn("explosion", {
-  position: [0, 0.4, 0],
-});
-```
-
-Starter presets include `explosion`, `muzzleFlash`, `smokePuff`, `hitSparks`, `magicBurst`, `runSmoke`, and `jumpSmokeRing`.
-
-## 3. Define A Custom Preset
+## 2. Define A Custom Preset
 
 ```ts
 const sparkleBurst: ParticlePreset = {
@@ -91,7 +65,7 @@ const sparkleBurst: ParticlePreset = {
 };
 ```
 
-## 4. Register And Spawn Your Custom Preset
+## 3. Register And Spawn Your Custom Preset
 
 ```ts
 const wisp = new Wisp({
@@ -110,7 +84,7 @@ wisp.particles!.spawn("sparkleBurst", {
 
 `wisp.particles.spawn` adds the spawned `ParticleSystem` to `scene` and starts it by default.
 
-## 5. Update Every Frame
+## 4. Update Every Frame
 
 ```ts
 const clock = new THREE.Clock();
@@ -128,7 +102,7 @@ animate();
 
 One-shot systems auto-dispose when complete unless their preset sets `autoDispose: false`.
 
-## 6. Try The Next Changes
+## 5. Try The Next Changes
 
 Change the shape:
 

@@ -216,7 +216,7 @@ Introduce/expand a renderer capability layer so public APIs do not hardcode one 
 - [x] Split or lazy-load WebGPU/TSL code so CPU/WebGL users do not pay the experimental TSL bundle cost.
   - [x] Measure current build output from importing `three/tsl`.
     - `dist/index.js` no longer imports `three/tsl` or `three/webgpu`; `dist/webgpu.js` owns those imports.
-    - The starter smoke atlas is generated procedurally so `dist/index.js` no longer embeds the old PNG as a base64 data URL.
+    - The smoke atlas is generated procedurally so `dist/index.js` no longer embeds the old PNG as a base64 data URL.
   - [x] Choose one approach: dynamic import the WebGPU backend, secondary export, or accept size until `0.3.0` experimental.
     - Chose a secondary `@tontonius/wisp/webgpu` entrypoint that registers the WebGPU backend as a side effect.
   - [x] Verify CPU/WebGL import path does not eagerly pull TSL after the split.

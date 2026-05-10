@@ -9,7 +9,7 @@ export type GradientPresetItem = {
 };
 
 /**
- * Preset swatches: a starter library row, then gradients copied from
+ * Preset swatches: a base library row, then gradients copied from
  * `demo/presets.ts` `overLifetime.color` + `overLifetime.opacity` (when both exist).
  */
 export const GRADIENT_PRESETS: readonly GradientPresetItem[] = [
