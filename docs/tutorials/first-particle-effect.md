@@ -6,7 +6,9 @@ This tutorial shows the fastest path first (starter presets), then a custom pres
 
 ```ts
 import * as THREE from "three";
-import { Wisp, createStarterKit, type ParticlePreset } from "@tontonius/wisp";
+import { Wisp, type ParticlePreset } from "@tontonius/wisp";
+import { createStarterTextures } from "@tontonius/wisp/starter/textures";
+import { createExplosionPreset } from "@tontonius/wisp/starter/effects/explosion";
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -21,7 +23,10 @@ document.body.appendChild(renderer.domElement);
 ## 2. Fast Path: Starter Explosion
 
 ```ts
-const { presets } = createStarterKit();
+const starterTextures = createStarterTextures();
+const presets = {
+  explosion: createExplosionPreset(starterTextures),
+};
 
 const wisp = new Wisp({
   scene,

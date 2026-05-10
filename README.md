@@ -91,11 +91,16 @@ Module entry points:
 
 ```ts
 import * as THREE from "three";
-import { Wisp, createStarterKit, type ParticlePreset } from "@tontonius/wisp";
+import { Wisp, type ParticlePreset } from "@tontonius/wisp";
+import { createStarterTextures } from "@tontonius/wisp/starter/textures";
+import { createExplosionPreset } from "@tontonius/wisp/starter/effects/explosion";
 
 const scene = new THREE.Scene();
 const renderer = new THREE.WebGLRenderer();
-const { presets } = createStarterKit();
+const starterTextures = createStarterTextures();
+const presets = {
+  explosion: createExplosionPreset(starterTextures),
+};
 
 const wisp = new Wisp({
   scene,

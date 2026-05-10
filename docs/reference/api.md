@@ -4,6 +4,7 @@ All public exports come from the package root (`@tontonius/wisp`), backed by `sr
 
 ```ts
 export * from "./particles";
+export * from "./starter";
 export * from "./camera";
 export * from "./wisp";
 ```
@@ -13,7 +14,7 @@ Wisp currently exposes three core areas:
 - camera effects (`Wisp`, `WispCamera`, `CameraEffectsSystem`, `CameraShakeController`)
 - motion effects (`WispMotion`, `MotionEffectsSystem`, `MotionController`)
 - particles (`ParticleManager`, `ParticleEffectLibrary`, `ParticleSystem`, and particle types/utilities)
-- starter content (`createStarterTextures`, `createStarterPresets`, `createStarterKit`, `starterBillboardUrls`)
+- starter content (`createStarterTextures`, `starterTextureUrls`, per-effect starter modules)
 
 ## IntelliSense Contract
 
@@ -455,9 +456,8 @@ Exported functions (see [Preset validation](preset-validation.md)):
 | `WispMotionOptions` | Motion module options (currently `MotionControllerOptions`). |
 | `WispParticleOptions` | `ParticleManagerOptions & { presets?: Record<string, ParticlePreset> }` |
 | `WispOptions` | `{ scene?: THREE.Object3D; camera: THREE.Camera; cameraEffects?: CameraEffectsOptions; motion?: WispMotionOptions; particles?: WispParticleOptions }` |
-| `StarterTexturePack` | `{ softDisc; hardDisc; spark; smokePuffsSheet4x4 }` as `THREE.Texture` values. |
+| `StarterTexturePack` | `{ softDisc; hardDisc; spark; smokePuffsSheet2x2 }` as `THREE.Texture` values. |
 | `StarterEffectName` | `"explosion" | "muzzleFlash" | "smokePuff" | "hitSparks" | "magicBurst" | "runSmoke" | "jumpSmokeRing"` |
-| `StarterKit` | `{ textures: StarterTexturePack; presets: Record<StarterEffectName, ParticlePreset> }` |
 
 ## Secondary Entrypoints
 
@@ -468,26 +468,18 @@ Exported functions (see [Preset validation](preset-validation.md)):
 
 See the dedicated reference pages for exact option semantics.
 
-## Starter Kit Helpers
+## Starter Modules
 
-Use these helpers when you want a zero-setup starter pack:
-
-```ts
-import { createStarterKit } from "@tontonius/wisp";
-
-const { presets } = createStarterKit();
-```
-
-Then pass those presets directly into `Wisp`:
+Use starter subpath exports for modular imports:
 
 ```ts
-const wisp = new Wisp({
-  scene,
-  camera,
-  particles: { renderer, presets },
-});
+import { createStarterTextures } from "@tontonius/wisp/starter/textures";
+import { createExplosionPreset } from "@tontonius/wisp/starter/effects/explosion";
 
-wisp.particles?.spawn("explosion");
+const starterTextures = createStarterTextures();
+const presets = {
+  explosion: createExplosionPreset(starterTextures),
+};
 ```
 
 See [Starter Kit](starter-kit.md) for details.

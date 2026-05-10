@@ -1,16 +1,13 @@
 # Starter Kit Reference
 
-The starter kit ships ready-to-use textures and presets so you can register effects and spawn them immediately.
+Starter content now ships as modular texture and effect files so you can import only what you need.
 
 ## Exports
 
 ```ts
-import {
-  createStarterTextures,
-  createStarterPresets,
-  createStarterKit,
-  starterBillboardUrls,
-} from "@tontonius/wisp";
+import { createStarterTextures, starterTextureUrls } from "@tontonius/wisp/starter/textures";
+import { createStarterPresets } from "@tontonius/wisp/starter/effects";
+import { createExplosionPreset } from "@tontonius/wisp/starter/effects/explosion";
 ```
 
 ## Included Effects
@@ -25,43 +22,54 @@ import {
 - `runSmoke`
 - `jumpSmokeRing`
 
-`explosion` is authored to use the generated `smokePuffsSheet4x4` atlas by default.
+`explosion` is authored to use the starter `smokePuffsSheet2x2` atlas by default.
 
 ## Included Textures
 
 `createStarterTextures(...)` returns:
 
-- `softDisc` (generated radial falloff)
-- `hardDisc` (generated hard circular disc)
-- `spark` (generated streak/spark strip)
-- `smokePuffsSheet4x4` (generated 4x4 smoke billboard atlas)
+- `softDisc`
+- `hardDisc`
+- `spark`
+- `smokePuffsSheet2x2`
 
-The legacy billboard file path is also exposed directly for apps that still want to load the old demo atlas themselves:
-
-```ts
-starterBillboardUrls.smokePuffsSheet4x4;
-```
-
-## Fast Path (one call)
+The texture asset URLs are also exposed:
 
 ```ts
-const { presets } = createStarterKit();
+starterTextureUrls.smokePuffsSheet2x2;
 ```
 
-This creates textures and returns a `presets` object that can be passed into `Wisp`.
+## Fast Path (modular)
+
+```ts
+import { createStarterTextures } from "@tontonius/wisp/starter/textures";
+import { createExplosionPreset } from "@tontonius/wisp/starter/effects/explosion";
+
+const starterTextures = createStarterTextures();
+const presets = {
+  explosion: createExplosionPreset(starterTextures),
+};
+```
+
+This keeps each effect in its own file while still giving you a simple setup path.
 
 ## Typical Usage
 
 ```ts
 import * as THREE from "three";
-import { Wisp, createStarterKit } from "@tontonius/wisp";
+import { Wisp } from "@tontonius/wisp";
+import { createStarterTextures } from "@tontonius/wisp/starter/textures";
+import { createStarterPresets } from "@tontonius/wisp/starter/effects";
+
+const textures = createStarterTextures();
+const presets = createStarterPresets(textures);
 
 const wisp = new Wisp({
   scene,
   camera,
   particles: {
     renderer,
-    presets: createStarterKit().presets,
+    presets,
   },
 });
 
@@ -71,5 +79,5 @@ wisp.particles?.spawn("explosion", { position: [0, 0.6, 0] });
 ## Notes
 
 - Starter textures use `THREE.SRGBColorSpace`.
-- The starter smoke atlas is generated with canvas so the core library entrypoint does not inline a PNG payload.
+- Starter textures are shipped as package assets under the starter module and loaded by URL.
 - `magicBurst` requests GPU simulation; if no renderer is provided, runtime falls back to CPU using normal library fallback rules.

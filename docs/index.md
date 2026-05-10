@@ -18,7 +18,7 @@ Current core modules:
 ## Start Here
 
 - [Reference: Public API](reference/api.md)
-- [Reference: Starter Kit](reference/starter-kit.md)
+- [Reference: Starter Assets](reference/starter-kit.md)
 - [Reference: Camera Effects](reference/camera-effects.md)
 - [Reference: Motion Effects](reference/motion-effects.md)
 - [Tutorial: First Particle Effect](tutorials/first-particle-effect.md)
@@ -46,7 +46,7 @@ Current core modules:
 ### Reference
 
 - [Public API](reference/api.md)
-- [Starter Kit](reference/starter-kit.md)
+- [Starter Assets](reference/starter-kit.md)
 - [Camera Effects](reference/camera-effects.md)
 - [Motion Effects](reference/motion-effects.md)
 
